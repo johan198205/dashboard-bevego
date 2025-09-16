@@ -83,3 +83,20 @@ All these features and more make **NextAdmin** a robust, well-rounded solution f
 
 ### Version 1.0
 - Initial Release - [May 13, 2024]
+
+## Docker
+
+Bygg och kör med Docker:
+
+```bash
+# Build image
+docker build -t dashboard-mittriks:local .
+# Run
+docker run --rm -p 3000:3000 dashboard-mittriks:local
+```
+
+### Docker Compose
+
+```bash
+docker compose up --build
+```
