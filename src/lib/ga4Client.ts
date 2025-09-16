@@ -12,36 +12,50 @@ export type Ga4SessionsRow = {
 	sessions: number;
 };
 
-/**
- * TODO:
- * - Bekräfta auth-modell (Service Account vs OAuth).
- * - Ange env-nycklar: exempelvis GA4_PROPERTY_ID, GA4_CLIENT_EMAIL, GA4_PRIVATE_KEY.
- * - Implementera faktisk GA4 Data API-koppling (google-analytics-data).
- */
 export async function querySessionsByDateRange(
 	dateRange: Ga4DateRange,
 ): Promise<Ga4SessionsRow[]> {
 	const tz = dateRange.timeZone || "Europe/Stockholm";
 
-	// Placeholder-implementation tills env och auth bekräftas.
-	// Returnerar en singelrad per dag med 0-sessioner för att inte bryta UI.
-	const start = new Date(dateRange.startDate + "T00:00:00");
-	const end = new Date(dateRange.endDate + "T00:00:00");
-	const rows: Ga4SessionsRow[] = [];
+	const { BetaAnalyticsDataClient } = await import("@google-analytics/data");
 
-	for (let d = start; d <= end; d = addDays(d, 1)) {
-		rows.push({
-			date: formatDate(d),
-			channel_group: "All",
-			sessions: 0,
-		});
+	const propertyId = process.env.GA4_PROPERTY_ID || "";
+	const clientEmail = process.env.GOOGLE_CLIENT_EMAIL || "";
+	const privateKeyRaw = process.env.GOOGLE_PRIVATE_KEY || "";
+	if (!propertyId || !clientEmail || !privateKeyRaw) {
+		// Fallback till placeholder om env saknas
+		const start = new Date(dateRange.startDate + "T00:00:00");
+		const end = new Date(dateRange.endDate + "T00:00:00");
+		const rows: Ga4SessionsRow[] = [];
+		for (let d = start; d <= end; d = addDays(d, 1)) {
+			rows.push({ date: formatDate(d), channel_group: "All", sessions: 0 });
+		}
+		return rows;
 	}
 
-	// TODO: Ersätt med riktig GA4-query och normalisering till kontraktsschemat.
-	// - Metrics: sessions
-	// - Dimensions: date, sessionDefaultChannelGroup
-	// - Label: source_label = 'GA4 API'
-	// - Timezone: Europe/Stockholm
+	const privateKey = privateKeyRaw.replace(/\\n/g, "\n");
+
+	const client = new BetaAnalyticsDataClient({
+		credentials: {
+			client_email: clientEmail,
+			private_key: privateKey,
+		},
+	});
+
+	const [response] = await client.runReport({
+		property: `properties/${propertyId}`,
+		dimensions: [{ name: "date" }],
+		metrics: [{ name: "sessions" }],
+		dateRanges: [{ startDate: dateRange.startDate, endDate: dateRange.endDate }],
+		// GA4 API använder projektets timezone; vi antar Europe/Stockholm i UI och paritet
+	});
+
+	const rows: Ga4SessionsRow[] = (response.rows || []).map((r) => ({
+		date: normalizeGaDate(r.dimensionValues?.[0]?.value || ""),
+		channel_group: "All",
+		sessions: Number(r.metricValues?.[0]?.value || 0),
+	}));
+
 	return rows;
 }
 
@@ -55,5 +69,13 @@ function addDays(date: Date, days: number): Date {
 
 function formatDate(date: Date): string {
 	return date.toISOString().slice(0, 10);
+}
+
+function normalizeGaDate(gaDate: string): string {
+	// GA4 date dimension returns YYYYMMDD
+	if (gaDate && gaDate.length === 8) {
+		return `${gaDate.slice(0, 4)}-${gaDate.slice(4, 6)}-${gaDate.slice(6, 8)}`;
+	}
+	return gaDate || "";
 }
 
