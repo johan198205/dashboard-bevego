@@ -1,9 +1,25 @@
 import SourceToggle from "@/components/SourceToggle";
 import mf from "@/lib/mockData/fixtures/microfrontends.json";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 export default function Page() {
   return (
     <div className="grid grid-cols-1 gap-4">
+      <div className="card">
+        <div className="title mb-2">Funktioner</div>
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center justify-between">
+            <span>Konverteringar</span>
+            <span className={`badge ${FEATURE_FLAGS.conversions ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+              {FEATURE_FLAGS.conversions ? 'Aktiverad' : 'Inaktiverad'}
+            </span>
+          </div>
+          <div className="text-xs text-gray-500">
+            Ändra FEATURE_FLAGS.conversions i installningar/page.tsx för att aktivera
+          </div>
+        </div>
+      </div>
+
       <div className="card">
         <div className="title mb-2">Källa</div>
         <SourceToggle />

@@ -1,4 +1,12 @@
+import { redirect } from "next/navigation";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
+
 export default function Page() {
+  // TODO: Route protection - redirect if Konverteringar feature is disabled
+  if (!FEATURE_FLAGS.conversions) {
+    redirect("/");
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       <div className="card">

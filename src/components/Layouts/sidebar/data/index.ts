@@ -1,4 +1,5 @@
 import * as Icons from "../icons";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 export const NAV_DATA = [
   {
@@ -13,7 +14,8 @@ export const NAV_DATA = [
       },
       { title: "Användare", url: "/anvandare", icon: Icons.User, items: [] },
       { title: "Användning", url: "/anvandning", icon: Icons.Table, items: [] },
-      { title: "Konverteringar", url: "/konverteringar", icon: Icons.PieChart, items: [] },
+      // TODO: Konverteringar section - controlled by FEATURE_FLAGS.conversions
+      ...(FEATURE_FLAGS.conversions ? [{ title: "Konverteringar", url: "/konverteringar", icon: Icons.PieChart, items: [] }] : []),
       { title: "Kundnöjdhet", url: "/kundnojdhet", icon: Icons.FourCircle, items: [] },
       { title: "Prestanda", url: "/prestanda", icon: Icons.Table, items: [] },
       { title: "Inställningar", url: "/installningar", icon: Icons.Alphabet, items: [] },
