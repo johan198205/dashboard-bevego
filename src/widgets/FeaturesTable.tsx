@@ -4,6 +4,9 @@ import { getKpi } from "@/lib/resolver";
 import { KpiResponse, Params } from "@/lib/types";
 import InfoTooltip from "@/components/InfoTooltip";
 import { formatPercent } from "@/lib/format";
+import { ScoreCard } from "@/components/ui/scorecard";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { StatusPill } from "@/components/ui/status-pill";
 
 export default function FeaturesTable({ range }: { range: Params["range"] }) {
   const [features, setFeatures] = useState<KpiResponse | null>(null);
@@ -32,39 +35,69 @@ export default function FeaturesTable({ range }: { range: Params["range"] }) {
     if (!Number.isFinite(prevRate) || prevRate === 0) return null;
     return ((totalRate - prevRate) / Math.abs(prevRate)) * 100;
   })();
+  // Icon component for Features
+  const FeaturesIcon = ({ className }: { className?: string }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+
   return (
-    <div className="card">
-      <div className="mb-2 flex items-center justify-between">
-        <div className="title">Funktioner</div>
-        <div className="flex items-center gap-2">
-          <span className="badge">Källa: Mock</span>
-          <InfoTooltip text="Användning per funktion. Mockdata." />
-        </div>
-      </div>
-      <div className="value">{totalRate !== null ? formatPercentUnsigned(totalRate) : "–"}</div>
-      {yoyRatePct !== null && (
-        <div className={`text-sm ${yoyRatePct >= 0 ? "text-green-600" : "text-red-600"}`}>
-          {formatPercentUnsigned(yoyRatePct)} {range.comparisonMode === 'prev' ? 'vs föregående period' : ''}
-        </div>
-      )}
+    <div className="space-y-4">
+      {/* Score Card */}
+      <ScoreCard
+        label="Funktioner"
+        value={totalRate !== null ? formatPercentUnsigned(totalRate) : "–"}
+        growthRate={yoyRatePct !== null ? yoyRatePct : undefined}
+        Icon={FeaturesIcon}
+        source="Mock"
+        variant="success"
+      />
+      
+      {/* Table */}
       {rows.length === 0 ? (
-        <div className="text-sm text-gray-500">Inga rader för valt filter.</div>
+        <div className="rounded-lg border border-stroke bg-white p-6 text-center text-sm text-gray-500 dark:border-dark-3 dark:bg-gray-dark">
+          Inga rader för valt filter.
+        </div>
       ) : (
-        <div className="max-h-80 overflow-y-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-500"><th>Funktion</th><th className="text-right">Antal</th><th className="text-right">{range.comparisonMode === 'prev' ? 'Föreg. period' : 'YoY'}</th></tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.key} className="border-t">
-                  <td className="py-2">{r.key}</td>
-                  <td className="py-2 text-right">{new Intl.NumberFormat("sv-SE").format(r.value)}</td>
-                  <td className="py-2 text-right">{r.yoyPct !== undefined ? `${r.yoyPct.toFixed(2)}%` : "–"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="rounded-lg border border-stroke bg-white shadow-sm dark:border-dark-3 dark:bg-gray-dark">
+          <div className="px-6 py-4 border-b border-stroke dark:border-dark-3">
+            <h3 className="text-lg font-semibold text-dark dark:text-white">Funktion Details</h3>
+          </div>
+          <div className="max-h-80 overflow-y-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Funktion</TableHead>
+                  <TableHead className="text-right">Antal</TableHead>
+                  <TableHead className="text-right">{range.comparisonMode === 'prev' ? 'Föreg. period' : 'YoY'}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow key={r.key}>
+                    <TableCell className="font-medium">{r.key}</TableCell>
+                    <TableCell className="text-right">
+                      {new Intl.NumberFormat("sv-SE").format(r.value)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {r.yoyPct !== undefined ? (
+                        <StatusPill 
+                          variant={r.yoyPct >= 0 ? "success" : "error"}
+                          size="sm"
+                        >
+                          {r.yoyPct >= 0 ? "+" : ""}{r.yoyPct.toFixed(1)}%
+                        </StatusPill>
+                      ) : (
+                        <span className="text-neutral-400">–</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
     </div>

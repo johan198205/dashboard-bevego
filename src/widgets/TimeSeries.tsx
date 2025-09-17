@@ -37,13 +37,52 @@ export default function TimeSeries({ title, metric, range }: Props) {
 
   const options: ApexOptions = useMemo(() => ({
     chart: { type: "line", toolbar: { show: false }, fontFamily: "inherit", animations: { enabled: true } },
-    stroke: { curve: "smooth", width: 3 },
-    grid: { strokeDashArray: 5, yaxis: { lines: { show: true } } },
+    stroke: { 
+      curve: "smooth", 
+      width: [4, 2], // Current line thicker, comparison thinner
+      dashArray: [0, 8] // Current solid, comparison dashed
+    },
+    grid: { 
+      strokeDashArray: 5, 
+      yaxis: { lines: { show: true } },
+      xaxis: { lines: { show: false } }
+    },
     dataLabels: { enabled: false },
-    xaxis: { type: "datetime", axisBorder: { show: false }, axisTicks: { show: false }, labels: { datetimeUTC: false } },
-    yaxis: { decimalsInFloat: 0 },
-    tooltip: { x: { format: localGrain === "month" ? "MMM ''yy" : "dd MMM yyyy" } },
-    colors: ["#E01E26", "#94a3b8"],
+    xaxis: { 
+      type: "datetime", 
+      axisBorder: { show: false }, 
+      axisTicks: { show: false }, 
+      labels: { 
+        datetimeUTC: false,
+        style: { colors: "#6B7280", fontSize: "12px" }
+      } 
+    },
+    yaxis: { 
+      decimalsInFloat: 0,
+      labels: {
+        style: { colors: "#6B7280", fontSize: "12px" }
+      }
+    },
+    tooltip: { 
+      x: { format: localGrain === "month" ? "MMM ''yy" : "dd MMM yyyy" },
+      style: { fontSize: "14px" }
+    },
+    colors: ["#E01E26", "#9CA3AF"], // Primary red for current, neutral gray for comparison
+    legend: {
+      show: true,
+      position: "top",
+      horizontalAlign: "right",
+      fontSize: "14px",
+      fontFamily: "inherit",
+      markers: {
+        size: 10,
+        strokeWidth: 3
+      },
+      itemMargin: {
+        horizontal: 16,
+        vertical: 8
+      }
+    },
   }), [localGrain]);
 
   return (
@@ -66,8 +105,15 @@ export default function TimeSeries({ title, metric, range }: Props) {
         <div className="h-32 w-full bg-gray-100" aria-label="diagram placeholder" />
       ) : (
         <div className="-ml-1 -mr-1 h-40" aria-label={title}>
-          {/* @ts-expect-error dynamic import typing of react-apexcharts */}
-          <Chart options={{...options, stroke: {curve: 'smooth', width: 3, dashArray: [0, 6]}}} series={[{ name: 'Nuvarande', data: seriesData }, ...(compareSeries.length ? [{ name: 'Jämförelse', data: compareSeries }] : [])]} type="line" height={160} />
+          <Chart 
+            options={options} 
+            series={[
+              { name: 'Nuvarande', data: seriesData }, 
+              ...(compareSeries.length ? [{ name: 'Jämförelse', data: compareSeries }] : [])
+            ]} 
+            type="line" 
+            height={160} 
+          />
         </div>
       )}
       <div className="mt-2 text-xs text-gray-500">{data?.timeseries.length || 0} punkter</div>

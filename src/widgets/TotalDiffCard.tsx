@@ -4,6 +4,8 @@ import { getKpi } from "@/lib/resolver";
 import { Params, KpiResponse } from "@/lib/types";
 import { useFilters } from "@/components/GlobalFilters";
 import { formatNumber, formatPercent } from "@/lib/format";
+import { ScoreCard } from "@/components/ui/scorecard";
+import { UserIcon, GlobeIcon } from "@/assets/icons";
 import InfoTooltip from "@/components/InfoTooltip";
 
 type Props = {
@@ -12,30 +14,59 @@ type Props = {
   range: Params["range"];
 };
 
+// Icon mapping for different metrics
+const getMetricIcon = (metric: string) => {
+  switch (metric) {
+    case "mau":
+    case "users":
+      return UserIcon;
+    case "pageviews":
+    case "sessions":
+      return GlobeIcon;
+    default:
+      return UserIcon;
+  }
+};
+
+// Variant mapping based on metric type
+const getMetricVariant = (metric: string) => {
+  switch (metric) {
+    case "mau":
+    case "users":
+      return "primary" as const;
+    case "pageviews":
+    case "sessions":
+      return "success" as const;
+    default:
+      return "default" as const;
+  }
+};
+
 export default function TotalDiffCard({ title, metric, range }: Props) {
   const [data, setData] = useState<KpiResponse | null>(null);
   const { state } = useFilters();
+  
   useEffect(() => {
     getKpi({ metric, range, filters: { audience: state.audience, device: state.device, channel: state.channel } }).then(setData);
   }, [metric, range.start, range.end, range.compareYoy, range.grain, state.audience.join(","), state.device.join(","), state.channel.join(",")]);
 
   const summary = data?.summary;
+  const Icon = getMetricIcon(metric);
+  const variant = getMetricVariant(metric);
 
   return (
-    <div className="card">
-      <div className="mb-2 flex items-center justify-between">
-        <div className="title">{title}</div>
-        <div className="flex items-center gap-2">
-          <span className="badge">Källa: Mock</span>
-          <InfoTooltip text={`Metrik: ${metric}. Mockdata och definitioner för demo.`} />
-        </div>
+    <div className="relative">
+      <ScoreCard
+        label={title}
+        value={summary ? formatNumber(summary.current) : "–"}
+        growthRate={summary ? summary.yoyPct : undefined}
+        Icon={Icon}
+        variant={variant}
+        source="Mock"
+      />
+      <div className="absolute top-2 right-2">
+        <InfoTooltip text={`Metrik: ${metric}. Mockdata och definitioner för demo.`} />
       </div>
-      <div className="value">{summary ? formatNumber(summary.current) : "–"}</div>
-      {summary && (
-        <div className={`text-sm ${summary.yoyPct >= 0 ? "text-green-600" : "text-red-600"}`}>
-          {formatPercent(summary.yoyPct)} {range.comparisonMode === 'prev' ? 'vs föregående period' : 'vs föregående år'}
-        </div>
-      )}
     </div>
   );
 }

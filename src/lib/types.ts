@@ -26,7 +26,7 @@ export type Filters = {
 };
 
 export type Params = {
-  metric: 'mau' | 'pageviews' | 'tasks' | 'features' | 'ndi' | 'perf';
+  metric: 'mau' | 'pageviews' | 'tasks' | 'features' | 'ndi' | 'perf' | 'users';
   range: {
     start: string;
     end: string;
@@ -37,6 +37,62 @@ export type Params = {
     grain?: Grain;
   };
   filters?: Filters;
+};
+
+// Core Web Vitals types
+export type CwvStatus = 'Pass' | 'Needs Improvement' | 'Fail';
+
+export type CwvSummary = {
+  lcp: {
+    p75: number; // in ms
+    status: CwvStatus;
+    target: number; // 2500ms
+  };
+  inp: {
+    p75: number; // in ms
+    status: CwvStatus;
+    target: number; // 200ms
+  };
+  cls: {
+    p75: number; // score
+    status: CwvStatus;
+    target: number; // 0.1
+  };
+  passedPages: {
+    count: number;
+    percentage: number;
+  };
+  totalStatus: {
+    percentage: number; // % that pass all three metrics
+  };
+  source: 'Mock' | 'GA4 API' | 'BigQuery';
+};
+
+export type CwvTrendPoint = {
+  date: string;
+  lcp: number;
+  inp: number;
+  cls: number;
+};
+
+export type CwvUrlGroupRow = {
+  url: string;
+  lcp: {
+    p75: number;
+    status: CwvStatus;
+  };
+  inp: {
+    p75: number;
+    status: CwvStatus;
+  };
+  cls: {
+    p75: number;
+    status: CwvStatus;
+  };
+  overallStatus: CwvStatus;
+  sessions?: number;
+  lastTested: string;
+  source: 'Mock' | 'GA4 API' | 'BigQuery';
 };
 
 

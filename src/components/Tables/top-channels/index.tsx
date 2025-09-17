@@ -17,56 +17,61 @@ export async function TopChannels({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "grid rounded-[10px] bg-white px-7.5 pb-4 pt-7.5 shadow-1 dark:bg-gray-dark dark:shadow-card",
+        "rounded-lg border border-stroke bg-white shadow-sm dark:border-dark-3 dark:bg-gray-dark",
         className,
       )}
     >
-      <h2 className="mb-4 text-body-2xlg font-bold text-dark dark:text-white">
-        Top Channels
-      </h2>
+      <div className="px-6 py-4 border-b border-stroke dark:border-dark-3">
+        <h2 className="text-lg font-semibold text-dark dark:text-white">
+          Top Channels
+        </h2>
+      </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow className="border-none uppercase [&>th]:text-center">
-            <TableHead className="min-w-[120px] !text-left">Source</TableHead>
-            <TableHead>Visitors</TableHead>
-            <TableHead className="!text-right">Revenues</TableHead>
-            <TableHead>Sales</TableHead>
-            <TableHead>Conversion</TableHead>
-          </TableRow>
-        </TableHeader>
-
-        <TableBody>
-          {data.map((channel, i) => (
-            <TableRow
-              className="text-center text-base font-medium text-dark dark:text-white"
-              key={channel.name + i}
-            >
-              <TableCell className="flex min-w-fit items-center gap-3">
-                <Image
-                  src={channel.logo}
-                  className="size-8 rounded-full object-cover"
-                  width={40}
-                  height={40}
-                  alt={channel.name + " Logo"}
-                  role="presentation"
-                />
-                <div className="">{channel.name}</div>
-              </TableCell>
-
-              <TableCell>{compactFormat(channel.visitors)}</TableCell>
-
-              <TableCell className="!text-right text-green-light-1">
-                ${standardFormat(channel.revenues)}
-              </TableCell>
-
-              <TableCell>{channel.sales}</TableCell>
-
-              <TableCell>{channel.conversion}%</TableCell>
+      <div className="p-6">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="min-w-[120px]">Source</TableHead>
+              <TableHead className="text-center">Visitors</TableHead>
+              <TableHead className="text-right">Revenues</TableHead>
+              <TableHead className="text-center">Sales</TableHead>
+              <TableHead className="text-center">Conversion</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+
+          <TableBody>
+            {data.map((channel, i) => (
+              <TableRow key={channel.name + i}>
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <Image
+                      src={channel.logo}
+                      className="size-8 rounded-full object-cover"
+                      width={40}
+                      height={40}
+                      alt={channel.name + " Logo"}
+                      role="presentation"
+                    />
+                    <span className="font-medium">{channel.name}</span>
+                  </div>
+                </TableCell>
+
+                <TableCell className="text-center">
+                  {compactFormat(channel.visitors)}
+                </TableCell>
+
+                <TableCell className="text-right text-green font-medium">
+                  ${standardFormat(channel.revenues)}
+                </TableCell>
+
+                <TableCell className="text-center">{channel.sales}</TableCell>
+
+                <TableCell className="text-center">{channel.conversion}%</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

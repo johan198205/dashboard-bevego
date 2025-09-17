@@ -3,6 +3,15 @@ import { useEffect, useState } from "react";
 import { getKpi } from "@/lib/resolver";
 import { KpiResponse, Params } from "@/lib/types";
 import { useFilters } from "@/components/GlobalFilters";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { StatusPill } from "@/components/ui/status-pill";
 import InfoTooltip from "@/components/InfoTooltip";
 
 export default function ChannelTable({ metric, range }: { metric: Params["metric"]; range: Params["range"] }) {
@@ -14,32 +23,58 @@ export default function ChannelTable({ metric, range }: { metric: Params["metric
   const rows = data?.breakdown || [];
 
   return (
-    <div className="card">
-      <div className="mb-2 flex items-center justify-between">
-        <div className="title">Kanalgrupper</div>
-        <div className="flex items-center gap-2">
-          <span className="badge">Källa: Mock</span>
-          <InfoTooltip text="Brytning per kanalgrupp. Mockdata." />
+    <div className="rounded-lg border border-stroke bg-white shadow-sm dark:border-dark-3 dark:bg-gray-dark">
+      <div className="px-6 py-4 border-b border-stroke dark:border-dark-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-dark dark:text-white">
+            Kanalgrupper
+          </h2>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-dark-5 dark:text-dark-6">Källa: Mock</span>
+            <InfoTooltip text="Brytning per kanalgrupp. Mockdata." />
+          </div>
         </div>
       </div>
+      
       {rows.length === 0 ? (
-        <div className="text-sm text-gray-500">Inga rader för valt filter.</div>
+        <div className="p-6 text-center text-sm text-dark-6 dark:text-dark-4">
+          Inga rader för valt filter.
+        </div>
       ) : (
         <div className="max-h-80 overflow-y-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-500"><th>Kanal</th><th className="text-right">Antal</th><th className="text-right">{range.comparisonMode === 'prev' ? 'Föreg. period' : 'YoY'}</th></tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Kanal</TableHead>
+                <TableHead className="text-right">Antal</TableHead>
+                <TableHead className="text-right">
+                  {range.comparisonMode === 'prev' ? 'Föreg. period' : 'YoY'}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {rows.map((r) => (
-                <tr key={r.key} className="border-t">
-                  <td className="py-2">{r.key}</td>
-                  <td className="py-2 text-right">{new Intl.NumberFormat("sv-SE").format(r.value)}</td>
-                  <td className="py-2 text-right">{r.yoyPct !== undefined ? `${r.yoyPct.toFixed(2)}%` : "–"}</td>
-                </tr>
+                <TableRow key={r.key}>
+                  <TableCell className="font-medium">{r.key}</TableCell>
+                  <TableCell className="text-right">
+                    {new Intl.NumberFormat("sv-SE").format(r.value)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {r.yoyPct !== undefined ? (
+                      <StatusPill 
+                        variant={r.yoyPct >= 0 ? "success" : "error"}
+                        size="sm"
+                      >
+                        {r.yoyPct >= 0 ? "+" : ""}{r.yoyPct.toFixed(1)}%
+                      </StatusPill>
+                    ) : (
+                      <span className="text-neutral-400">–</span>
+                    )}
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

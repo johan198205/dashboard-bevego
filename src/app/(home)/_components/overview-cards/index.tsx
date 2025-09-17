@@ -15,6 +15,7 @@ export async function OverviewCardsGroup() {
           value: compactFormat(views.value),
         }}
         Icon={icons.Views}
+        variant="success"
       />
 
       <OverviewCard
@@ -24,6 +25,7 @@ export async function OverviewCardsGroup() {
           value: "$" + compactFormat(profit.value),
         }}
         Icon={icons.Profit}
+        variant="warning"
       />
 
       <OverviewCard
@@ -33,6 +35,7 @@ export async function OverviewCardsGroup() {
           value: compactFormat(products.value),
         }}
         Icon={icons.Product}
+        variant="info"
       />
 
       <OverviewCard
@@ -42,6 +45,7 @@ export async function OverviewCardsGroup() {
           value: compactFormat(users.value),
         }}
         Icon={icons.Users}
+        variant="primary"
       />
     </div>
   );

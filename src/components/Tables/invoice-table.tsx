@@ -1,4 +1,4 @@
-import { TrashIcon } from "@/assets/icons";
+import { TrashIcon, PencilSquareIcon } from "@/assets/icons";
 import {
   Table,
   TableBody,
@@ -7,6 +7,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { StatusPill } from "@/components/ui/status-pill";
+import { GhostButton } from "@/components/ui/ghost-button";
 import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
 import { getInvoiceTableData } from "./fetch";
@@ -15,74 +17,94 @@ import { DownloadIcon, PreviewIcon } from "./icons";
 export async function InvoiceTable() {
   const data = await getInvoiceTableData();
 
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case "Paid":
+        return "success" as const;
+      case "Unpaid":
+        return "error" as const;
+      case "Pending":
+        return "warning" as const;
+      default:
+        return "neutral" as const;
+    }
+  };
+
   return (
-    <div className="rounded-[10px] border border-stroke bg-white p-4 shadow-1 dark:border-dark-3 dark:bg-gray-dark dark:shadow-card sm:p-7.5">
-      <Table>
-        <TableHeader>
-          <TableRow className="border-none bg-[#F7F9FC] dark:bg-dark-2 [&>th]:py-4 [&>th]:text-base [&>th]:text-dark [&>th]:dark:text-white">
-            <TableHead className="min-w-[155px] xl:pl-7.5">Package</TableHead>
-            <TableHead>Invoice Date</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right xl:pr-7.5">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
+    <div className="rounded-lg border border-stroke bg-white shadow-sm dark:border-dark-3 dark:bg-gray-dark">
+      <div className="px-6 py-4 border-b border-stroke dark:border-dark-3">
+        <h2 className="text-lg font-semibold text-dark dark:text-white">
+          Invoices
+        </h2>
+      </div>
 
-        <TableBody>
-          {data.map((item, index) => (
-            <TableRow key={index} className="border-[#eee] dark:border-dark-3">
-              <TableCell className="min-w-[155px] xl:pl-7.5">
-                <h5 className="text-dark dark:text-white">{item.name}</h5>
-                <p className="mt-[3px] text-body-sm font-medium">
-                  ${item.price}
-                </p>
-              </TableCell>
-
-              <TableCell>
-                <p className="text-dark dark:text-white">
-                  {dayjs(item.date).format("MMM DD, YYYY")}
-                </p>
-              </TableCell>
-
-              <TableCell>
-                <div
-                  className={cn(
-                    "max-w-fit rounded-full px-3.5 py-1 text-sm font-medium",
-                    {
-                      "bg-[#219653]/[0.08] text-[#219653]":
-                        item.status === "Paid",
-                      "bg-[#D34053]/[0.08] text-[#D34053]":
-                        item.status === "Unpaid",
-                      "bg-[#FFA70B]/[0.08] text-[#FFA70B]":
-                        item.status === "Pending",
-                    },
-                  )}
-                >
-                  {item.status}
-                </div>
-              </TableCell>
-
-              <TableCell className="xl:pr-7.5">
-                <div className="flex items-center justify-end gap-x-3.5">
-                  <button className="hover:text-primary">
-                    <span className="sr-only">View Invoice</span>
-                    <PreviewIcon />
-                  </button>
-
-                  <button className="hover:text-primary">
-                    <span className="sr-only">Delete Invoice</span>
-                    <TrashIcon />
-                  </button>
-
-                  <button className="hover:text-primary">
-                    <span className="sr-only">Download Invoice</span>
-                    <DownloadIcon />
-                  </button>
-                </div>
-              </TableCell>
+      <div className="p-6">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="min-w-[155px]">Package</TableHead>
+              <TableHead>Invoice Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+
+          <TableBody>
+            {data.map((item, index) => (
+              <TableRow key={index}>
+                <TableCell>
+                  <div>
+                    <h5 className="font-medium text-dark dark:text-white">{item.name}</h5>
+                    <p className="mt-1 text-sm text-dark-6 dark:text-dark-4">
+                      ${item.price}
+                    </p>
+                  </div>
+                </TableCell>
+
+                <TableCell>
+                  <p className="text-dark dark:text-white">
+                    {dayjs(item.date).format("MMM DD, YYYY")}
+                  </p>
+                </TableCell>
+
+                <TableCell>
+                  <StatusPill variant={getStatusVariant(item.status)}>
+                    {item.status}
+                  </StatusPill>
+                </TableCell>
+
+                <TableCell>
+                  <div className="flex items-center justify-end gap-2">
+                    <GhostButton
+                      size="sm"
+                      variant="primary"
+                      aria-label="View Invoice"
+                    >
+                      <PreviewIcon className="h-4 w-4" />
+                    </GhostButton>
+
+                    <GhostButton
+                      size="sm"
+                      variant="danger"
+                      aria-label="Delete Invoice"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </GhostButton>
+
+                    <GhostButton
+                      size="sm"
+                      variant="primary"
+                      aria-label="Download Invoice"
+                    >
+                      <DownloadIcon className="h-4 w-4" />
+                    </GhostButton>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
