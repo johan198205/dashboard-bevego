@@ -33,7 +33,7 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
       <div className="value">{summary ? formatNumber(summary.current) : "–"}</div>
       {summary && (
         <div className={`text-sm ${summary.yoyPct >= 0 ? "text-green-600" : "text-red-600"}`}>
-          {formatPercent(summary.yoyPct)} vs föregående år
+          {formatPercent(summary.yoyPct)} {range.comparisonMode === 'prev' ? 'vs föregående period' : 'vs föregående år'}
         </div>
       )}
     </div>

@@ -28,6 +28,13 @@ export default function TimeSeries({ title, metric, range }: Props) {
     return points.map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
   }, [data?.timeseries]);
 
+  const compareSeries = useMemo(() => {
+    const points = data?.compareTimeseries || [];
+    if (!points || points.length === 0) return [] as { x: number; y: number }[];
+    // Index-align: map to same x as current by index to overlay
+    return points.map((p, i) => ({ x: seriesData[i]?.x ?? new Date(p.date).getTime(), y: p.value }));
+  }, [data?.compareTimeseries, seriesData]);
+
   const options: ApexOptions = useMemo(() => ({
     chart: { type: "line", toolbar: { show: false }, fontFamily: "inherit", animations: { enabled: true } },
     stroke: { curve: "smooth", width: 3 },
@@ -36,7 +43,7 @@ export default function TimeSeries({ title, metric, range }: Props) {
     xaxis: { type: "datetime", axisBorder: { show: false }, axisTicks: { show: false }, labels: { datetimeUTC: false } },
     yaxis: { decimalsInFloat: 0 },
     tooltip: { x: { format: localGrain === "month" ? "MMM ''yy" : "dd MMM yyyy" } },
-    colors: ["#E01E26"],
+    colors: ["#E01E26", "#94a3b8"],
   }), [localGrain]);
 
   return (
@@ -60,7 +67,7 @@ export default function TimeSeries({ title, metric, range }: Props) {
       ) : (
         <div className="-ml-1 -mr-1 h-40" aria-label={title}>
           {/* @ts-expect-error dynamic import typing of react-apexcharts */}
-          <Chart options={options} series={[{ name: metric, data: seriesData }]} type="line" height={160} />
+          <Chart options={{...options, stroke: {curve: 'smooth', width: 3, dashArray: [0, 6]}}} series={[{ name: 'Nuvarande', data: seriesData }, ...(compareSeries.length ? [{ name: 'Jämförelse', data: compareSeries }] : [])]} type="line" height={160} />
         </div>
       )}
       <div className="mt-2 text-xs text-gray-500">{data?.timeseries.length || 0} punkter</div>

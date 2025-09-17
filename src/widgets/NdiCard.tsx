@@ -19,7 +19,7 @@ export default function NdiCard({ range }: { range: Params["range"] }) {
         </div>
       </div>
       <div className="value">{s ? formatNumber(s.current) : "–"}</div>
-      {s && <div className={`text-sm ${s.yoyPct >= 0 ? "text-green-600" : "text-red-600"}`}>{formatPercent(s.yoyPct)} YoY</div>}
+      {s && <div className={`text-sm ${s.yoyPct >= 0 ? "text-green-600" : "text-red-600"}`}>{formatPercent(s.yoyPct)} {range.comparisonMode === 'prev' ? 'vs föregående period' : 'YoY'}</div>}
     </div>
   );
 }

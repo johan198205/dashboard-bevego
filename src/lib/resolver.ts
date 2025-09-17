@@ -1,4 +1,4 @@
-import { type KpiResponse, type Params, type Grain, type Filters } from "./types";
+import { type KpiResponse, type Params, type Grain, type Filters, type KpiPoint } from "./types";
 import { buildKpiResponse, generateTimeseries, aggregate } from "./mockData/generators";
 
 function addYears(dateStr: string, years: number): string {
@@ -9,6 +9,18 @@ function addYears(dateStr: string, years: number): string {
 
 function previousYoyRange(range: { start: string; end: string }) {
   return { start: addYears(range.start, -1), end: addYears(range.end, -1) };
+}
+
+function previousPeriodRange(range: { start: string; end: string }): { start: string; end: string } {
+  // Compute duration in days and subtract that from start
+  const start = new Date(range.start);
+  const end = new Date(range.end);
+  const lengthDays = Math.max(0, Math.round((end.getTime() - start.getTime()) / (24 * 3600 * 1000)) + 1);
+  const prevEnd = new Date(start);
+  prevEnd.setDate(prevEnd.getDate() - 1);
+  const prevStart = new Date(prevEnd);
+  prevStart.setDate(prevStart.getDate() - (lengthDays - 1));
+  return { start: prevStart.toISOString().slice(0, 10), end: prevEnd.toISOString().slice(0, 10) };
 }
 
 function ensureGrain(grain?: Grain): Grain { return grain || "day"; }
@@ -53,36 +65,59 @@ function scaleSeries(series: { date: string; value: number }[], factor: number) 
 export async function getKpi(params: Params): Promise<KpiResponse> {
   const { metric, range, filters } = params;
   const grain = ensureGrain(range.grain);
+  const comparisonMode: 'none' | 'yoy' | 'prev' = (range.comparisonMode as any) || (range.compareYoy ? 'yoy' : 'none');
 
   // Note: All data is mock. CONNECT GA4 HERE LATER by swapping implementation per metric.
   const scale = computeScale(filters);
   if (metric === "mau") {
     const currentRaw = generateTimeseries({ start: range.start, end: range.end, grain }, { base: 1200, noise: 0.1 });
     const current = scaleSeries(currentRaw, scale);
-    const prevRange = previousYoyRange(range);
-    const previous = range.compareYoy ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 1050, noise: 0.1 }), scale) : undefined;
+    const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 1050, noise: 0.1 }), scale) : undefined;
     const series = aggregate(current, grain);
     const prevAgg = previous ? aggregate(previous, grain) : undefined;
-    const breakdown = ["Direkt", "Organiskt", "Kampanj", "E-post"];
+    const breakdown = [
+      "Direkt",
+      "Organiskt",
+      "Kampanj",
+      "E-post",
+      "Referral",
+      "Social",
+      "Betald sök",
+      "Display",
+      "Video",
+      "Övrigt",
+    ];
     const dims = filters?.channel && filters.channel.length > 0 ? breakdown.filter((c) => filters.channel?.includes(c)) : breakdown;
     return buildKpiResponse("mau", series, prevAgg, dims, ["Källa: Mockdata (MAU)"]);
   }
 
   if (metric === "pageviews") {
     const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 5400, noise: 0.12 }), scale);
-    const prevRange = previousYoyRange(range);
-    const previous = range.compareYoy ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 5000, noise: 0.12 }), scale) : undefined;
+    const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 5000, noise: 0.12 }), scale) : undefined;
     const series = aggregate(current, grain);
     const prevAgg = previous ? aggregate(previous, grain) : undefined;
-    const breakdown = ["Direkt", "Organiskt", "Kampanj", "E-post"];
+    const breakdown = [
+      "Direkt",
+      "Organiskt",
+      "Kampanj",
+      "E-post",
+      "Referral",
+      "Social",
+      "Betald sök",
+      "Display",
+      "Video",
+      "Övrigt",
+    ];
     const dims = filters?.channel && filters.channel.length > 0 ? breakdown.filter((c) => filters.channel?.includes(c)) : breakdown;
     return buildKpiResponse("pageviews", series, prevAgg, dims, ["Källa: Mockdata (Sidvisningar)"]);
   }
 
   if (metric === "tasks") {
     const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 750, noise: 0.15 }), scale);
-    const prevRange = previousYoyRange(range);
-    const previous = range.compareYoy ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 680, noise: 0.15 }), scale) : undefined;
+    const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 680, noise: 0.15 }), scale) : undefined;
     const series = aggregate(current, grain);
     const prevAgg = previous ? aggregate(previous, grain) : undefined;
     return buildKpiResponse("tasks", series, prevAgg, [
@@ -92,14 +127,17 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       "task_news_created",
       "task_expense_uploaded",
       "task_doc_uploaded",
-      "task_doc_downloaded"
+      "task_doc_downloaded",
+      "task_profile_updated",
+      "task_consent_updated",
+      "task_contacted_support",
     ], ["Rate = antal / MAU för perioden (beräknas i widget)", "Källa: Mockdata (Tasks)"]);
   }
 
   if (metric === "features") {
     const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 950, noise: 0.14 }), scale);
-    const prevRange = previousYoyRange(range);
-    const previous = range.compareYoy ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 900, noise: 0.14 }), scale) : undefined;
+    const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 900, noise: 0.14 }), scale) : undefined;
     const series = aggregate(current, grain);
     const prevAgg = previous ? aggregate(previous, grain) : undefined;
     return buildKpiResponse("features", series, prevAgg, [
@@ -108,7 +146,11 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       "feature_view_faq",
       "feature_view_vendor_invoice",
       "feature_visit_boardroom",
-      "feature_view_avi"
+      "feature_view_avi",
+      "feature_download_document",
+      "feature_search",
+      "feature_notifications",
+      "feature_settings",
     ], ["Källa: Mockdata (Funktioner)"]);
   }
 
@@ -126,7 +168,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
     }
     const series = quarters.map((q) => ({ date: q.date, value: q.value }));
     // previous 6 quarters for YoY comparison
-    const prevSeries = range.compareYoy ? quarters.map((q) => ({ date: q.date, value: Math.round(q.value * (0.9 + Math.random() * 0.2)) })) : undefined;
+    const prevSeries = comparisonMode !== 'none' ? quarters.map((q) => ({ date: q.date, value: Math.round(q.value * (0.9 + Math.random() * 0.2)) })) : undefined;
     return buildKpiResponse("ndi", series, prevSeries, ["Styrelse", "Medlem", "Förvaltare"], ["NDI är dummyvärden på kvartalsnivå", "Källa: Mockdata (NDI)"]);
   }
 

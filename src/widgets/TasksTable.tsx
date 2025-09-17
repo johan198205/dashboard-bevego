@@ -51,7 +51,7 @@ export default function TasksTable({ range }: { range: Params["range"] }) {
       <div className="value">{totalRate !== null ? formatPercentUnsigned(totalRate) : "–"}</div>
       {yoyRatePct !== null && (
         <div className={`text-sm ${yoyRatePct >= 0 ? "text-green-600" : "text-red-600"}`}>
-          {formatPercentUnsigned(yoyRatePct)}
+          {formatPercentUnsigned(yoyRatePct)} {range.comparisonMode === 'prev' ? 'vs föregående period' : ''}
         </div>
       )}
       {rows.length === 0 ? (
@@ -60,7 +60,7 @@ export default function TasksTable({ range }: { range: Params["range"] }) {
         <div className="max-h-80 overflow-y-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-gray-500"><th>Task</th><th className="text-right">Antal</th><th className="text-right">Rate</th><th className="text-right">YoY</th></tr>
+              <tr className="text-left text-gray-500"><th>Task</th><th className="text-right">Antal</th><th className="text-right">Rate</th><th className="text-right">{range.comparisonMode === 'prev' ? 'Föreg. period' : 'YoY'}</th></tr>
             </thead>
             <tbody>
               {rows.map((r) => (

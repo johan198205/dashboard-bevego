@@ -4,7 +4,7 @@ import { Grain } from "@/lib/types";
 import FilterDropdown from "./FilterDropdown";
 
 type FilterState = {
-  range: { start: string; end: string; compareYoy: boolean; grain: Grain };
+  range: { start: string; end: string; compareYoy: boolean; comparisonMode: 'none' | 'yoy' | 'prev'; grain: Grain };
   audience: string[];
   device: string[];
   channel: string[];
@@ -28,7 +28,7 @@ export function FiltersProvider({ children }: { children: React.ReactNode }) {
   const start = new Date(today);
   start.setMonth(start.getMonth() - 1);
   const initial: FilterState = {
-    range: { start: start.toISOString().slice(0, 10), end: today.toISOString().slice(0, 10), compareYoy: true, grain: "day" },
+    range: { start: start.toISOString().slice(0, 10), end: today.toISOString().slice(0, 10), compareYoy: true, comparisonMode: 'yoy', grain: "day" },
     audience: [],
     device: [],
     channel: [],
@@ -59,14 +59,21 @@ export default function GlobalFilters() {
         />
       </div>
 
-      <label className="card filter-box">
-        <input
-          type="checkbox"
-          checked={state.range.compareYoy}
-          onChange={(e) => setState((p) => ({ ...p, range: { ...p.range, compareYoy: e.target.checked } }))}
-        />
-        <span className="title">Visa YoY</span>
-      </label>
+      <div className="card filter-box">
+        <span className="title">Jämförelse</span>
+        <select
+          className="rounded border px-2 py-1"
+          value={state.range.comparisonMode}
+          onChange={(e) => {
+            const mode = e.target.value as 'none' | 'yoy' | 'prev';
+            setState((p) => ({ ...p, range: { ...p.range, comparisonMode: mode, compareYoy: mode === 'yoy' } }));
+          }}
+        >
+          <option value="none">Ingen</option>
+          <option value="yoy">YoY</option>
+          <option value="prev">Föregående period</option>
+        </select>
+      </div>
 
       {/* Removed global Dag/Vecka/Månad filter per requirement. Local controls are provided within each chart widget. */}
 

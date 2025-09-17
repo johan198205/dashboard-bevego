@@ -25,20 +25,22 @@ export default function ChannelTable({ metric, range }: { metric: Params["metric
       {rows.length === 0 ? (
         <div className="text-sm text-gray-500">Inga rader för valt filter.</div>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-gray-500"><th>Kanal</th><th className="text-right">Antal</th><th className="text-right">YoY</th></tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.key} className="border-t">
-                <td className="py-2">{r.key}</td>
-                <td className="py-2 text-right">{new Intl.NumberFormat("sv-SE").format(r.value)}</td>
-                <td className="py-2 text-right">{r.yoyPct !== undefined ? `${r.yoyPct.toFixed(2)}%` : "–"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="max-h-80 overflow-y-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-gray-500"><th>Kanal</th><th className="text-right">Antal</th><th className="text-right">{range.comparisonMode === 'prev' ? 'Föreg. period' : 'YoY'}</th></tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.key} className="border-t">
+                  <td className="py-2">{r.key}</td>
+                  <td className="py-2 text-right">{new Intl.NumberFormat("sv-SE").format(r.value)}</td>
+                  <td className="py-2 text-right">{r.yoyPct !== undefined ? `${r.yoyPct.toFixed(2)}%` : "–"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

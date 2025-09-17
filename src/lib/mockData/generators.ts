@@ -100,7 +100,13 @@ export function buildBreakdown(keys: string[], total: number): BreakdownRow[] {
     remaining -= portion;
     rows.push({ key: keys[i], value: Math.max(0, portion), yoyPct: Math.round((Math.random() * 20 - 10) * 100) / 100 });
   }
-  return rows.sort((a, b) => b.value - a.value);
+  // Stable sorting: primary by value desc, tiebreak by key asc (alphabetical)
+  const sorted = rows.sort((a, b) => {
+    if (b.value !== a.value) return b.value - a.value;
+    return a.key.localeCompare(b.key);
+  });
+  // Return all rows; UI can limit visible rows via scroll
+  return sorted;
 }
 
 export function buildKpiResponse(metric: string, series: KpiPoint[], previous?: KpiPoint[], breakdownKeys?: string[], notes?: string[]): KpiResponse {
@@ -115,6 +121,7 @@ export function buildKpiResponse(metric: string, series: KpiPoint[], previous?: 
     meta: { source: 'mock', metric, dims: [] },
     summary,
     timeseries: series,
+    compareTimeseries: previous,
     breakdown,
     notes,
   };
