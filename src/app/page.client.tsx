@@ -5,8 +5,9 @@ import ChannelTable from "@/widgets/ChannelTable";
 import TasksTable from "@/widgets/TasksTable";
 import FeaturesTable from "@/widgets/FeaturesTable";
 import NdiCard from "@/widgets/NdiCard";
-import PerfCard from "@/widgets/PerfCard";
-import WcagCard from "@/widgets/WcagCard";
+// TODO: Re-enable these cards if needed
+// import PerfCard from "@/widgets/PerfCard";
+// import WcagCard from "@/widgets/WcagCard";
 import { useFilters } from "@/components/GlobalFilters";
 
 export default function ClientHome() {
@@ -25,9 +26,11 @@ export default function ClientHome() {
       <TasksTable range={range} />
       <FeaturesTable range={range} />
 
+      {/* TODO: Re-enable these cards if needed
       <PerfCard title="Svarstid" value="420 ms" note="Placeholder" />
       <PerfCard title="Uptime" value="99,6%" note="Placeholder" />
       <WcagCard />
+      */}
     </div>
   );
 }
