@@ -16,11 +16,11 @@ type CwvTableProps = {
 function getStatusBadge(status: CwvStatus): string {
   switch (status) {
     case 'Pass':
-      return 'text-green-600 bg-green-100';
+      return 'inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
     case 'Needs Improvement':
-      return 'text-yellow-600 bg-yellow-100';
+      return 'inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
     case 'Fail':
-      return 'text-red-600 bg-red-100';
+      return 'inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
   }
 }
 
@@ -61,31 +61,31 @@ export default function CwvTable({ data, className }: CwvTableProps) {
                 </div>
               </TableCell>
               <TableCell className="text-center">
-                <div className="flex flex-col items-center">
+                <div className="flex flex-col items-center space-y-1">
                   <span className="font-medium">{row.lcp.p75} ms</span>
-                  <span className={`badge ${getStatusBadge(row.lcp.status)} text-xs`}>
+                  <span className={getStatusBadge(row.lcp.status)}>
                     {getStatusText(row.lcp.status)}
                   </span>
                 </div>
               </TableCell>
               <TableCell className="text-center">
-                <div className="flex flex-col items-center">
+                <div className="flex flex-col items-center space-y-1">
                   <span className="font-medium">{row.inp.p75} ms</span>
-                  <span className={`badge ${getStatusBadge(row.inp.status)} text-xs`}>
+                  <span className={getStatusBadge(row.inp.status)}>
                     {getStatusText(row.inp.status)}
                   </span>
                 </div>
               </TableCell>
               <TableCell className="text-center">
-                <div className="flex flex-col items-center">
+                <div className="flex flex-col items-center space-y-1">
                   <span className="font-medium">{row.cls.p75}</span>
-                  <span className={`badge ${getStatusBadge(row.cls.status)} text-xs`}>
+                  <span className={getStatusBadge(row.cls.status)}>
                     {getStatusText(row.cls.status)}
                   </span>
                 </div>
               </TableCell>
               <TableCell className="text-center">
-                <span className={`badge ${getStatusBadge(row.overallStatus)}`}>
+                <span className={getStatusBadge(row.overallStatus)}>
                   {getStatusText(row.overallStatus)}
                 </span>
               </TableCell>
@@ -96,7 +96,9 @@ export default function CwvTable({ data, className }: CwvTableProps) {
                 {row.lastTested}
               </TableCell>
               <TableCell className="text-center">
-                <span className="badge">{row.source}</span>
+                <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
+                  {row.source}
+                </span>
               </TableCell>
             </TableRow>
           ))}

@@ -18,6 +18,7 @@ export const NAV_DATA = [
       ...(FEATURE_FLAGS.conversions ? [{ title: "Konverteringar", url: "/konverteringar", icon: Icons.PieChart, items: [] }] : []),
       { title: "Kundnöjdhet", url: "/kundnojdhet", icon: Icons.FourCircle, items: [] },
       { title: "Prestanda", url: "/prestanda", icon: Icons.Table, items: [] },
+      { title: "Clarity", url: "/clarity", icon: Icons.FourCircle, items: [] },
       { title: "Inställningar", url: "/installningar", icon: Icons.Alphabet, items: [] },
     ],
   },

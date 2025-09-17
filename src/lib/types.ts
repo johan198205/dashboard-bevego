@@ -95,4 +95,82 @@ export type CwvUrlGroupRow = {
   source: 'Mock' | 'GA4 API' | 'BigQuery';
 };
 
+// Microsoft Clarity types
+export type ClarityOverview = {
+  sessions: number;
+  avgEngagementTime: number; // in seconds
+  avgScrollDepth: number; // percentage
+  rageClicks: {
+    count: number;
+    percentage: number; // % of sessions
+  };
+  deadClicks: {
+    count: number;
+    percentage: number; // % of sessions
+  };
+  quickBack: {
+    percentage: number; // % of sessions
+  };
+  scriptErrors: {
+    count: number;
+  };
+  source: 'Mock' | 'Clarity API';
+};
+
+export type ClarityTrendPoint = {
+  date: string;
+  sessions: number;
+  engagementTime: number; // in seconds
+  scrollDepth: number; // percentage
+  rageClicks: number;
+  deadClicks: number;
+  quickBack: number; // percentage
+  scriptErrors: number;
+};
+
+export type ClarityUrlRow = {
+  url: string;
+  sessions: number;
+  engagementTime: number; // in seconds
+  scrollDepth: number; // percentage
+  rageClicks: {
+    count: number;
+    per1k: number; // per 1k sessions
+  };
+  deadClicks: {
+    count: number;
+    per1k: number; // per 1k sessions
+  };
+  quickBack: number; // percentage
+  scriptErrors: number;
+  source: 'Mock' | 'Clarity API';
+};
+
+export type ClarityInsight = {
+  url: string;
+  sessions: number;
+  ragePer1k: number;
+  deadPer1k: number;
+  quickBackPct: number;
+  priority: number; // calculated priority score
+  source: 'Mock' | 'Clarity API';
+};
+
+export type ClarityFilters = {
+  device?: string[];
+  country?: string[];
+  source?: string[];
+  browser?: string[];
+  os?: string[];
+};
+
+export type ClarityParams = {
+  range: {
+    start: string;
+    end: string;
+    grain?: 'day' | 'week' | 'month';
+  };
+  filters?: ClarityFilters;
+};
+
 

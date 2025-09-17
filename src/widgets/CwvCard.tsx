@@ -1,4 +1,24 @@
 import { CwvStatus } from '@/lib/types';
+import { ScoreCard } from '@/components/ui/scorecard';
+import { JSX, SVGProps } from 'react';
+
+// Simple performance icon
+function PerformanceIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      width={24}
+      height={24}
+      viewBox="0 0 24 24"
+      fill="none"
+      {...props}
+    >
+      <path
+        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
 
 type CwvCardProps = {
   title: string;
@@ -6,16 +26,17 @@ type CwvCardProps = {
   target: string;
   status: CwvStatus;
   description?: string;
+  Icon?: (props: SVGProps<SVGSVGElement>) => JSX.Element;
 };
 
-function getStatusColor(status: CwvStatus): string {
+function getStatusVariant(status: CwvStatus): "default" | "primary" | "success" | "warning" | "error" | "info" {
   switch (status) {
     case 'Pass':
-      return 'text-green-600 bg-green-100';
+      return 'success';
     case 'Needs Improvement':
-      return 'text-yellow-600 bg-yellow-100';
+      return 'warning';
     case 'Fail':
-      return 'text-red-600 bg-red-100';
+      return 'error';
   }
 }
 
@@ -30,20 +51,32 @@ function getStatusText(status: CwvStatus): string {
   }
 }
 
-export default function CwvCard({ title, value, target, status, description }: CwvCardProps) {
+export default function CwvCard({ title, value, target, status, description, Icon }: CwvCardProps) {
   return (
-    <div className="card">
-      <div className="title mb-1">{title}</div>
-      <div className="value">{value}</div>
-      <div className="text-sm text-gray-600 mb-2">Mål: {target}</div>
-      {description && <div className="text-xs text-gray-500 mb-2">{description}</div>}
-      <div className="flex items-center gap-2 mb-2">
-        <span className={`badge ${getStatusColor(status)}`}>
+    <div className="space-y-2">
+      <ScoreCard
+        label={title}
+        value={value}
+        Icon={Icon || PerformanceIcon}
+        variant={getStatusVariant(status)}
+        source="Mock"
+      />
+      <div className="text-xs text-dark-6 dark:text-dark-4">
+        Mål: {target}
+      </div>
+      {description && (
+        <div className="text-xs text-dark-6 dark:text-dark-4">
+          {description}
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+          status === 'Pass' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
+          status === 'Needs Improvement' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
+          'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+        }`}>
           {getStatusText(status)}
         </span>
-      </div>
-      <div className="mt-2">
-        <span className="badge">Källa: Mock</span>
       </div>
     </div>
   );

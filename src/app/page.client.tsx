@@ -1,9 +1,11 @@
 "use client";
 import TotalDiffCard from "@/widgets/TotalDiffCard";
-import TimeSeries from "@/widgets/TimeSeries";
-import ChannelTable from "@/widgets/ChannelTable";
-import TasksTable from "@/widgets/TasksTable";
-import FeaturesTable from "@/widgets/FeaturesTable";
+// TODO(modal): Re-enable chart via modal on card
+// import TimeSeries from "@/widgets/TimeSeries";
+// import ChannelTable from "@/widgets/ChannelTable";
+// Tables moved to Användning page only
+// import TasksTable from "@/widgets/TasksTable";
+// import FeaturesTable from "@/widgets/FeaturesTable";
 import NdiCard from "@/widgets/NdiCard";
 // TODO: Re-enable these cards if needed
 // import PerfCard from "@/widgets/PerfCard";
@@ -19,12 +21,17 @@ export default function ClientHome() {
       <TotalDiffCard title="Användning — Sidvisningar" metric="pageviews" range={range} />
       <NdiCard range={range} />
 
-      <TimeSeries title="MAU — trend" metric="mau" range={range} />
-      <TimeSeries title="Sidvisningar — tidsserie" metric="pageviews" range={range} />
-      <ChannelTable metric="pageviews" range={range} />
+      {/* TODO(modal): Re-enable chart via modal on card */}
+      {/* <TimeSeries title="MAU — trend" metric="mau" range={range} /> */}
+      {/* <TimeSeries title="Sidvisningar — tidsserie" metric="pageviews" range={range} /> */}
+      {/* <ChannelTable metric="pageviews" range={range} /> */}
 
-      <TasksTable range={range} />
-      <FeaturesTable range={range} />
+      <TotalDiffCard title="Tasks" metric="tasks" range={range} />
+      <TotalDiffCard title="Funktioner" metric="features" range={range} />
+
+      {/* Tables moved to Användning page only */}
+      {/* <TasksTable range={range} /> */}
+      {/* <FeaturesTable range={range} /> */}
 
       {/* TODO: Re-enable these cards if needed
       <PerfCard title="Svarstid" value="420 ms" note="Placeholder" />
