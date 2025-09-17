@@ -1,0 +1,38 @@
+// BigQuery konfiguration med hårdkodade credentials
+// Detta är en tillfällig lösning för att få BigQuery att fungera
+
+export const BQ_CONFIG = {
+  projectId: "ga4-453414",
+  clientEmail: "dashboard-riksbyggen@ga4-453414.iam.gserviceaccount.com",
+  privateKey: `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCpVQvHA5nvis0D
+oyA5jWw6gM99ALGbnuYCyJlU9JVQKMwZ4rd5eMhK4Z3bdGd9dTglR6M5aG9cuIqp
+0qXR6/0VbgngVBKEXMy4kfPBofAc1yTZcREF77UcpwR2qd0i0SJl8/mKUu9oULC+
+VedABI772IYlFkEFTmBzAWXH9iU+V8ET4OD5ZdDuMZl+EldrVEnwwLUdRQmI2z+p
+N0S8QKAhH34NNFteG+zAYRjQ2q1dzqpDKgnEgn9+ff80wo7Zm/wS4pS/TXZTRCF3
+g0uev31T5Dgr3spyza9fwaYGT7yBlxqgdnko4nRMshbQwaJ5MZQfV/iXg4MACJ7y
+SbyYAXEbAgMBAAECggEADCoT4oQbtt2dxLkfQ4MpVzqRrUUzfR55H5IRkczQPSXx
+I5rp20wV92slz/IYzSZylhsDWshp15taOsDrMJ1nXPa+tuLTQbb47fluLWbYvPmn
+qAc7VdXWiOxmoa+qNyoW8oQIVSuID1JcoA/DwRGSw/zWBiwHF759p0VebnL8UfIV
+20s4j3LV7zlMCB6Pmhs5b12jivcq3CwO4aBVCqzOSH/0ax6PxhzctPRCmsfTasBe
+Z+Tzsa+EgHaOu8AOXzOHrQ/9RE4IXNQTfP3kBPAHC/LvUY20xfPyVMnw3Z/vBd+K
+FGfisjKwRm/9zYcO2CLgMaDNsGfPFedUPmgd7Jx2gQKBgQDlN28Bgl6XVYG1WENw
+cpAcjOajqmZOeHydpvlDI6VIKgH4NCqJFboOZtiHV5K1gslh7w9N/CAaeC4VSrPy
+rKKVccxQ4FY+uP/GE/viKnbk/9+lF5XHXpXuhBfYM5BuevrywZPt4xChI5/+5FE+
+hsANMbI9iKmcvx9YhW5nrKEuawKBgQC9HkoT9I9OXVnNA/RT524SR2jPE+RJWKOh
+6st0fcDrXFmA5UYhMwhSZak3spHMpmWSszASNIaZOelL4duZY3a+QBlmp8IcQl9P
+XjviO0ukExgwhjNaUNyawVSrsvLRTIGff/J4dEovwU7Dcz5YPukioecEubn0TE67
+WNOzfkcUEQKBgE5DjDJ+uh+AAabSuUwmwdANyB5v6zi16Q7HWWq0PBYUydFetntS
+INIUCbDElQJG4s3+m0IsaSXAjTOV6zVb/rN6RKIEx03pSuPuJN4HU8tDFrC/CdQm
+Fpl3HtEiYhlnAlJrCEB8fEwY5uNYP+lShza6Fjruc8Nieqh1/smFZw97AoGBAKpY
+1jETYOIdg/3/Sd0p4SPl3qpoKIFIrlvyukC75UIbdSN9YaYV6bEOkVXyKxJD78os
+TWiYl4T9fP80+jE4PoUwB7FH+ripsGA1aYtmDcREzs0mlKsNmyhqbHIcRkvwtfGN
+ntkJ5vTk2zlOPQuEKCcWAQC8pfC5pbaGjaU2MuUmBAoGACJUPnvIfZWv4dfKznSlX
+RPajEyurol9odwpQjEf/sWBaxJkm+Jzatuys7OH11eqH3MHQd61LEzyZ6vCVA2Rg
+yK8Xa3WyV6K1OXsO8n1aNCf+DLRSnv89RZX2Z+C/mspz4NGfEZBqkViALGl/JHTU
+ui6cP1RHHuHqdTOvagOCEC0=
+-----END PRIVATE KEY-----`,
+  dataset: "analytics_249591466",
+  location: "EU"
+};
+

@@ -28,14 +28,18 @@ export async function getSessionsKpi(
 		return { total_sessions: total, source_label: GA4_SOURCE_LABEL };
 	}
 
-	// BQ
-	// TODO: Byt placeholder mot riktig BQ-anrop när env/auth finns.
-	const rows = await bqQuery({
-		startDate: input.startDate,
-		endDate: input.endDate,
-		timeZone: "Europe/Stockholm",
-	});
-	const total = rows.reduce((sum, r) => sum + (r.sessions || 0), 0);
-	return { total_sessions: total, source_label: BQ_SOURCE_LABEL };
+    // BigQuery temporärt avstängt bakom feature-flag. Gör no-op och logga varning.
+    if (process.env.ENABLE_BQ === "true" || process.env.NEXT_PUBLIC_ENABLE_BQ === "true") {
+        const rows = await bqQuery({
+            startDate: input.startDate,
+            endDate: input.endDate,
+            timeZone: "Europe/Stockholm",
+        });
+        const total = rows.reduce((sum, r) => sum + (r.sessions || 0), 0);
+        return { total_sessions: total, source_label: BQ_SOURCE_LABEL };
+    }
+
+    console.warn("BigQuery disabled via feature flag. Returning GA4-only no-op for BQ path.");
+    return { total_sessions: 0, source_label: BQ_SOURCE_LABEL };
 }
 
