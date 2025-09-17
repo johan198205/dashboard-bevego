@@ -41,7 +41,7 @@ export function FiltersProvider({ children }: { children: React.ReactNode }) {
 export default function GlobalFilters() {
   const { state, setState } = useFilters();
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-3">
+    <div className="mb-4 flex flex-wrap items-center gap-3" suppressHydrationWarning>
       <div className="card filter-box">
         <span className="title">Datumintervall</span>
         <input
@@ -68,17 +68,7 @@ export default function GlobalFilters() {
         <span className="title">Visa YoY</span>
       </label>
 
-      <div className="card filter-box">
-        <select
-          value={state.range.grain}
-          onChange={(e) => setState((p) => ({ ...p, range: { ...p.range, grain: e.target.value as Grain } }))}
-          className="bg-transparent outline-none border-none text-sm"
-        >
-          <option value="day">Dag</option>
-          <option value="week">Vecka</option>
-          <option value="month">Månad</option>
-        </select>
-      </div>
+      {/* Removed global Dag/Vecka/Månad filter per requirement. Local controls are provided within each chart widget. */}
 
       <FilterDropdown
         label="Roll"

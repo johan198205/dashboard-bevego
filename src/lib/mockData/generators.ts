@@ -8,56 +8,79 @@ type SeedConfig = {
 };
 
 export function generateDateRange(start: string, end: string, grain: Grain = "day"): string[] {
+  // Always generate daily dates; higher-level grains will be aggregated from these.
   const out: string[] = [];
   const startDate = new Date(start);
   const endDate = new Date(end);
   const cursor = new Date(startDate);
   while (cursor <= endDate) {
     out.push(cursor.toISOString().slice(0, 10));
-    if (grain === "day") cursor.setDate(cursor.getDate() + 1);
-    else if (grain === "week") cursor.setDate(cursor.getDate() + 7);
-    else if (grain === "month") cursor.setMonth(cursor.getMonth() + 1);
+    cursor.setDate(cursor.getDate() + 1);
   }
   return out;
 }
 
 export function generateTimeseries(range: { start: string; end: string; grain?: Grain }, seed: SeedConfig): KpiPoint[] {
-  const dates = generateDateRange(range.start, range.end, range.grain || "day");
+  // Ignore input grain here; always produce daily series and aggregate later.
+  const dates = generateDateRange(range.start, range.end, "day");
   const months = seed.seasonalityByMonth || [1, 0.95, 1.02, 1.04, 1.05, 1.01, 0.85, 0.98, 1.03, 1.04, 1.02, 1.01];
   const noise = seed.noise ?? 0.08;
   return dates.map((d) => {
     const dt = new Date(d);
     const m = dt.getUTCMonth();
     const seasonal = months[m] || 1;
-    const jitter = 1 + (Math.random() * 2 - 1) * noise;
+    // Deterministic pseudo-random per date to keep Day/Week/Month consistent across requests
+    const r = deterministicRandom(d);
+    const jitter = 1 + (r * 2 - 1) * noise;
     const value = Math.max(0, Math.round(seed.base * seasonal * jitter));
     return { date: d, value };
   });
 }
 
 export function aggregate(series: KpiPoint[], grain: Grain): KpiPoint[] {
-  if (grain === "day") return series;
+  if (grain === "day") {
+    // Ensure sorted ascending by date
+    return [...series].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  }
   const buckets = new Map<string, number>();
   for (const p of series) {
     const dt = new Date(p.date);
     let key = p.date;
     if (grain === "week") {
-      const weekKey = `${dt.getUTCFullYear()}-W${getIsoWeek(dt).toString().padStart(2, "0")}`;
-      key = weekKey;
+      // Bucket to Monday of the week (week starts on Monday)
+      const monday = startOfWeekMonday(dt);
+      key = monday.toISOString().slice(0, 10);
     } else if (grain === "month") {
-      key = `${dt.getUTCFullYear()}-${(dt.getUTCMonth() + 1).toString().padStart(2, "0")}`;
+      // First day of the month
+      const first = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), 1));
+      key = first.toISOString().slice(0, 10);
     }
     buckets.set(key, (buckets.get(key) || 0) + p.value);
   }
-  return Array.from(buckets.entries()).map(([date, value]) => ({ date, value }));
+  return Array.from(buckets.entries())
+    .map(([date, value]) => ({ date, value }))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
 
-function getIsoWeek(date: Date): number {
-  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+function startOfWeekMonday(date: Date): Date {
+  // Create a UTC date at 00:00 and move back to Monday
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+  const day = d.getUTCDay(); // 0 (Sun) .. 6 (Sat)
+  const diff = (day === 0 ? -6 : 1 - day); // if Sunday, go back 6 days; else back to Monday
+  d.setUTCDate(d.getUTCDate() + diff);
+  return d;
+}
+
+function deterministicRandom(key: string): number {
+  // Simple string hash → [0,1). Not cryptographic, just stable.
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) {
+    h ^= key.charCodeAt(i);
+    h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
+  }
+  // Convert to positive 32-bit and normalize
+  const x = (h >>> 0) / 4294967295;
+  return x;
 }
 
 export function computeYoy(currentSeries: KpiPoint[], previousSeries: KpiPoint[]): { summary: Diff; pairs: Array<{ current?: KpiPoint; previous?: KpiPoint }>; } {

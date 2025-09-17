@@ -5,10 +5,11 @@
 :root {
   --rbg-muted: #f6f7f9;
   --rbg-border: #e5e7eb;
+  --rbg-primary: #E01E26;
 }
 
 body {
-  @apply bg-white text-gray-900;
+  @apply bg-white text-black;
 }
 
 .card {
@@ -16,7 +17,7 @@ body {
 }
 
 .badge {
-  @apply inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700;
+  @apply inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs text-black;
 }
 
 .title {

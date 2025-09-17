@@ -28,12 +28,12 @@ export default function RootLayout({ children }: PropsWithChildren) {
     <html lang="en" suppressHydrationWarning>
       <body>
         <Providers>
-          <NextTopLoader color="#5750F1" showSpinner={false} />
+          <NextTopLoader color="#E01E26" showSpinner={false} />
 
           <div className="flex min-h-screen">
             <Sidebar />
 
-            <div className="w-full bg-gray-2 dark:bg-[#020d1a]">
+            <div className="w-full bg-white dark:bg-[#020d1a]">
               <Header />
 
               <FiltersProvider>
