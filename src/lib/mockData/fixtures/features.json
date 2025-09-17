@@ -1,0 +1,14 @@
+{
+  "meta": { "metric": "features", "grain": "day" },
+  "keys": [
+    "feature_read_report",
+    "feature_read_news",
+    "feature_view_faq",
+    "feature_view_vendor_invoice",
+    "feature_visit_boardroom",
+    "feature_view_avi"
+  ],
+  "notes": ["Hög trafik vid utskick av årsredovisningar."]
+}
+
+

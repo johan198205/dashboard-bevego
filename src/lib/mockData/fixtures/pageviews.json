@@ -1,0 +1,7 @@
+{
+  "meta": { "metric": "pageviews", "grain": "day" },
+  "channels": ["Direkt", "Organiskt", "Kampanj", "E-post"],
+  "notes": ["Stabil trend med toppar vid nyhetsbrev."]
+}
+
+

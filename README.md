@@ -1,3 +1,50 @@
+# Mitt Riksbyggen – Mock Analytics Dashboard
+
+All data in this app is mock. The UI and resolver are structured so each widget can later be switched from mock to GA4/BigQuery by editing a single place.
+
+## Snabbstart
+
+1. Kopiera `.env.local.example` till `.env.local` och behåll:
+
+```
+TZ=Europe/Stockholm
+```
+
+2. Kör utvecklingsservern:
+
+```
+npm run dev
+```
+
+## Arkitektur
+
+- `src/lib/types.ts` – Normaliserat kontrakt (`KpiResponse`, `KpiPoint`, `Diff`, m.m.)
+- `src/lib/resolver.ts` – EN ingång: `getKpi(params)`. Idag mockar alla mått.
+  - CONNECT GA4 HERE LATER: byt implementation per `metric` och returnera samma `KpiResponse`.
+- `src/lib/mockData/` – Fixtures och generatorer för realistiska tidsserier och brytningar.
+- `src/components/GlobalFilters.tsx` – Enkel filter-context som påverkar frågorna (lokalt).
+- `src/widgets/*` – Typade komponenter som anropar `getKpi` och visar badges/tooltips.
+
+## Byta en widget till GA4 senare
+
+1. Gå till `src/lib/resolver.ts`, lokalisera grenen för metrik (t.ex. `metric === "mau"`).
+2. Ersätt mock-generatorn med anrop till GA4/BQ-provider.
+3. Mappa svaret till `KpiResponse` (behåll samma fält). Inga widgetändringar behövs.
+
+## Sidor
+
+- `/` (Översikt) – MAU, Sidvisningar, Tasks/Features, NDI, Prestanda.
+- `/anvandare` – MAU-trend, kanal-/målgruppstabell (mockad breakdown).
+- `/anvandning` – Sidvisningar + Tasks/Features-tabeller.
+- `/konverteringar` – scaffold/tratt.
+- `/kundnojdhet` – NDI trend + placeholder heatmap/tabell.
+- `/prestanda` – placeholders (svarstid, uptime, WCAG).
+- `/installningar` – Käll-toggle (Mock), event-taxonomi och redigerbar `microfrontends.json` lista.
+
+## Språk & format
+
+- Svenska etiketter, datum/nummer formateras som `sv-SE`. Tidszon `Europe/Stockholm`.
+
 # NextAdmin - Next.js Admin Dashboard Template and Components
 
 **NextAdmin** is a Free, open-source Next.js admin dashboard toolkit featuring 200+ UI components and templates that come with pre-built elements, components, pages, high-quality design, integrations, and much more to help you create powerful admin dashboards with ease.

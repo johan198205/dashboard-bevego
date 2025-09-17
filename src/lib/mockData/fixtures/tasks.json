@@ -1,0 +1,16 @@
+{
+  "meta": { "metric": "tasks", "grain": "day" },
+  "keys": [
+    "task_submitted_fault_report",
+    "task_invoice_attested",
+    "task_legal_booking",
+    "task_news_created",
+    "task_expense_uploaded",
+    "task_doc_uploaded",
+    "task_doc_downloaded",
+    "task_board_comment"
+  ],
+  "notes": ["Fler attesteringar i början av månaden."]
+}
+
+

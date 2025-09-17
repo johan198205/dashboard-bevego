@@ -1,0 +1,12 @@
+{
+  "meta": { "metric": "mau", "grain": "day" },
+  "audiences": ["Styrelse", "Medlem", "Leverantör", "Förvaltare"],
+  "channels": ["Direkt", "Organiskt", "Kampanj", "E-post"],
+  "devices": ["Desktop", "Mobil", "Surfplatta"],
+  "notes": [
+    "Säsongsdyk i juli p.g.a. semester.",
+    "Ökad aktivitet efter utskick i september."
+  ]
+}
+
+

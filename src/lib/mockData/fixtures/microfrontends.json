@@ -1,0 +1,8 @@
+[
+  { "name": "Felanmälan", "status": "partial", "owner": "Team Drift" },
+  { "name": "Fakturor", "status": "full", "owner": "Ekonomi" },
+  { "name": "Dokument", "status": "partial", "owner": "Kärnteam" },
+  { "name": "Nyheter", "status": "none", "owner": "Kommunikation" }
+]
+
+

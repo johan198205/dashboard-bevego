@@ -1,45 +1,118 @@
-import { GA4_SOURCE_LABEL, querySessionsByDateRange as ga4Query } from "./ga4Client";
-import { BQ_SOURCE_LABEL, querySessionsByDateRange as bqQuery } from "./bqClient";
+import { type KpiResponse, type Params, type Grain } from "./types";
+import { buildKpiResponse, generateTimeseries, aggregate } from "./mockData/generators";
 
-export type DataSource = "ga4" | "bq";
+function addYears(dateStr: string, years: number): string {
+  const d = new Date(dateStr);
+  d.setFullYear(d.getFullYear() + years);
+  return d.toISOString().slice(0, 10);
+}
 
-export type SessionsKpiInput = {
-	startDate: string; // YYYY-MM-DD
-	endDate: string; // YYYY-MM-DD
-	dataSource: DataSource;
-};
+function previousYoyRange(range: { start: string; end: string }) {
+  return { start: addYears(range.start, -1), end: addYears(range.end, -1) };
+}
 
-export type SessionsKpiResult = {
-	total_sessions: number;
-	source_label: "GA4 API" | "BigQuery";
-};
+function ensureGrain(grain?: Grain): Grain { return grain || "day"; }
 
-export async function getSessionsKpi(
-	input: SessionsKpiInput,
-): Promise<SessionsKpiResult> {
-	if (input.dataSource === "ga4") {
-		// TODO: Byt placeholder mot riktig GA4-anrop när env/auth finns.
-		const rows = await ga4Query({
-			startDate: input.startDate,
-			endDate: input.endDate,
-			timeZone: "Europe/Stockholm",
-		});
-		const total = rows.reduce((sum, r) => sum + (r.sessions || 0), 0);
-		return { total_sessions: total, source_label: GA4_SOURCE_LABEL };
-	}
+export async function getKpi(params: Params): Promise<KpiResponse> {
+  const { metric, range, filters } = params;
+  const grain = ensureGrain(range.grain);
 
-    // BigQuery temporärt avstängt bakom feature-flag. Gör no-op och logga varning.
-    if (process.env.ENABLE_BQ === "true" || process.env.NEXT_PUBLIC_ENABLE_BQ === "true") {
-        const rows = await bqQuery({
-            startDate: input.startDate,
-            endDate: input.endDate,
-            timeZone: "Europe/Stockholm",
-        });
-        const total = rows.reduce((sum, r) => sum + (r.sessions || 0), 0);
-        return { total_sessions: total, source_label: BQ_SOURCE_LABEL };
+  // Note: All data is mock. CONNECT GA4 HERE LATER by swapping implementation per metric.
+  if (metric === "mau") {
+    const current = generateTimeseries({ start: range.start, end: range.end, grain }, { base: 1200, noise: 0.1 });
+    const prevRange = previousYoyRange(range);
+    const previous = range.compareYoy ? generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 1050, noise: 0.1 }) : undefined;
+    const series = aggregate(current, grain);
+    const prevAgg = previous ? aggregate(previous, grain) : undefined;
+    return buildKpiResponse("mau", series, prevAgg, ["Direkt", "Organiskt", "Kampanj", "E-post"], ["Källa: Mockdata (MAU)"]);
+  }
+
+  if (metric === "pageviews") {
+    const current = generateTimeseries({ start: range.start, end: range.end, grain }, { base: 5400, noise: 0.12 });
+    const prevRange = previousYoyRange(range);
+    const previous = range.compareYoy ? generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 5000, noise: 0.12 }) : undefined;
+    const series = aggregate(current, grain);
+    const prevAgg = previous ? aggregate(previous, grain) : undefined;
+    return buildKpiResponse("pageviews", series, prevAgg, ["Direkt", "Organiskt", "Kampanj", "E-post"], ["Källa: Mockdata (Sidvisningar)"]);
+  }
+
+  if (metric === "tasks") {
+    const current = generateTimeseries({ start: range.start, end: range.end, grain }, { base: 750, noise: 0.15 });
+    const prevRange = previousYoyRange(range);
+    const previous = range.compareYoy ? generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 680, noise: 0.15 }) : undefined;
+    const series = aggregate(current, grain);
+    const prevAgg = previous ? aggregate(previous, grain) : undefined;
+    return buildKpiResponse("tasks", series, prevAgg, [
+      "task_submitted_fault_report",
+      "task_invoice_attested",
+      "task_legal_booking",
+      "task_news_created",
+      "task_expense_uploaded",
+      "task_doc_uploaded",
+      "task_doc_downloaded"
+    ], ["Rate = antal / MAU för perioden (beräknas i widget)", "Källa: Mockdata (Tasks)"]);
+  }
+
+  if (metric === "features") {
+    const current = generateTimeseries({ start: range.start, end: range.end, grain }, { base: 950, noise: 0.14 });
+    const prevRange = previousYoyRange(range);
+    const previous = range.compareYoy ? generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 900, noise: 0.14 }) : undefined;
+    const series = aggregate(current, grain);
+    const prevAgg = previous ? aggregate(previous, grain) : undefined;
+    return buildKpiResponse("features", series, prevAgg, [
+      "feature_read_report",
+      "feature_read_news",
+      "feature_view_faq",
+      "feature_view_vendor_invoice",
+      "feature_visit_boardroom",
+      "feature_view_avi"
+    ], ["Källa: Mockdata (Funktioner)"]);
+  }
+
+  if (metric === "ndi") {
+    // 6 quarters of dummy NDI values 0..100
+    const now = new Date(range.end);
+    const quarters: { date: string; value: number }[] = [];
+    const currentQ = Math.floor(now.getUTCMonth() / 3);
+    for (let i = 5; i >= 0; i--) {
+      const qIndex = currentQ - i;
+      const qDate = new Date(Date.UTC(now.getUTCFullYear(), (qIndex) * 3, 1));
+      while (qDate > now) qDate.setUTCMonth(qDate.getUTCMonth() - 3);
+      const label = `${qDate.getUTCFullYear()}-Q${Math.floor(qDate.getUTCMonth() / 3) + 1}`;
+      quarters.push({ date: label, value: Math.round(60 + Math.random() * 30) });
     }
+    const series = quarters.map((q) => ({ date: q.date, value: q.value }));
+    // previous 6 quarters for YoY comparison
+    const prevSeries = range.compareYoy ? quarters.map((q) => ({ date: q.date, value: Math.round(q.value * (0.9 + Math.random() * 0.2)) })) : undefined;
+    return buildKpiResponse("ndi", series, prevSeries, ["Styrelse", "Medlem", "Förvaltare"], ["NDI är dummyvärden på kvartalsnivå", "Källa: Mockdata (NDI)"]);
+  }
 
-    console.warn("BigQuery disabled via feature flag. Returning GA4-only no-op for BQ path.");
-    return { total_sessions: 0, source_label: BQ_SOURCE_LABEL };
+  if (metric === "perf") {
+    // Static placeholders
+    const series = [{ date: params.range.start, value: 1 }];
+    return {
+      meta: { source: "mock", metric: "perf", dims: [] },
+      summary: { current: 1, prev: 1, yoyPct: 0 },
+      timeseries: series,
+      notes: ["Svarstid, Uptime och WCAG är placeholders", "Källa: Mockdata (Prestanda)"]
+    };
+  }
+
+  // Fallback
+  return {
+    meta: { source: "mock", metric, dims: [] },
+    summary: { current: 0, prev: 0, yoyPct: 0 },
+    timeseries: [],
+    notes: ["Okänt mått", "Källa: Mockdata"]
+  };
+}
+
+// Temporary shim to avoid breaking existing imports in the template
+export type DataSource = "ga4" | "bq";
+export type SessionsKpiInput = { startDate: string; endDate: string; dataSource: DataSource };
+export type SessionsKpiResult = { total_sessions: number; source_label: "Mock" };
+export async function getSessionsKpi(input: SessionsKpiInput): Promise<SessionsKpiResult> {
+  const res = await getKpi({ metric: "mau", range: { start: input.startDate, end: input.endDate, compareYoy: false, grain: "day" } });
+  return { total_sessions: res.summary.current, source_label: "Mock" };
 }
 

@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --rbg-muted: #f6f7f9;
+  --rbg-border: #e5e7eb;
+}
+
+body {
+  @apply bg-white text-gray-900;
+}
+
+.card {
+  @apply rounded-lg border border-[color:var(--rbg-border)] bg-white p-4 shadow-sm;
+}
+
+.badge {
+  @apply inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700;
+}
+
+.title {
+  @apply text-sm font-medium text-gray-700;
+}
+
+.value {
+  @apply text-2xl font-semibold text-gray-900;
+}
+
+

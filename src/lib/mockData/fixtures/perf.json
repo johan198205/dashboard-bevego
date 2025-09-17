@@ -1,0 +1,9 @@
+{
+  "meta": { "metric": "perf" },
+  "uptime": 99.6,
+  "responseTimeMs": 420,
+  "wcag": "utvecklingsområde",
+  "notes": ["Prestanda är placeholders med informativa texter."]
+}
+
+
