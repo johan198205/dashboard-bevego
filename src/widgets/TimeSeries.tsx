@@ -2,13 +2,17 @@
 import { useEffect, useState } from "react";
 import { getKpi } from "@/lib/resolver";
 import { KpiResponse, Params } from "@/lib/types";
+import { useFilters } from "@/components/GlobalFilters";
 import InfoTooltip from "@/components/InfoTooltip";
 
 type Props = { title: string; metric: Params["metric"]; range: Params["range"] };
 
 export default function TimeSeries({ title, metric, range }: Props) {
   const [data, setData] = useState<KpiResponse | null>(null);
-  useEffect(() => { getKpi({ metric, range }).then(setData); }, [metric, range.start, range.end, range.compareYoy, range.grain]);
+  const { state } = useFilters();
+  useEffect(() => {
+    getKpi({ metric, range, filters: { audience: state.audience, device: state.device, channel: state.channel } }).then(setData);
+  }, [metric, range.start, range.end, range.compareYoy, range.grain, state.audience.join(","), state.device.join(","), state.channel.join(",")]);
 
   return (
     <div className="card">

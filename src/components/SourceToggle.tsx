@@ -1,5 +1,5 @@
 "use client";
-export default function SourceToggle() {
+export function SourceToggle() {
   return (
     <div className="card flex items-center gap-3">
       <span className="title">Källa</span>
@@ -9,4 +9,5 @@ export default function SourceToggle() {
     </div>
   );
 }
+export default SourceToggle;
 

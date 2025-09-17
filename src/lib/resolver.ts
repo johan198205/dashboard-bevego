@@ -1,4 +1,4 @@
-import { type KpiResponse, type Params, type Grain } from "./types";
+import { type KpiResponse, type Params, type Grain, type Filters } from "./types";
 import { buildKpiResponse, generateTimeseries, aggregate } from "./mockData/generators";
 
 function addYears(dateStr: string, years: number): string {
@@ -13,33 +13,76 @@ function previousYoyRange(range: { start: string; end: string }) {
 
 function ensureGrain(grain?: Grain): Grain { return grain || "day"; }
 
+// Proportional mock scaling based on UI filters
+const AUDIENCE_WEIGHTS: Record<string, number> = {
+  "Styrelse": 0.1,
+  "Medlem": 0.7,
+  "Leverantör": 0.1,
+  "Förvaltare": 0.1,
+};
+const DEVICE_WEIGHTS: Record<string, number> = {
+  "Desktop": 0.6,
+  "Mobil": 0.3,
+  "Surfplatta": 0.1,
+};
+const CHANNEL_WEIGHTS: Record<string, number> = {
+  "Direkt": 0.35,
+  "Organiskt": 0.4,
+  "Kampanj": 0.15,
+  "E-post": 0.1,
+};
+
+function weightSum(values: string[] | undefined, weights: Record<string, number>): number {
+  if (!values || values.length === 0) return 1;
+  return values.reduce((acc, v) => acc + (weights[v] ?? 0), 0);
+}
+
+function computeScale(filters?: Filters): number {
+  if (!filters) return 1;
+  const a = weightSum(filters.audience, AUDIENCE_WEIGHTS);
+  const d = weightSum(filters.device, DEVICE_WEIGHTS);
+  const c = weightSum(filters.channel, CHANNEL_WEIGHTS);
+  return a * d * c;
+}
+
+function scaleSeries(series: { date: string; value: number }[], factor: number) {
+  if (factor === 1) return series;
+  return series.map((p) => ({ ...p, value: Math.round(p.value * factor) }));
+}
+
 export async function getKpi(params: Params): Promise<KpiResponse> {
   const { metric, range, filters } = params;
   const grain = ensureGrain(range.grain);
 
   // Note: All data is mock. CONNECT GA4 HERE LATER by swapping implementation per metric.
+  const scale = computeScale(filters);
   if (metric === "mau") {
-    const current = generateTimeseries({ start: range.start, end: range.end, grain }, { base: 1200, noise: 0.1 });
+    const currentRaw = generateTimeseries({ start: range.start, end: range.end, grain }, { base: 1200, noise: 0.1 });
+    const current = scaleSeries(currentRaw, scale);
     const prevRange = previousYoyRange(range);
-    const previous = range.compareYoy ? generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 1050, noise: 0.1 }) : undefined;
+    const previous = range.compareYoy ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 1050, noise: 0.1 }), scale) : undefined;
     const series = aggregate(current, grain);
     const prevAgg = previous ? aggregate(previous, grain) : undefined;
-    return buildKpiResponse("mau", series, prevAgg, ["Direkt", "Organiskt", "Kampanj", "E-post"], ["Källa: Mockdata (MAU)"]);
+    const breakdown = ["Direkt", "Organiskt", "Kampanj", "E-post"];
+    const dims = filters?.channel && filters.channel.length > 0 ? breakdown.filter((c) => filters.channel?.includes(c)) : breakdown;
+    return buildKpiResponse("mau", series, prevAgg, dims, ["Källa: Mockdata (MAU)"]);
   }
 
   if (metric === "pageviews") {
-    const current = generateTimeseries({ start: range.start, end: range.end, grain }, { base: 5400, noise: 0.12 });
+    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 5400, noise: 0.12 }), scale);
     const prevRange = previousYoyRange(range);
-    const previous = range.compareYoy ? generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 5000, noise: 0.12 }) : undefined;
+    const previous = range.compareYoy ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 5000, noise: 0.12 }), scale) : undefined;
     const series = aggregate(current, grain);
     const prevAgg = previous ? aggregate(previous, grain) : undefined;
-    return buildKpiResponse("pageviews", series, prevAgg, ["Direkt", "Organiskt", "Kampanj", "E-post"], ["Källa: Mockdata (Sidvisningar)"]);
+    const breakdown = ["Direkt", "Organiskt", "Kampanj", "E-post"];
+    const dims = filters?.channel && filters.channel.length > 0 ? breakdown.filter((c) => filters.channel?.includes(c)) : breakdown;
+    return buildKpiResponse("pageviews", series, prevAgg, dims, ["Källa: Mockdata (Sidvisningar)"]);
   }
 
   if (metric === "tasks") {
-    const current = generateTimeseries({ start: range.start, end: range.end, grain }, { base: 750, noise: 0.15 });
+    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 750, noise: 0.15 }), scale);
     const prevRange = previousYoyRange(range);
-    const previous = range.compareYoy ? generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 680, noise: 0.15 }) : undefined;
+    const previous = range.compareYoy ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 680, noise: 0.15 }), scale) : undefined;
     const series = aggregate(current, grain);
     const prevAgg = previous ? aggregate(previous, grain) : undefined;
     return buildKpiResponse("tasks", series, prevAgg, [
@@ -54,9 +97,9 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
   }
 
   if (metric === "features") {
-    const current = generateTimeseries({ start: range.start, end: range.end, grain }, { base: 950, noise: 0.14 });
+    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 950, noise: 0.14 }), scale);
     const prevRange = previousYoyRange(range);
-    const previous = range.compareYoy ? generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 900, noise: 0.14 }) : undefined;
+    const previous = range.compareYoy ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 900, noise: 0.14 }), scale) : undefined;
     const series = aggregate(current, grain);
     const prevAgg = previous ? aggregate(previous, grain) : undefined;
     return buildKpiResponse("features", series, prevAgg, [

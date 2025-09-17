@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { getKpi } from "@/lib/resolver";
 import { Params, KpiResponse } from "@/lib/types";
+import { useFilters } from "@/components/GlobalFilters";
 import { formatNumber, formatPercent } from "@/lib/format";
 import InfoTooltip from "@/components/InfoTooltip";
 
@@ -13,9 +14,10 @@ type Props = {
 
 export default function TotalDiffCard({ title, metric, range }: Props) {
   const [data, setData] = useState<KpiResponse | null>(null);
+  const { state } = useFilters();
   useEffect(() => {
-    getKpi({ metric, range }).then(setData);
-  }, [metric, range.start, range.end, range.compareYoy, range.grain]);
+    getKpi({ metric, range, filters: { audience: state.audience, device: state.device, channel: state.channel } }).then(setData);
+  }, [metric, range.start, range.end, range.compareYoy, range.grain, state.audience.join(","), state.device.join(","), state.channel.join(",")]);
 
   const summary = data?.summary;
 

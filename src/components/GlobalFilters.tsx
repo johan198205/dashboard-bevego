@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useContext, useMemo, useState } from "react";
 import { Grain } from "@/lib/types";
+import FilterDropdown from "./FilterDropdown";
 
 type FilterState = {
   range: { start: string; end: string; compareYoy: boolean; grain: Grain };
@@ -41,7 +42,7 @@ export default function GlobalFilters() {
   const { state, setState } = useFilters();
   return (
     <div className="mb-4 flex flex-wrap items-center gap-3">
-      <div className="card flex items-center gap-2">
+      <div className="card filter-box">
         <span className="title">Datumintervall</span>
         <input
           type="date"
@@ -58,7 +59,7 @@ export default function GlobalFilters() {
         />
       </div>
 
-      <label className="card flex items-center gap-2">
+      <label className="card filter-box">
         <input
           type="checkbox"
           checked={state.range.compareYoy}
@@ -67,35 +68,52 @@ export default function GlobalFilters() {
         <span className="title">Visa YoY</span>
       </label>
 
-      <select
-        value={state.range.grain}
-        onChange={(e) => setState((p) => ({ ...p, range: { ...p.range, grain: e.target.value as Grain } }))}
-        className="card"
-      >
-        <option value="day">Dag</option>
-        <option value="week">Vecka</option>
-        <option value="month">Månad</option>
-      </select>
+      <div className="card filter-box">
+        <select
+          value={state.range.grain}
+          onChange={(e) => setState((p) => ({ ...p, range: { ...p.range, grain: e.target.value as Grain } }))}
+          className="bg-transparent outline-none border-none text-sm"
+        >
+          <option value="day">Dag</option>
+          <option value="week">Vecka</option>
+          <option value="month">Månad</option>
+        </select>
+      </div>
 
-      <select multiple className="card" value={state.audience} onChange={(e) => setState((p) => ({ ...p, audience: Array.from(e.target.selectedOptions).map(o => o.value) }))}>
-        <option>Styrelse</option>
-        <option>Medlem</option>
-        <option>Leverantör</option>
-        <option>Förvaltare</option>
-      </select>
+      <FilterDropdown
+        label="Roll"
+        items={[
+          { value: "Styrelse", label: "Styrelse" },
+          { value: "Medlem", label: "Medlem" },
+          { value: "Leverantör", label: "Leverantör" },
+          { value: "Förvaltare", label: "Förvaltare" },
+        ]}
+        values={state.audience}
+        onChange={(values) => setState((p) => ({ ...p, audience: values }))}
+      />
 
-      <select multiple className="card" value={state.device} onChange={(e) => setState((p) => ({ ...p, device: Array.from(e.target.selectedOptions).map(o => o.value) }))}>
-        <option>Desktop</option>
-        <option>Mobil</option>
-        <option>Surfplatta</option>
-      </select>
+      <FilterDropdown
+        label="Enhet"
+        items={[
+          { value: "Desktop", label: "Desktop" },
+          { value: "Mobil", label: "Mobil" },
+          { value: "Surfplatta", label: "Surfplatta" },
+        ]}
+        values={state.device}
+        onChange={(values) => setState((p) => ({ ...p, device: values }))}
+      />
 
-      <select multiple className="card" value={state.channel} onChange={(e) => setState((p) => ({ ...p, channel: Array.from(e.target.selectedOptions).map(o => o.value) }))}>
-        <option>Direkt</option>
-        <option>Organiskt</option>
-        <option>Kampanj</option>
-        <option>E-post</option>
-      </select>
+      <FilterDropdown
+        label="Kanal"
+        items={[
+          { value: "Direkt", label: "Direkt" },
+          { value: "Organiskt", label: "Organiskt" },
+          { value: "Kampanj", label: "Kampanj" },
+          { value: "E-post", label: "E-post" },
+        ]}
+        values={state.channel}
+        onChange={(values) => setState((p) => ({ ...p, channel: values }))}
+      />
     </div>
   );
 }

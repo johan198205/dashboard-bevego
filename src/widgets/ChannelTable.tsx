@@ -2,11 +2,15 @@
 import { useEffect, useState } from "react";
 import { getKpi } from "@/lib/resolver";
 import { KpiResponse, Params } from "@/lib/types";
+import { useFilters } from "@/components/GlobalFilters";
 import InfoTooltip from "@/components/InfoTooltip";
 
 export default function ChannelTable({ metric, range }: { metric: Params["metric"]; range: Params["range"] }) {
   const [data, setData] = useState<KpiResponse | null>(null);
-  useEffect(() => { getKpi({ metric, range }).then(setData); }, [metric, range.start, range.end, range.compareYoy, range.grain]);
+  const { state } = useFilters();
+  useEffect(() => {
+    getKpi({ metric, range, filters: { audience: state.audience, device: state.device, channel: state.channel } }).then(setData);
+  }, [metric, range.start, range.end, range.compareYoy, range.grain, state.audience.join(","), state.device.join(","), state.channel.join(",")]);
   const rows = data?.breakdown || [];
 
   return (
