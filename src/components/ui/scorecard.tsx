@@ -11,6 +11,7 @@ type ScoreCardProps = {
   source?: string;
   variant?: "default" | "primary" | "success" | "warning" | "error" | "info";
   className?: string;
+  onClick?: () => void; // optional, non-breaking
 };
 
 const variantStyles = {
@@ -53,16 +54,31 @@ export function ScoreCard({
   Icon, 
   source,
   variant = "default",
-  className 
+  className,
+  onClick,
 }: ScoreCardProps) {
   const isDecreasing = growthRate !== undefined && growthRate < 0;
   const styles = variantStyles[variant];
 
   return (
-    <div className={cn(
-      "relative overflow-hidden rounded-lg bg-white shadow-sm border border-stroke dark:bg-gray-dark dark:border-dark-3",
-      className
-    )}>
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-lg bg-white shadow-sm border border-stroke dark:bg-gray-dark dark:border-dark-3",
+        onClick ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary" : "",
+        className
+      )}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={onClick ? `${label} – öppna detaljer` : undefined}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (!onClick) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+    >
       {/* Accent bar - thicker and more prominent */}
       <div className={cn("absolute left-0 top-0 h-full w-1.5", styles.accentBar)} />
       

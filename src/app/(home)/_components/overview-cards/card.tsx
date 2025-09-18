@@ -11,7 +11,7 @@ type PropsType = {
   variant?: "default" | "primary" | "success" | "warning" | "error" | "info";
 };
 
-export function OverviewCard({ label, data, Icon, variant = "default" }: PropsType) {
+export function OverviewCard({ label, data, Icon, variant = "default", ...rest }: PropsType & { onClick?: () => void }) {
   return (
     <ScoreCard
       label={label}
@@ -20,6 +20,7 @@ export function OverviewCard({ label, data, Icon, variant = "default" }: PropsTy
       Icon={Icon}
       variant={variant}
       source="Mock"
+      {...rest}
     />
   );
 }

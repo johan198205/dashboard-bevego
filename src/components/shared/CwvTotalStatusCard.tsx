@@ -41,9 +41,22 @@ const getStatusText = (status: CwvStatus) => {
   }
 };
 
-export function CwvTotalStatusCard({ label, data, Icon }: PropsType) {
+export function CwvTotalStatusCard({ label, data, Icon, ...rest }: PropsType & { onClick?: () => void }) {
   return (
-    <div className="relative overflow-hidden rounded-lg bg-white shadow-sm border border-stroke dark:bg-gray-dark dark:border-dark-3">
+    <div
+      className="relative overflow-hidden rounded-lg bg-white shadow-sm border border-stroke dark:bg-gray-dark dark:border-dark-3 cursor-pointer"
+      role={rest.onClick ? "button" : undefined}
+      tabIndex={rest.onClick ? 0 : undefined}
+      aria-label={rest.onClick ? `${label} – öppna detaljer` : undefined}
+      onClick={rest.onClick}
+      onKeyDown={(e) => {
+        if (!rest.onClick) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          rest.onClick();
+        }
+      }}
+    >
       {/* Accent bar */}
       <div className="absolute left-0 top-0 h-full w-1.5 bg-orange" />
       
