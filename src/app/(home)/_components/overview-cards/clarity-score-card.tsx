@@ -68,6 +68,8 @@ export function ClarityScoreCard({ label, data, Icon, ...rest }: PropsType & { o
           </div>
         </div>
 
+        {/* No sparkline for clarity card */}
+
         {/* Growth rate indicator */}
         {data.growthRate !== 0 && (
           <div className="mt-4 flex items-center gap-1 text-xs font-semibold">

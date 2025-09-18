@@ -93,6 +93,8 @@ export function CwvTotalStatusCard({ label, data, Icon, ...rest }: PropsType & {
           </div>
         </div>
 
+        {/* No sparkline for CWV card */}
+
         {/* Source attribution */}
         <div className="mt-6 flex items-center gap-1 text-xs text-dark-5 dark:text-dark-6">
           <div className="h-4 w-4 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">

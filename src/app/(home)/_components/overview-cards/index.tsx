@@ -8,6 +8,7 @@ import { ClarityScoreCard } from "./clarity-score-card";
 import { CwvTotalStatusCard } from "@/components/shared/CwvTotalStatusCard";
 import { useCwvData } from "@/hooks/useCwvData";
 import { useClarityData } from "@/hooks/useClarityData";
+import { getKpi } from "@/lib/resolver";
 import * as icons from "./icons";
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
 import { useFilters } from "@/components/GlobalFilters";
@@ -49,12 +50,10 @@ export function OverviewCardsGroup() {
   // Minimal providers mapping → returns series aligned with TimeSeries widget style
   const providers = useMemo(() => ({
     mau: async ({ start, end, grain, filters }: any) => {
-      const { getKpi } = await import("@/lib/resolver");
       const res = await getKpi({ metric: "mau", range: { start, end, grain, comparisonMode: state.range.comparisonMode }, filters });
       return (res.timeseries || []).map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
     },
     pageviews: async ({ start, end, grain, filters }: any) => {
-      const { getKpi } = await import("@/lib/resolver");
       const res = await getKpi({ metric: "pageviews", range: { start, end, grain, comparisonMode: state.range.comparisonMode }, filters });
       return (res.timeseries || []).map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
     },
@@ -118,6 +117,7 @@ export function OverviewCardsGroup() {
           // open drawer
           // @ts-expect-error preserve public API on this specific card component
           onClick={() => setDrawer({ metricId: "clarity", title: "Clarity Score" })}
+          // no sparkline on this card
         />
       )}
 
@@ -135,6 +135,7 @@ export function OverviewCardsGroup() {
           Icon={icons.CwvTotalStatus}
           // @ts-expect-error minimal click passthrough
           onClick={() => setDrawer({ metricId: "cwv_total", title: "CWV total status" })}
+          // no sparkline on this card
         />
       )}
 
@@ -149,6 +150,8 @@ export function OverviewCardsGroup() {
         // Pageviews metric
         // @ts-expect-error underlying ScoreCard supports onClick
         onClick={() => setDrawer({ metricId: "pageviews", title: "Sidvisningar" })}
+        // Provide sparkline data
+        getSeries={providers.pageviews}
       />
 
       <OverviewCard
@@ -162,6 +165,7 @@ export function OverviewCardsGroup() {
         // Treat as Tasks (mock) for demo
         // @ts-expect-error click passthrough
         onClick={() => setDrawer({ metricId: "tasks", title: "Tasks" })}
+        getSeries={providers.tasks}
       />
 
       <OverviewCard
@@ -174,6 +178,7 @@ export function OverviewCardsGroup() {
         variant="info"
         // @ts-expect-error click passthrough
         onClick={() => setDrawer({ metricId: "features", title: "Funktioner" })}
+        getSeries={providers.features}
       />
 
       <OverviewCard
@@ -186,6 +191,7 @@ export function OverviewCardsGroup() {
         variant="primary"
         // @ts-expect-error click passthrough
         onClick={() => setDrawer({ metricId: "mau", title: "Användare (MAU)" })}
+        getSeries={providers.mau}
       />
 
       {drawer && (
