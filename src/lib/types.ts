@@ -173,4 +173,18 @@ export type ClarityParams = {
   filters?: ClarityFilters;
 };
 
+export type ClarityScore = {
+  score: number;
+  grade: 'Bra' | 'Behöver förbättras' | 'Dålig' | 'N/A';
+  parts: {
+    rage: number;
+    dead: number;
+    quickback: number;
+    script: number;
+    engagement: number;
+    scroll: number;
+  };
+  source: 'Mock' | 'Clarity API';
+};
+
 

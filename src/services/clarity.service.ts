@@ -3,8 +3,10 @@ import {
   ClarityTrendPoint, 
   ClarityUrlRow, 
   ClarityInsight, 
-  ClarityParams 
+  ClarityParams,
+  ClarityFilters
 } from '@/lib/types';
+import { computeClarityScore } from '@/lib/clarity-score';
 
 // TODO: Replace with real Clarity API integration
 // This service provides a clean interface for Clarity data fetching
@@ -46,6 +48,22 @@ export class ClarityService {
     // TODO: Implement real Clarity API call
     const mockData = this.generateMockInsights(params);
     return mockData;
+  }
+
+  /**
+   * Get Clarity Score for the specified date range and filters
+   */
+  async getClarityScore(params: ClarityParams) {
+    // Get overview data first
+    const overview = await this.getOverview(params);
+    
+    // Compute the Clarity Score
+    const scoreData = computeClarityScore(overview);
+    
+    return {
+      ...scoreData,
+      source: overview.source,
+    };
   }
 
   private generateMockOverview(params: ClarityParams): ClarityOverview {
@@ -157,7 +175,7 @@ export class ClarityService {
         },
         quickBack: 5 + Math.random() * 20,
         scriptErrors: Math.floor(sessions * (0.001 + Math.random() * 0.01)),
-        source: 'Mock'
+        source: 'Mock' as const
       };
     }).sort((a, b) => b.rageClicks.per1k - a.rageClicks.per1k); // Sort by rage clicks per 1k
   }
@@ -184,7 +202,7 @@ export class ClarityService {
         deadPer1k,
         quickBackPct,
         priority,
-        source: 'Mock'
+        source: 'Mock' as const
       };
     }).sort((a, b) => b.priority - a.priority); // Sort by priority descending
   }

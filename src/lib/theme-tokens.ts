@@ -100,3 +100,40 @@ export const shadows = {
   lg: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
   xl: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
 } as const;
+
+// Clarity Score Configuration
+export const clarityScoreConfig = {
+  // Weights for different metrics (must sum to 1.0)
+  weights: {
+    rage: 0.25,
+    dead: 0.20,
+    quickback: 0.15,
+    script: 0.10,
+    engagement: 0.20,
+    scroll: 0.10,
+  },
+  
+  // Breakpoints for normalizing metrics to 0-100 scale
+  // Format: [input_value, output_score] pairs for piecewise linear mapping
+  breakpoints: {
+    // Rage clicks percentage: [0→100, 5→50, 10→0]
+    rage: [[0, 100], [5, 50], [10, 0]],
+    // Dead clicks percentage: [0→100, 5→50, 10→0]  
+    dead: [[0, 100], [5, 50], [10, 0]],
+    // Quick-back percentage: [0→100, 10→50, 20→0]
+    quickback: [[0, 100], [10, 50], [20, 0]],
+    // Script errors per 1k sessions: [0→100, 10→70, 50→0]
+    script: [[0, 100], [10, 70], [50, 0]],
+    // Engagement time in seconds: [10→20, 30→70, 60→100]
+    engagement: [[10, 20], [30, 70], [60, 100]],
+    // Scroll depth percentage: [25→30, 50→70, 75→100]
+    scroll: [[25, 30], [50, 70], [75, 100]],
+  },
+  
+  // Score grade thresholds
+  gradeThresholds: {
+    good: 80,      // ≥80 = "Bra"
+    needsImprovement: 60, // 60-79 = "Behöver förbättras"
+    // <60 = "Dålig"
+  },
+} as const;

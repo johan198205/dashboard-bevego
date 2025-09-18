@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function OverviewCardsSkeleton() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4 2xl:gap-7.5">
-      {Array.from({ length: 4 }).map((_, i) => (
+      {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
           className="rounded-[10px] bg-white p-6 shadow-1 dark:bg-gray-dark"
