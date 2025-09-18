@@ -1,3 +1,5 @@
+"use client";
+
 import { ScoreCard } from "@/components/ui/scorecard";
 import { GlobeIcon } from "@/assets/icons";
 

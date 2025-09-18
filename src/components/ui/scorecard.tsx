@@ -1,3 +1,5 @@
+"use client";
+
 import { ArrowDownIcon, ArrowUpIcon } from "@/assets/icons";
 import { brandColors } from "@/lib/theme-tokens";
 import { cn } from "@/lib/utils";
