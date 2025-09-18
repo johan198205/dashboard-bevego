@@ -1,4 +1,5 @@
 import type { JSX, SVGProps } from "react";
+import { ScoreCard } from "@/components/ui/scorecard";
 
 type PropsType = {
   label: string;
@@ -8,85 +9,22 @@ type PropsType = {
     grade: 'Bra' | 'Behöver förbättras' | 'Dålig' | 'N/A';
   };
   Icon: (props: SVGProps<SVGSVGElement>) => JSX.Element;
+  comparisonLabel?: string;
 };
 
-// Helper function to get status chip styling
-const getStatusChipStyle = (grade: string) => {
-  switch (grade) {
-    case 'Bra':
-      return "bg-green-light-6 text-green border border-green/20";
-    case 'Behöver förbättras':
-      return "bg-yellow-light-4 text-yellow-dark border border-yellow/20";
-    case 'Dålig':
-      return "bg-red-light-6 text-red border border-red/20";
-    case 'N/A':
-      return "bg-neutral-200 text-neutral-600 border border-neutral-300";
-    default:
-      return "bg-neutral-200 text-neutral-600 border border-neutral-300";
-  }
-};
 
-export function ClarityScoreCard({ label, data, Icon, ...rest }: PropsType & { onClick?: () => void }) {
+export function ClarityScoreCard({ label, data, Icon, comparisonLabel = "vs. previous period", ...rest }: PropsType & { onClick?: () => void }) {
   return (
-    <div
-      className="relative overflow-hidden rounded-lg bg-white shadow-sm border border-stroke dark:bg-gray-dark dark:border-dark-3 cursor-pointer transition-transform transition-shadow duration-200 ease-out will-change-transform motion-reduce:transition-none motion-reduce:transform-none hover:shadow-md hover:border-primary/30 motion-reduce:hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:scale-[1.01] focus-visible:scale-[1.01] motion-reduce:hover:scale-100 motion-reduce:focus-visible:scale-100"
-      role={rest.onClick ? "button" : undefined}
-      tabIndex={rest.onClick ? 0 : undefined}
-      aria-label={rest.onClick ? `${label} – öppna detaljer` : undefined}
+    <ScoreCard
+      label={label}
+      value={data.value}
+      growthRate={data.growthRate}
+      Icon={Icon}
+      variant="default"
+      appearance="analytics"
+      comparisonLabel={comparisonLabel}
+      source="Mock"
       onClick={rest.onClick}
-      onKeyDown={(e) => {
-        if (!rest.onClick) return;
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          rest.onClick();
-        }
-      }}
-    >
-      {/* Accent bar */}
-      <div className="absolute left-0 top-0 h-full w-1.5 bg-red" />
-      
-      <div className="p-4">
-        {/* Header with icon and status chip */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg shadow-sm bg-red/10">
-            <Icon className="h-5 w-5 text-red" />
-          </div>
-          
-          {/* Status chip */}
-          <div className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm ${getStatusChipStyle(data.grade)}`}>
-            {data.grade}
-          </div>
-        </div>
-
-        {/* Main content */}
-        <div className="space-y-1.5">
-          <div className="text-2xl font-bold text-dark dark:text-white tracking-tight">
-            {data.value}
-          </div>
-          <div className="text-base font-semibold text-dark dark:text-white/90">
-            {label}
-          </div>
-        </div>
-
-        {/* No sparkline for clarity card */}
-
-        {/* Growth rate indicator */}
-        {data.growthRate !== 0 && (
-          <div className="mt-4 flex items-center gap-1 text-xs font-semibold">
-            <span className={data.growthRate > 0 ? "text-green" : "text-red"}>
-              {data.growthRate > 0 ? "↗" : "↘"} {Math.abs(data.growthRate).toFixed(1)}%
-            </span>
-          </div>
-        )}
-
-        {/* Source attribution */}
-        <div className="mt-4 flex items-center gap-1 text-xs text-dark-5 dark:text-dark-6">
-          <div className="h-4 w-4 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
-            <span className="text-[10px] font-bold">i</span>
-          </div>
-          Källa: Mock
-        </div>
-      </div>
-    </div>
+    />
   );
 }

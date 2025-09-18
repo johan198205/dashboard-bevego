@@ -56,6 +56,8 @@ function generateInsights(metricId: string, series: TimePoint[], anomalies: Anom
     ndi: "Kundnöjdhet (NDI)",
     tasks: "Tasks",
     features: "Funktioner",
+    tasks_rate: "Tasks",
+    features_rate: "Funktioner",
     clarity: "Clarity Score",
     cwv_total: "CWV total status",
   };
@@ -162,13 +164,20 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
 
   if (!open) return null;
 
+  const isRateMetric = metricId === "tasks_rate" || metricId === "features_rate" || metricId === "clarity" || metricId === "cwv_total";
+  
   const options = {
     chart: { type: "line", toolbar: { show: false }, fontFamily: "inherit" },
     stroke: { curve: "smooth", width: [3, 2], dashArray: [0, 6] },
     grid: { borderColor: "#E5E7EB33", strokeDashArray: 4, yaxis: { lines: { show: true } } },
     dataLabels: { enabled: false },
     xaxis: { type: "datetime", axisBorder: { show: false }, axisTicks: { show: false }, labels: { datetimeUTC: false, style: { colors: "#6B7280" } } },
-    yaxis: { labels: { style: { colors: "#6B7280" } } },
+    yaxis: { 
+      labels: { 
+        style: { colors: "#6B7280" },
+        formatter: isRateMetric ? (value: number) => `${value.toFixed(1)}%` : undefined
+      } 
+    },
     colors: ["#E01E26", "#9CA3AF"],
     legend: { show: true, position: "top", horizontalAlign: "right" },
   } as const;

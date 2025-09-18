@@ -172,6 +172,72 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
     return buildKpiResponse("ndi", series, prevSeries, ["Styrelse", "Medlem", "Förvaltare"], ["NDI är dummyvärden på kvartalsnivå", "Källa: Mockdata (NDI)"]);
   }
 
+  if (metric === "tasks_rate") {
+    // Calculate tasks rate as percentage of MAU using direct mock data
+    const tasksCurrent = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 750, noise: 0.15, seedKey: "tasks" }), scale);
+    const mauCurrent = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 1200, noise: 0.1, seedKey: "mau" }), scale);
+    
+    const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+    const tasksPrev = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 680, noise: 0.15, seedKey: "tasks_prev" }), scale) : undefined;
+    const mauPrev = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 1050, noise: 0.1, seedKey: "mau_prev" }), scale) : undefined;
+    
+    const tasksAgg = aggregate(tasksCurrent, grain);
+    const mauAgg = aggregate(mauCurrent, grain);
+    const tasksPrevAgg = tasksPrev ? aggregate(tasksPrev, grain) : undefined;
+    const mauPrevAgg = mauPrev ? aggregate(mauPrev, grain) : undefined;
+    
+    const currentRate = mauAgg.reduce((sum, p) => sum + p.value, 0) ? (tasksAgg.reduce((sum, p) => sum + p.value, 0) / mauAgg.reduce((sum, p) => sum + p.value, 0)) * 100 : 0;
+    const prevRate = mauPrevAgg && tasksPrevAgg ? (mauPrevAgg.reduce((sum, p) => sum + p.value, 0) ? (tasksPrevAgg.reduce((sum, p) => sum + p.value, 0) / mauPrevAgg.reduce((sum, p) => sum + p.value, 0)) * 100 : 0) : 0;
+    const yoyPct = prevRate ? ((currentRate - prevRate) / Math.abs(prevRate)) * 100 : 0;
+    
+    // Generate rate timeseries
+    const rateSeries = tasksAgg.map((taskPoint, i) => {
+      const mauPoint = mauAgg[i];
+      const rate = mauPoint?.value ? (taskPoint.value / mauPoint.value) * 100 : 0;
+      return { date: taskPoint.date, value: Math.max(0, Math.min(100, rate)) };
+    });
+    
+    return {
+      meta: { source: "mock", metric: "tasks_rate", dims: [] },
+      summary: { current: currentRate, prev: prevRate, yoyPct },
+      timeseries: rateSeries,
+      notes: ["Rate = antal tasks / MAU för perioden", "Källa: Mockdata (Tasks Rate)"]
+    };
+  }
+
+  if (metric === "features_rate") {
+    // Calculate features rate as percentage of MAU using direct mock data
+    const featuresCurrent = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 950, noise: 0.14, seedKey: "features" }), scale);
+    const mauCurrent = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 1200, noise: 0.1, seedKey: "mau" }), scale);
+    
+    const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+    const featuresPrev = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 900, noise: 0.14, seedKey: "features_prev" }), scale) : undefined;
+    const mauPrev = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 1050, noise: 0.1, seedKey: "mau_prev" }), scale) : undefined;
+    
+    const featuresAgg = aggregate(featuresCurrent, grain);
+    const mauAgg = aggregate(mauCurrent, grain);
+    const featuresPrevAgg = featuresPrev ? aggregate(featuresPrev, grain) : undefined;
+    const mauPrevAgg = mauPrev ? aggregate(mauPrev, grain) : undefined;
+    
+    const currentRate = mauAgg.reduce((sum, p) => sum + p.value, 0) ? (featuresAgg.reduce((sum, p) => sum + p.value, 0) / mauAgg.reduce((sum, p) => sum + p.value, 0)) * 100 : 0;
+    const prevRate = mauPrevAgg && featuresPrevAgg ? (mauPrevAgg.reduce((sum, p) => sum + p.value, 0) ? (featuresPrevAgg.reduce((sum, p) => sum + p.value, 0) / mauPrevAgg.reduce((sum, p) => sum + p.value, 0)) * 100 : 0) : 0;
+    const yoyPct = prevRate ? ((currentRate - prevRate) / Math.abs(prevRate)) * 100 : 0;
+    
+    // Generate rate timeseries
+    const rateSeries = featuresAgg.map((featurePoint, i) => {
+      const mauPoint = mauAgg[i];
+      const rate = mauPoint?.value ? (featurePoint.value / mauPoint.value) * 100 : 0;
+      return { date: featurePoint.date, value: Math.max(0, Math.min(100, rate)) };
+    });
+    
+    return {
+      meta: { source: "mock", metric: "features_rate", dims: [] },
+      summary: { current: currentRate, prev: prevRate, yoyPct },
+      timeseries: rateSeries,
+      notes: ["Rate = antal features / MAU för perioden", "Källa: Mockdata (Features Rate)"]
+    };
+  }
+
   if (metric === "perf") {
     // Static placeholders
     const series = [{ date: params.range.start, value: 1 }];

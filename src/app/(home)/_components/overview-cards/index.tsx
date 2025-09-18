@@ -27,6 +27,8 @@ export function OverviewCardsGroup() {
   const { clarityScore, loading: clarityLoading } = useClarityData();
   const { state } = useFilters();
   const [drawer, setDrawer] = useState<{ metricId: string; title: string } | null>(null);
+  const [tasksRateData, setTasksRateData] = useState<{ value: number; growthRate: number } | null>(null);
+  const [featuresRateData, setFeaturesRateData] = useState<{ value: number; growthRate: number } | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -36,6 +38,38 @@ export function OverviewCardsGroup() {
     loadData();
   }, []);
 
+  // Load rate data
+  useEffect(() => {
+    const loadRateData = async () => {
+      try {
+        console.log("Loading rate data...", { start: state.range.start, end: state.range.end, grain: state.range.grain, comparisonMode: state.range.comparisonMode });
+        const [tasksRateRes, featuresRateRes] = await Promise.all([
+          getKpi({ metric: "tasks_rate", range: { start: state.range.start, end: state.range.end, grain: state.range.grain, comparisonMode: state.range.comparisonMode } }),
+          getKpi({ metric: "features_rate", range: { start: state.range.start, end: state.range.end, grain: state.range.grain, comparisonMode: state.range.comparisonMode } })
+        ]);
+        
+        console.log("Tasks rate result:", tasksRateRes);
+        console.log("Features rate result:", featuresRateRes);
+        
+        setTasksRateData({
+          value: tasksRateRes.summary.current,
+          growthRate: tasksRateRes.summary.yoyPct
+        });
+        
+        setFeaturesRateData({
+          value: featuresRateRes.summary.current,
+          growthRate: featuresRateRes.summary.yoyPct
+        });
+        
+        console.log("Rate data set:", { tasks: tasksRateRes.summary.current, features: featuresRateRes.summary.current });
+      } catch (error) {
+        console.error("Failed to load rate data:", error);
+      }
+    };
+    
+    loadRateData();
+  }, [state.range.start, state.range.end, state.range.grain, state.range.comparisonMode]);
+
   // Minimal providers mapping → returns series aligned with TimeSeries widget style
   const providers = useMemo(() => ({
     mau: async ({ start, end, grain, filters }: any) => {
@@ -44,6 +78,15 @@ export function OverviewCardsGroup() {
     },
     pageviews: async ({ start, end, grain, filters }: any) => {
       const res = await getKpi({ metric: "pageviews", range: { start, end, grain, comparisonMode: state.range.comparisonMode }, filters });
+      return (res.timeseries || []).map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
+    },
+    // Rate metrics using server-backed data
+    tasks_rate: async ({ start, end, grain, filters }: any) => {
+      const res = await getKpi({ metric: "tasks_rate", range: { start, end, grain, comparisonMode: state.range.comparisonMode }, filters });
+      return (res.timeseries || []).map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
+    },
+    features_rate: async ({ start, end, grain, filters }: any) => {
+      const res = await getKpi({ metric: "features_rate", range: { start, end, grain, comparisonMode: state.range.comparisonMode }, filters });
       return (res.timeseries || []).map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
     },
     // For demo metrics without server-backed series, reuse mock generator
@@ -76,7 +119,7 @@ export function OverviewCardsGroup() {
     },
   }), [state.range.comparisonMode]);
 
-  if (!overviewData || clarityLoading || cwvLoading) {
+  if (clarityLoading || cwvLoading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4 2xl:gap-7.5">
         {Array.from({ length: 6 }).map((_, i) => (
@@ -86,7 +129,16 @@ export function OverviewCardsGroup() {
     );
   }
 
-  const { views, profit, products, users } = overviewData;
+  const { views, profit, products, users } = overviewData || { views: { value: 0, growthRate: 0 }, profit: { value: 0, growthRate: 0 }, products: { value: 0, growthRate: 0 }, users: { value: 0, growthRate: 0 } };
+
+  // Get comparison label based on current comparison mode
+  const getComparisonLabel = () => {
+    switch (state.range.comparisonMode) {
+      case 'yoy': return 'vs. previous year';
+      case 'prev': return 'vs. previous period';
+      default: return 'vs. previous period';
+    }
+  };
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4 2xl:gap-7.5">
@@ -100,6 +152,7 @@ export function OverviewCardsGroup() {
             grade: clarityScore.grade
           }}
           Icon={icons.ClarityScore}
+          comparisonLabel={getComparisonLabel()}
           // open drawer
           onClick={() => setDrawer({ metricId: "clarity", title: "Clarity Score" })}
           // no sparkline on this card
@@ -118,6 +171,7 @@ export function OverviewCardsGroup() {
             description: "Klarar alla tre"
           }}
           Icon={icons.CwvTotalStatus}
+          comparisonLabel={getComparisonLabel()}
           onClick={() => setDrawer({ metricId: "cwv_total", title: "CWV total status" })}
           // no sparkline on this card
         />
@@ -131,6 +185,8 @@ export function OverviewCardsGroup() {
         }}
         Icon={icons.Views}
         variant="success"
+        appearance="analytics"
+        comparisonLabel={getComparisonLabel()}
         // Pageviews metric
         onClick={() => setDrawer({ metricId: "pageviews", title: "Sidvisningar" })}
         // Provide sparkline data
@@ -138,28 +194,31 @@ export function OverviewCardsGroup() {
       />
 
       <OverviewCard
-        label="Total Profit"
+        label="Tasks"
         data={{
-          ...profit,
-          value: "$" + compactFormat(profit.value),
+          value: `${tasksRateData?.value?.toFixed(2) || '0.00'}%`,
+          growthRate: tasksRateData?.growthRate || 0,
         }}
         Icon={icons.Profit}
         variant="warning"
-        // Treat as Tasks (mock) for demo
-        onClick={() => setDrawer({ metricId: "tasks", title: "Tasks" })}
-        getSeries={providers.tasks}
+        appearance="analytics"
+        comparisonLabel={getComparisonLabel()}
+        onClick={() => setDrawer({ metricId: "tasks_rate", title: "Tasks" })}
+        getSeries={providers.tasks_rate}
       />
 
       <OverviewCard
-        label="Total Products"
+        label="Funktioner"
         data={{
-          ...products,
-          value: compactFormat(products.value),
+          value: `${featuresRateData?.value?.toFixed(2) || '0.00'}%`,
+          growthRate: featuresRateData?.growthRate || 0,
         }}
         Icon={icons.Product}
         variant="info"
-        onClick={() => setDrawer({ metricId: "features", title: "Funktioner" })}
-        getSeries={providers.features}
+        appearance="analytics"
+        comparisonLabel={getComparisonLabel()}
+        onClick={() => setDrawer({ metricId: "features_rate", title: "Funktioner" })}
+        getSeries={providers.features_rate}
       />
 
       <OverviewCard
@@ -170,6 +229,8 @@ export function OverviewCardsGroup() {
         }}
         Icon={icons.Users}
         variant="primary"
+        appearance="analytics"
+        comparisonLabel={getComparisonLabel()}
         onClick={() => setDrawer({ metricId: "mau", title: "Användare (MAU)" })}
         getSeries={providers.mau}
       />
@@ -184,7 +245,7 @@ export function OverviewCardsGroup() {
           getSeries={providers[drawer.metricId as keyof typeof providers]}
           getCompareSeries={async (args) => {
             // Where resolver provides compare series, align by index
-            if (drawer.metricId === "mau" || drawer.metricId === "pageviews") {
+            if (drawer.metricId === "mau" || drawer.metricId === "pageviews" || drawer.metricId === "tasks_rate" || drawer.metricId === "features_rate") {
               const { getKpi } = await import("@/lib/resolver");
               const res = await getKpi({ metric: drawer.metricId as any, range: { start: args.start, end: args.end, grain: args.grain, comparisonMode: state.range.comparisonMode }, filters: args.filters });
               const points = res.compareTimeseries || [];

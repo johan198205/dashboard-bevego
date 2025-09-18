@@ -26,7 +26,7 @@ export type Filters = {
 };
 
 export type Params = {
-  metric: 'mau' | 'pageviews' | 'tasks' | 'features' | 'ndi' | 'perf' | 'users';
+  metric: 'mau' | 'pageviews' | 'tasks' | 'features' | 'ndi' | 'perf' | 'users' | 'tasks_rate' | 'features_rate';
   range: {
     start: string;
     end: string;

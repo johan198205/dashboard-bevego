@@ -92,8 +92,11 @@ export function ScoreCard({
 
   const metricColor = isAnalytics ? getMetricColor(label) : null;
 
+  // Force analytics layout for all cards
+  const forceAnalytics = true;
+  
   // Analytics appearance layout (matches mockup exactly)
-  if (isAnalytics) {
+  if (forceAnalytics) {
     return (
       <div
         className={cn(
