@@ -21,34 +21,34 @@ type ScoreCardProps = {
 
 const variantStyles = {
   default: {
-    accentBar: "bg-neutral-200",
-    iconBg: "bg-neutral-100",
-    iconColor: "text-neutral-600",
+    accentBar: "bg-red",
+    iconBg: "bg-red/10",
+    iconColor: "text-red",
   },
   primary: {
-    accentBar: "bg-primary",
-    iconBg: "bg-primary/10", 
-    iconColor: "text-primary",
+    accentBar: "bg-red",
+    iconBg: "bg-red/10", 
+    iconColor: "text-red",
   },
   success: {
-    accentBar: "bg-green",
-    iconBg: "bg-green/10",
-    iconColor: "text-green",
+    accentBar: "bg-red",
+    iconBg: "bg-red/10",
+    iconColor: "text-red",
   },
   warning: {
-    accentBar: "bg-yellow-dark",
-    iconBg: "bg-yellow-light-4",
-    iconColor: "text-yellow-dark",
+    accentBar: "bg-red",
+    iconBg: "bg-red/10",
+    iconColor: "text-red",
   },
   error: {
     accentBar: "bg-red",
-    iconBg: "bg-red-light-6",
+    iconBg: "bg-red/10",
     iconColor: "text-red",
   },
   info: {
-    accentBar: "bg-blue",
-    iconBg: "bg-blue-light-5",
-    iconColor: "text-blue",
+    accentBar: "bg-red",
+    iconBg: "bg-red/10",
+    iconColor: "text-red",
   },
 };
 
@@ -70,7 +70,12 @@ export function ScoreCard({
     <div
       className={cn(
         "relative overflow-hidden rounded-lg bg-white shadow-sm border border-stroke dark:bg-gray-dark dark:border-dark-3",
-        onClick ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary" : "",
+        // Subtle affordance on hover/focus while respecting reduced motion
+        "transition-transform transition-shadow duration-200 ease-out will-change-transform motion-reduce:transition-none motion-reduce:transform-none",
+        "hover:shadow-md hover:border-primary/30 motion-reduce:hover:shadow-sm",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+        "hover:scale-[1.01] focus-visible:scale-[1.01] motion-reduce:hover:scale-100 motion-reduce:focus-visible:scale-100",
+        onClick ? "cursor-pointer" : "",
         className
       )}
       role={onClick ? "button" : undefined}
@@ -121,7 +126,7 @@ export function ScoreCard({
           <div className="text-2xl font-bold text-dark dark:text-white tracking-tight">
             {value}
           </div>
-          <div className="text-sm font-medium text-dark-6 dark:text-dark-4">
+          <div className="text-base font-semibold text-dark dark:text-white/90">
             {label}
           </div>
         </div>

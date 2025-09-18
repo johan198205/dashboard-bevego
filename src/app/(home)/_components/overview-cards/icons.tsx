@@ -92,10 +92,10 @@ export function ClarityScore(props: SVGPropsType) {
 export function CwvTotalStatus(props: SVGPropsType) {
   return (
     <svg width={58} height={58} viewBox="0 0 58 58" fill="none" {...props}>
-      <circle cx={29} cy={29} r={29} fill="#FF9C55" />
+      {/* Monochrome icon that inherits currentColor; container provides bg-red/10 */}
       <path
         d="M29 12C20.163 12 13 19.163 13 28s7.163 16 16 16 16-7.163 16-16S37.837 12 29 12zm-2 15l-5-5 1.41-1.41L27 25.17l7.59-7.59L36 19l-9 9z"
-        fill="#fff"
+        fill="currentColor"
       />
     </svg>
   );
