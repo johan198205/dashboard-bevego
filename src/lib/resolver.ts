@@ -70,10 +70,10 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
   // Note: All data is mock. CONNECT GA4 HERE LATER by swapping implementation per metric.
   const scale = computeScale(filters);
   if (metric === "mau") {
-    const currentRaw = generateTimeseries({ start: range.start, end: range.end, grain }, { base: 1200, noise: 0.1 });
+    const currentRaw = generateTimeseries({ start: range.start, end: range.end, grain }, { base: 1200, noise: 0.1, seedKey: "mau" });
     const current = scaleSeries(currentRaw, scale);
     const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
-    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 1050, noise: 0.1 }), scale) : undefined;
+    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 1050, noise: 0.1, seedKey: "mau_prev" }), scale) : undefined;
     const series = aggregate(current, grain);
     const prevAgg = previous ? aggregate(previous, grain) : undefined;
     const breakdown = [
@@ -93,9 +93,9 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
   }
 
   if (metric === "pageviews") {
-    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 5400, noise: 0.12 }), scale);
+    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 5400, noise: 0.12, seedKey: "pageviews" }), scale);
     const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
-    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 5000, noise: 0.12 }), scale) : undefined;
+    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 5000, noise: 0.12, seedKey: "pageviews_prev" }), scale) : undefined;
     const series = aggregate(current, grain);
     const prevAgg = previous ? aggregate(previous, grain) : undefined;
     const breakdown = [
@@ -115,9 +115,9 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
   }
 
   if (metric === "tasks") {
-    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 750, noise: 0.15 }), scale);
+    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 750, noise: 0.15, seedKey: "tasks" }), scale);
     const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
-    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 680, noise: 0.15 }), scale) : undefined;
+    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 680, noise: 0.15, seedKey: "tasks_prev" }), scale) : undefined;
     const series = aggregate(current, grain);
     const prevAgg = previous ? aggregate(previous, grain) : undefined;
     return buildKpiResponse("tasks", series, prevAgg, [
@@ -135,9 +135,9 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
   }
 
   if (metric === "features") {
-    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 950, noise: 0.14 }), scale);
+    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 950, noise: 0.14, seedKey: "features" }), scale);
     const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
-    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 900, noise: 0.14 }), scale) : undefined;
+    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 900, noise: 0.14, seedKey: "features_prev" }), scale) : undefined;
     const series = aggregate(current, grain);
     const prevAgg = previous ? aggregate(previous, grain) : undefined;
     return buildKpiResponse("features", series, prevAgg, [

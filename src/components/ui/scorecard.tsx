@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowDownIcon, ArrowUpIcon } from "@/assets/icons";
-import { brandColors } from "@/lib/theme-tokens";
 import { cn } from "@/lib/utils";
 import type { JSX, SVGProps } from "react";
 import { MiniSparkline } from "./mini-sparkline";
@@ -17,6 +16,20 @@ type ScoreCardProps = {
   onClick?: () => void; // optional, non-breaking
   // Optional provider for inline sparkline
   getSeries?: (args: { start: string; end: string; grain: any; filters: any }) => Promise<{ x: number; y: number }[]>;
+  size?: "default" | "compact";
+  appearance?: "default" | "analytics"; // New appearance variant for analytics cards
+  comparisonLabel?: string; // For delta chip text like "vs. previous month"
+};
+
+// Metric-specific color tokens for analytics appearance - all using red theme
+const metricColors = {
+  sessions: { bg: "bg-red-100", icon: "text-red-600" },
+  engagedSessions: { bg: "bg-red-100", icon: "text-red-600" },
+  activeUsers: { bg: "bg-red-100", icon: "text-red-600" },
+  pageviews: { bg: "bg-red-100", icon: "text-red-600" },
+  engagementRate: { bg: "bg-red-100", icon: "text-red-600" },
+  avgEngagementTime: { bg: "bg-red-100", icon: "text-red-600" },
+  default: { bg: "bg-red-100", icon: "text-red-600" },
 };
 
 const variantStyles = {
@@ -62,10 +75,93 @@ export function ScoreCard({
   className,
   onClick,
   getSeries,
+  size = "default",
+  appearance = "default",
+  comparisonLabel = "vs. previous period",
 }: ScoreCardProps) {
   const isDecreasing = growthRate !== undefined && growthRate < 0;
   const styles = variantStyles[variant];
+  const isCompact = size === "compact";
+  const isAnalytics = appearance === "analytics";
 
+  // Get metric-specific colors for analytics appearance - always return red theme
+  const getMetricColor = (label: string) => {
+    // Always return red theme for all metrics
+    return metricColors.default;
+  };
+
+  const metricColor = isAnalytics ? getMetricColor(label) : null;
+
+  // Analytics appearance layout (matches mockup exactly)
+  if (isAnalytics) {
+    return (
+      <div
+        className={cn(
+          "relative overflow-hidden rounded-2xl bg-white shadow-sm border border-stroke dark:bg-gray-dark dark:border-dark-3",
+          "transition-transform transition-shadow duration-200 ease-out will-change-transform motion-reduce:transition-none motion-reduce:transform-none",
+          "hover:shadow-md hover:border-primary/30 motion-reduce:hover:shadow-sm",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+          "hover:scale-[1.01] focus-visible:scale-[1.01] motion-reduce:hover:scale-100 motion-reduce:focus-visible:scale-100",
+          onClick ? "cursor-pointer" : "",
+          "px-6 py-5",
+          className
+        )}
+        role={onClick ? "button" : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        aria-label={onClick ? `${label} – öppna detaljer` : undefined}
+        onClick={onClick}
+        onKeyDown={(e) => {
+          if (!onClick) return;
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick();
+          }
+        }}
+      >
+        <div className="flex items-start justify-between">
+          {/* Left column: Label, Value, Delta chip */}
+          <div className="flex-1 min-w-0">
+            {/* Label */}
+            <div className="text-base font-bold text-neutral-600 dark:text-neutral-400 mb-1">
+              {label}
+            </div>
+            
+            {/* Large Value */}
+            <div className="text-4xl font-semibold text-neutral-900 dark:text-white leading-none mb-2">
+              {value}
+            </div>
+            
+            {/* Delta chip */}
+            {growthRate !== undefined && (
+              <div className={cn(
+                "inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium",
+                isDecreasing 
+                  ? "bg-red-50 text-red-600 border border-red-200" 
+                  : "bg-green-50 text-green-600 border border-green-200"
+              )}>
+                {isDecreasing ? (
+                  <ArrowDownIcon className="h-3 w-3" aria-hidden="true" />
+                ) : (
+                  <ArrowUpIcon className="h-3 w-3" aria-hidden="true" />
+                )}
+                {Math.abs(growthRate).toFixed(2)}%
+                <span className="text-neutral-600 dark:text-neutral-400 ml-1">
+                  {comparisonLabel}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Right column: Icon badge */}
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg shadow-sm bg-red-100">
+            <Icon className="h-5 w-5 text-red-600" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Default appearance (existing layout)
   return (
     <div
       className={cn(
@@ -76,6 +172,7 @@ export function ScoreCard({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
         "hover:scale-[1.01] focus-visible:scale-[1.01] motion-reduce:hover:scale-100 motion-reduce:focus-visible:scale-100",
         onClick ? "cursor-pointer" : "",
+        isCompact ? "py-3" : "",
         className
       )}
       role={onClick ? "button" : undefined}
@@ -93,14 +190,14 @@ export function ScoreCard({
       {/* Accent bar - thicker and more prominent */}
       <div className={cn("absolute left-0 top-0 h-full w-1.5", styles.accentBar)} />
       
-      <div className="p-4">
+      <div className={cn("p-4", isCompact && "p-2") }>
         {/* Header with icon and YoY chip */}
-        <div className="flex items-start justify-between mb-4">
+        <div className={cn("flex items-start justify-between", isCompact ? "mb-1" : "mb-4") }>
           <div className={cn(
-            "flex h-10 w-10 items-center justify-center rounded-lg shadow-sm",
+            isCompact ? "flex h-8 w-8 items-center justify-center rounded-lg shadow-sm" : "flex h-10 w-10 items-center justify-center rounded-lg shadow-sm",
             styles.iconBg
           )}>
-            <Icon className={cn("h-5 w-5", styles.iconColor)} />
+            <Icon className={cn(isCompact ? "h-4 w-4" : "h-5 w-5", styles.iconColor)} />
           </div>
           
           {/* YoY chip - improved styling */}
@@ -122,29 +219,31 @@ export function ScoreCard({
         </div>
 
         {/* Main content */}
-        <div className="space-y-1.5">
-          <div className="text-2xl font-bold text-dark dark:text-white tracking-tight">
+        <div className={cn("space-y-1.5", isCompact && "space-y-0") }>
+          <div className={cn(isCompact ? "text-lg" : "text-2xl", "font-bold text-dark dark:text-white tracking-tight") }>
             {value}
           </div>
-          <div className="text-base font-semibold text-dark dark:text-white/90">
+          <div className={cn(isCompact ? "text-xs" : "text-base", "font-semibold text-dark dark:text-white/90") }>
             {label}
           </div>
         </div>
 
         {/* Inline sparkline reflecting active filters & date range */}
-        <MiniSparkline
-          getSeries={getSeries}
-          className="mt-2"
-          colorClassName={styles.iconColor.replace("text-", "text-")}
-          height={28}
-          amplify={3}
-        />
+        {getSeries && (
+          <MiniSparkline
+            getSeries={getSeries}
+            className={cn(isCompact ? "mt-1" : "mt-2")}
+            colorClassName={styles.iconColor.replace("text-", "text-")}
+            height={isCompact ? 20 : 28}
+            amplify={3}
+          />
+        )}
 
         {/* Source attribution with info icon */}
         {source && (
-          <div className="mt-4 flex items-center gap-1 text-xs text-dark-5 dark:text-dark-6">
-            <div className="h-4 w-4 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
-              <span className="text-[10px] font-bold">i</span>
+          <div className={cn("flex items-center gap-1 text-xs text-dark-5 dark:text-dark-6", isCompact ? "mt-1" : "mt-4") }>
+            <div className="h-3 w-3 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
+              <span className="text-[8px] font-bold">i</span>
             </div>
             Källa: {source}
           </div>

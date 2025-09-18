@@ -5,6 +5,7 @@ type SeedConfig = {
   base: number;
   seasonalityByMonth?: number[]; // 12 length multipliers
   noise?: number; // 0..1
+  seedKey?: string; // optional to diversify series per metric/source
 };
 
 export function generateDateRange(start: string, end: string, grain: Grain = "day"): string[] {
@@ -30,7 +31,7 @@ export function generateTimeseries(range: { start: string; end: string; grain?: 
     const m = dt.getUTCMonth();
     const seasonal = months[m] || 1;
     // Deterministic pseudo-random per date to keep Day/Week/Month consistent across requests
-    const r = deterministicRandom(d);
+    const r = deterministicRandom(seed.seedKey ? `${d}|${seed.seedKey}` : d);
     const jitter = 1 + (r * 2 - 1) * noise;
     const value = Math.max(0, Math.round(seed.base * seasonal * jitter));
     return { date: d, value };

@@ -20,7 +20,6 @@ export function OverviewCard({ label, data, Icon, variant = "default", ...rest }
       Icon={Icon}
       variant={variant}
       source="Mock"
-      // @ts-expect-error pass through getSeries used by sparkline
       getSeries={rest.getSeries}
       {...rest}
     />
