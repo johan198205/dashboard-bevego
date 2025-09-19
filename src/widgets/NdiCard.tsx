@@ -7,13 +7,16 @@ import { UserIcon } from "@/assets/icons";
 import InfoTooltip from "@/components/InfoTooltip";
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
 import { selectNdiPercent, ndiTimeseriesToChart } from "@/lib/ndi-utils";
+import { getNdiDataSourceLabel } from "@/services/ndi-data.service";
 
 export default function NdiCard({ range, compact = false }: { range: Params["range"]; compact?: boolean }) {
   const [data, setData] = useState<KpiResponse | null>(null);
   const [open, setOpen] = useState(false);
+  const [sourceLabel, setSourceLabel] = useState<string>('Mockdata');
   
   useEffect(() => { 
     getKpi({ metric: "ndi", range }).then(setData); 
+    getNdiDataSourceLabel().then(setSourceLabel);
   }, [range.start, range.end, range.comparisonMode, range.grain]);
   
   const s = data?.summary;
@@ -46,7 +49,7 @@ export default function NdiCard({ range, compact = false }: { range: Params["ran
             </h4>
             <p className={`font-medium text-body-color ${
               compact ? 'text-xs' : 'text-sm'
-            }`}>Mock</p>
+            }`}>{sourceLabel}</p>
           </div>
           <div className={`flex items-center justify-center rounded-lg bg-red/10 ${
             compact ? 'h-8 w-8' : 'h-11.5 w-11.5'
@@ -57,7 +60,7 @@ export default function NdiCard({ range, compact = false }: { range: Params["ran
         
         {/* Info icon in top-right corner like other scorecards */}
         <div className={`absolute ${compact ? 'top-2 right-2' : 'top-4 right-4'}`}>
-          <InfoTooltip text="NDI kvartalsvärden. Mockdata." />
+          <InfoTooltip text={`NDI kvartalsvärden. ${sourceLabel}.`} />
         </div>
         
         {/* Gauge */}
@@ -89,7 +92,7 @@ export default function NdiCard({ range, compact = false }: { range: Params["ran
         onClose={() => setOpen(false)}
         metricId="ndi"
         title="Kundnöjdhet (NDI)"
-        sourceLabel="Mock"
+        sourceLabel={sourceLabel}
         getSeries={getSeries}
         getCompareSeries={async () => []}
       />

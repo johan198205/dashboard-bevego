@@ -1,5 +1,6 @@
 import { type KpiResponse, type Params, type Grain, type Filters, type KpiPoint } from "./types";
 import { buildKpiResponse, generateTimeseries, aggregate } from "./mockData/generators";
+import { getNdiTimeseries, getNdiCurrent, getNdiBreakdown, hasNdiData, getNdiDataSourceLabel } from "../services/ndi-data.service";
 
 function addYears(dateStr: string, years: number): string {
   const d = new Date(dateStr);
@@ -155,13 +156,46 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
   }
 
   if (metric === "ndi") {
-    // Generate daily NDI values 0..100 for the date range
-    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 75, noise: 0.08, seedKey: "ndi" }), scale);
-    const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
-    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 70, noise: 0.08, seedKey: "ndi_prev" }), scale) : undefined;
-    const series = aggregate(current, grain);
-    const prevAgg = previous ? aggregate(previous, grain) : undefined;
-    return buildKpiResponse("ndi", series, prevAgg, ["Styrelse", "Medlem", "Förvaltare"], ["NDI är dummyvärden på daglig nivå", "Källa: Mockdata (NDI)"]);
+    // Use uploaded NDI data if available, otherwise fallback to mock
+    const hasUploadedData = await hasNdiData();
+    if (hasUploadedData) {
+      const current = await getNdiTimeseries(range, filters);
+      const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+      const previous = prevRange ? await getNdiTimeseries(prevRange, filters) : undefined;
+      
+      // Convert filters to NDI dimension format
+      const ndiFilters = filters ? {
+        audience: filters.audience,
+        device: filters.device,
+        channel: filters.channel,
+      } : undefined;
+      
+      const breakdown = await getNdiBreakdown('audience', range);
+      const sourceLabel = await getNdiDataSourceLabel();
+      const currentValue = await getNdiCurrent(range, ndiFilters);
+      const prevValue = previous && previous.length > 0 ? await getNdiCurrent(prevRange!, ndiFilters) : 0;
+      
+      return {
+        meta: { source: "uploaded", metric: "ndi", dims: breakdown.map(b => b.key) },
+        summary: {
+          current: currentValue,
+          prev: prevValue,
+          yoyPct: prevValue ? ((currentValue - prevValue) / Math.abs(prevValue)) * 100 : 0
+        },
+        timeseries: current,
+        compareTimeseries: previous,
+        breakdown: breakdown.length > 0 ? breakdown : undefined,
+        notes: [`Källa: ${sourceLabel} (NDI)`]
+      };
+    } else {
+      // Fallback to mock data
+      const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 75, noise: 0.08, seedKey: "ndi" }), scale);
+      const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+      const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 70, noise: 0.08, seedKey: "ndi_prev" }), scale) : undefined;
+      const series = aggregate(current, grain);
+      const prevAgg = previous ? aggregate(previous, grain) : undefined;
+      return buildKpiResponse("ndi", series, prevAgg, ["Styrelse", "Medlem", "Förvaltare"], ["NDI är dummyvärden på daglig nivå", "Källa: Mockdata (NDI)"]);
+    }
   }
 
   if (metric === "tasks_rate") {
