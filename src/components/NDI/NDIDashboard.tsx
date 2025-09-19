@@ -5,7 +5,8 @@ import { NDICard } from "@/components/NDI/NDICard";
 import { NDIChart } from "@/components/NDI/NDIChart";
 import { NDISummaryTable } from "@/components/NDI/NDISummaryTable";
 import { NDITopBottom } from "@/components/NDI/NDITopBottom";
-import { NDISummary, NDISeriesPoint, BreakdownRow } from "@/types/ndi";
+import { NDIQuarterSelector } from "@/components/NDI/NDIQuarterSelector";
+import { NDISummary, NDISeriesPoint, BreakdownRow, Period } from "@/types/ndi";
 
 export function NDIDashboard() {
   const [summary, setSummary] = useState<NDISummary | null>(null);
@@ -13,53 +14,60 @@ export function NDIDashboard() {
   const [topBottom, setTopBottom] = useState<{ top: BreakdownRow[]; bottom: BreakdownRow[] }>({ top: [], bottom: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedQuarter, setSelectedQuarter] = useState<Period | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = async (targetPeriod?: Period | null) => {
     try {
       setLoading(true);
       setError(null);
 
-      // Get latest period
-      const latestPeriodResponse = await fetch('/api/metrics/ndi/latest-period');
-      const latestPeriod = await latestPeriodResponse.json();
+      // Use selected quarter or get latest period
+      let period = targetPeriod;
+      if (!period) {
+        const latestPeriodResponse = await fetch('/api/metrics/ndi/latest-period');
+        period = await latestPeriodResponse.json();
+      }
 
-      if (!latestPeriod) {
+      if (!period) {
         setError('Ingen data tillgänglig. Ladda upp filer först.');
         return;
       }
 
-      // Fetch summary for latest period
-      const summaryResponse = await fetch(`/api/metrics/ndi/summary?period=${latestPeriod}`);
+      // Fetch summary for selected period
+      const summaryResponse = await fetch(`/api/metrics/ndi/summary?period=${period}`);
       if (summaryResponse.ok) {
         const summaryData = await summaryResponse.json();
         console.log('Summary data received:', summaryData);
         setSummary(summaryData);
       } else {
         console.warn('Failed to fetch summary data:', summaryResponse.status);
-        // Try with 2024Q4 as fallback
-        const fallbackResponse = await fetch('/api/metrics/ndi/summary?period=2024Q4');
-        if (fallbackResponse.ok) {
-          const fallbackData = await fallbackResponse.json();
-          console.log('Fallback summary data received:', fallbackData);
-          setSummary(fallbackData);
-        } else {
-          setSummary(null);
-        }
+        setSummary(null);
       }
 
-      // Fetch series data
+      // Fetch series data (filtered by selected quarter)
       const seriesResponse = await fetch('/api/metrics/ndi/series');
       if (seriesResponse.ok) {
         const seriesData = await seriesResponse.json();
         console.log('Series data received:', seriesData);
-        setSeries(Array.isArray(seriesData) ? seriesData : []);
+        
+        // Filter series data up to selected quarter
+        let filteredSeries = Array.isArray(seriesData) ? seriesData : [];
+        if (period) {
+          filteredSeries = filteredSeries.filter((item: NDISeriesPoint) => {
+            const [year, quarter] = item.period.split('Q').map(Number);
+            const [targetYear, targetQuarter] = period.split('Q').map(Number);
+            return year < targetYear || (year === targetYear && quarter <= targetQuarter);
+          });
+        }
+        
+        setSeries(filteredSeries);
       } else {
         console.warn('Failed to fetch series data:', seriesResponse.status);
         setSeries([]);
       }
 
       // Fetch top/bottom performers
-      const breakdownResponse = await fetch(`/api/metrics/ndi/breakdown?period=${latestPeriod}`);
+      const breakdownResponse = await fetch(`/api/metrics/ndi/breakdown?period=${period}`);
       if (breakdownResponse.ok) {
         const breakdownData = await breakdownResponse.json();
         
@@ -85,6 +93,13 @@ export function NDIDashboard() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Handle quarter selection changes
+  useEffect(() => {
+    if (selectedQuarter !== null) {
+      fetchData(selectedQuarter);
+    }
+  }, [selectedQuarter]);
 
   if (loading) {
     return (
@@ -144,6 +159,14 @@ export function NDIDashboard() {
         <p className="text-dark-6 dark:text-dark-4 mt-1">
           Översikt över Net Promoter Index och kundnöjdhet
         </p>
+      </div>
+
+      {/* Quarter Selector */}
+      <div className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-lg p-4">
+        <NDIQuarterSelector
+          selectedQuarter={selectedQuarter}
+          onQuarterChange={setSelectedQuarter}
+        />
       </div>
 
       {/* Scorecards */}

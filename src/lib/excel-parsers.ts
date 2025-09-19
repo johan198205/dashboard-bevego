@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+Mimport * as XLSX from 'xlsx';
 import { Period, ValidationReport, ImportResult } from '@/types/ndi';
 import { normalizePeriod, parsePeriod } from './ndi-calculations';
 
