@@ -1,0 +1,47 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum FileKind {
+  AGGREGATED
+  BREAKDOWN
+}
+
+model FileUpload {
+  id           String   @id @default(cuid())
+  kind         FileKind
+  originalName String
+  storedPath   String
+  uploadedAt   DateTime @default(now())
+  period       String?  // t.ex. "2024Q2" om säkerställt vid import
+  active       Boolean  @default(true)
+  
+  @@map("file_uploads")
+}
+
+model MetricPoint {
+  id         String   @id @default(cuid())
+  period     String   // "YYYYQn" (primary dimension)
+  metric     String   // "NDI" (kan utökas)
+  value      Float
+  weight     Float?   // antal svar om tillgängligt
+  source     FileKind
+  createdAt  DateTime @default(now())
+  // För breakdowns – generiska kolumner för vad som än finns:
+  groupA     String?  // t.ex. "Fråga" / "Kategori"
+  groupB     String?  // valfritt
+  groupC     String?  // valfritt
+  
+  @@index([period, metric])
+  @@index([metric, period])
+  @@index([groupA, groupB, groupC])
+  @@map("metric_points")
+}

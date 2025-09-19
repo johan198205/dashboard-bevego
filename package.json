@@ -11,19 +11,25 @@
   "dependencies": {
     "@google-analytics/data": "5.2.0",
     "@google-cloud/bigquery": "8.1.1",
+    "@prisma/client": "^6.16.2",
+    "@types/multer": "^2.0.0",
     "apexcharts": "^4.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "flatpickr": "^4.6.13",
     "jsvectormap": "^1.6.0",
+    "multer": "^2.0.2",
     "next": "15.1.6",
     "next-themes": "^0.4.4",
     "nextjs-toploader": "^3.7.15",
+    "prisma": "^6.16.2",
     "react": "19.0.0",
     "react-apexcharts": "^1.7.0",
     "react-dom": "19.0.0",
-    "tailwind-merge": "^2.6.0"
+    "recharts": "^3.2.1",
+    "tailwind-merge": "^2.6.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^22",
