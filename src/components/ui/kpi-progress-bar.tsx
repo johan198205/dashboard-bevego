@@ -18,7 +18,7 @@ export function KpiProgressBar({ progress, goal, unit = "", className }: KpiProg
     <div className={cn("space-y-2", className)}>
       {/* Progress bar */}
       <div 
-        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden"
+        className="w-full h-2 bg-gray-200 dark:bg-dark-3 rounded-full overflow-hidden"
         role="progressbar"
         aria-valuenow={clampedProgress}
         aria-valuemin={0}
@@ -29,15 +29,15 @@ export function KpiProgressBar({ progress, goal, unit = "", className }: KpiProg
           className={cn(
             "h-full transition-all duration-300 ease-out motion-reduce:transition-none",
             isComplete 
-              ? "bg-green-500" 
-              : "bg-red-500"
+              ? "bg-green" 
+              : "bg-red"
           )}
           style={{ width: `${clampedProgress}%` }}
         />
       </div>
       
       {/* Labels */}
-      <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+      <div className="flex items-center justify-between text-xs text-gray-600 dark:text-dark-5">
         <span>
           {isComplete ? "Mål uppnått!" : `${clampedProgress.toFixed(0)}% uppnått`}
         </span>

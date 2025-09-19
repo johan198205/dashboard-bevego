@@ -31,11 +31,11 @@ export function Gauge({
   const strokeDasharray = circumference;
   const strokeDashoffset = circumference * (1 - normalizedValue);
   
-  // Colors based on value
+  // Colors based on value - using theme tokens
   const getColor = (value: number) => {
-    if (value >= 80) return "#10B981"; // green-500
-    if (value >= 60) return "#F59E0B"; // amber-500
-    if (value >= 40) return "#EF4444"; // red-500
+    if (value >= 80) return "#22AD5C"; // green (theme token)
+    if (value >= 60) return "#F59E0B"; // yellow-dark (theme token)
+    if (value >= 40) return "#F23030"; // red (theme token)
     return "#6B7280"; // gray-500
   };
   
@@ -57,7 +57,7 @@ export function Gauge({
             stroke="#E5E7EB"
             strokeWidth={strokeWidth}
             strokeLinecap="round"
-            className="dark:stroke-gray-600"
+            className="dark:stroke-dark-3"
           />
           
           {/* Value arc */}
@@ -108,7 +108,7 @@ export function Gauge({
           {Math.round(valuePct)}%
         </div>
         {label && (
-          <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          <div className="text-sm text-gray-600 dark:text-dark-5 mt-1">
             {label}
           </div>
         )}

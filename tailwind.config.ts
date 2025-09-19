@@ -20,20 +20,20 @@ const config: Config = {
         white: "#FFFFFF",
         primary: "#E01E26",
         stroke: "#E6EBF1",
-        "stroke-dark": "#27303E",
+        "stroke-dark": "#4A5568", // Improved contrast for dark theme borders (was #27303E)
         dark: {
           DEFAULT: "#111928",
           2: "#1F2A37",
-          3: "#374151",
-          4: "#4B5563",
-          5: "#6B7280",
-          6: "#9CA3AF",
-          7: "#D1D5DB",
-          8: "#E5E7EB",
+          3: "#4A5568", // Improved contrast for borders (was #374151)
+          4: "#6B7280", // Improved contrast for secondary text
+          5: "#9CA3AF", // Improved contrast for muted text
+          6: "#E2E8F0", // Much improved contrast for primary text (was #9CA3AF)
+          7: "#F1F5F9", // High contrast for headings
+          8: "#F8FAFC", // Maximum contrast for important text
         },
         gray: {
           DEFAULT: "#EFF4FB",
-          dark: "#122031",
+          dark: "#1A202C", // Improved contrast for card backgrounds (was #122031)
           1: "#F9FAFB",
           2: "#F3F4F6",
           3: "#E5E7EB",

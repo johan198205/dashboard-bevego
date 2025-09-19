@@ -8,9 +8,9 @@ const alertVariants = cva(
   {
     variants: {
       variant: {
-        success: "border-green bg-green-light-7 dark:bg-[#1B1B24]",
-        warning: "border-[#FFB800] bg-[#FEF5DE] dark:bg-[#1B1B24]",
-        error: "border-red-light bg-red-light-5 dark:bg-[#1B1B24]",
+        success: "border-green bg-green-light-7 dark:bg-gray-dark dark:border-green-600",
+        warning: "border-[#FFB800] bg-[#FEF5DE] dark:bg-gray-dark dark:border-yellow-600",
+        error: "border-red-light bg-red-light-5 dark:bg-gray-dark dark:border-red-600",
       },
     },
     defaultVariants: {
@@ -51,7 +51,7 @@ const Alert = ({
       <div className="w-full">
         <h5
           className={cn("mb-4 font-bold leading-[22px]", {
-            "text-[#004434] dark:text-[#34D399]": variant === "success",
+            "text-[#004434] dark:text-green-400": variant === "success",
             "text-[#9D5425]": variant === "warning",
             "text-[#BC1C21]": variant === "error",
           })}

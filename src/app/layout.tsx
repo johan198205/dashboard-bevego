@@ -33,7 +33,7 @@ export default function RootLayout({ children }: PropsWithChildren) {
           <div className="flex min-h-screen">
             <Sidebar />
 
-            <div className="w-full bg-white dark:bg-[#020d1a]">
+            <div className="w-full bg-white dark:bg-[#0F1419]">
               <Header />
 
               <FiltersProvider>

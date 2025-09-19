@@ -31,7 +31,7 @@ export default function NdiCard({ range, compact = false }: { range: Params["ran
   return (
     <div className="relative">
       <div 
-        className={`relative overflow-hidden rounded-xl border border-stroke bg-white shadow-1 dark:border-strokedark dark:bg-boxdark cursor-pointer hover:shadow-2 transition-shadow duration-200 ${
+        className={`relative overflow-hidden rounded-xl border border-stroke bg-white shadow-1 dark:border-dark-3 dark:bg-gray-dark cursor-pointer hover:shadow-2 transition-shadow duration-200 ${
           compact ? 'px-4 py-4' : 'px-7.5 py-6'
         }`}
         onClick={() => setOpen(true)}

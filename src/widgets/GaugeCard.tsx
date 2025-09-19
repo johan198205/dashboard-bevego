@@ -61,7 +61,7 @@ export default function GaugeCard({ title, metric, range, baseValue = 100, compa
   return (
     <div className="relative">
       <div 
-        className={`relative overflow-hidden rounded-xl border border-stroke bg-white shadow-1 dark:border-strokedark dark:bg-boxdark cursor-pointer hover:shadow-2 transition-shadow duration-200 ${
+        className={`relative overflow-hidden rounded-xl border border-stroke bg-white shadow-1 dark:border-dark-3 dark:bg-gray-dark cursor-pointer hover:shadow-2 transition-shadow duration-200 ${
           compact ? 'px-4 py-4' : 'px-7.5 py-6'
         }`}
         onClick={() => setOpen(true)}
@@ -74,14 +74,14 @@ export default function GaugeCard({ title, metric, range, baseValue = 100, compa
             }`}>
               {title}
             </h4>
-            <p className={`font-medium text-body-color ${
+            <p className={`font-medium text-body-color dark:text-dark-5 ${
               compact ? 'text-xs' : 'text-sm'
             }`}>Mock</p>
           </div>
-          <div className={`flex items-center justify-center rounded-lg bg-red/10 ${
+          <div className={`flex items-center justify-center rounded-lg bg-red/10 dark:bg-red-900/30 ${
             compact ? 'h-8 w-8' : 'h-11.5 w-11.5'
           }`}>
-            <Icon className={`text-red ${compact ? 'h-4 w-4' : 'h-5 w-5'}`} />
+            <Icon className={`text-red dark:text-red-400 ${compact ? 'h-4 w-4' : 'h-5 w-5'}`} />
           </div>
         </div>
         
@@ -104,8 +104,8 @@ export default function GaugeCard({ title, metric, range, baseValue = 100, compa
           <div className={`flex justify-center ${compact ? 'mt-2' : 'mt-4'}`}>
             <div className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
               summary.yoyPct >= 0 
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 
-                : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 dark:border dark:border-green-800' 
+                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 dark:border dark:border-red-800'
             }`}>
               <span>{summary.yoyPct >= 0 ? '↗' : '↘'}</span>
               <span>{Math.abs(summary.yoyPct).toFixed(1)}% vs. previous period</span>

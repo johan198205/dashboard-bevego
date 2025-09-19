@@ -117,7 +117,7 @@ const MultiSelect: React.FC<DropdownProps> = ({ id }) => {
                     {selected.map((index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-center rounded-[5px] border-[.5px] border-stroke bg-gray-2 px-2.5 py-[3px] text-body-sm font-medium dark:border-dark-3 dark:bg-dark"
+                        className="flex items-center justify-center rounded-[5px] border-[.5px] border-stroke bg-gray-2 px-2.5 py-[3px] text-body-sm font-medium text-dark-5 dark:border-dark-3 dark:bg-dark dark:text-dark-6"
                       >
                         <div className="max-w-full flex-initial">
                           {options[index].text}
@@ -204,7 +204,7 @@ const MultiSelect: React.FC<DropdownProps> = ({ id }) => {
                             }`}
                           >
                             <div className="flex w-full items-center">
-                              <div className="mx-2 leading-6">
+                              <div className="mx-2 leading-6 text-dark dark:text-dark-6">
                                 {option.text}
                               </div>
                             </div>

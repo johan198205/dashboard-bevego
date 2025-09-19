@@ -160,7 +160,7 @@ export function ScoreCard({
           {/* Left column: Label, Value, Delta chip */}
           <div className="flex-1 min-w-0">
             {/* Label */}
-            <div className="text-base font-bold text-neutral-600 dark:text-neutral-400 mb-1">
+            <div className="text-base font-bold text-neutral-600 dark:text-dark-5 mb-1">
               {label}
             </div>
             
@@ -174,8 +174,8 @@ export function ScoreCard({
               <div className={cn(
                 "inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium",
                 isDecreasing 
-                  ? "bg-red-50 text-red-600 border border-red-200" 
-                  : "bg-green-50 text-green-600 border border-green-200"
+                  ? "bg-red-50 text-red-600 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800" 
+                  : "bg-green-50 text-green-600 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
               )}>
                 {isDecreasing ? (
                   <ArrowDownIcon className="h-3 w-3" aria-hidden="true" />
@@ -183,7 +183,7 @@ export function ScoreCard({
                   <ArrowUpIcon className="h-3 w-3" aria-hidden="true" />
                 )}
                 {Math.abs(growthRate).toFixed(2)}%
-                <span className="text-neutral-600 dark:text-neutral-400 ml-1">
+                <span className="text-neutral-600 dark:text-dark-5 ml-1">
                   {comparisonLabel}
                 </span>
               </div>
@@ -191,8 +191,8 @@ export function ScoreCard({
           </div>
 
           {/* Right column: Icon badge */}
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg shadow-sm bg-red-100">
-            <Icon className="h-5 w-5 text-red-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg shadow-sm bg-red-100 dark:bg-red-900/30">
+            <Icon className="h-5 w-5 text-red-600 dark:text-red-400" />
           </div>
         </div>
 
