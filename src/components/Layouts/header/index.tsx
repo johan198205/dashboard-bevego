@@ -3,6 +3,8 @@
 import { SearchIcon } from "@/assets/icons";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { NAV_DATA } from "../sidebar/data";
 import { useSidebarContext } from "../sidebar/sidebar-context";
 import { MenuIcon } from "./icons";
 import { Notification } from "./notification";
@@ -11,6 +13,24 @@ import { UserInfo } from "./user-info";
 
 export function Header() {
   const { toggleSidebar, isMobile } = useSidebarContext();
+  const pathname = usePathname();
+
+  // Resolve current page title from NAV_DATA to avoid hardcoding
+  const currentTitle = (() => {
+    for (const section of NAV_DATA) {
+      for (const item of section.items) {
+        if (item.items && item.items.length) {
+          const found = item.items.find((s) => s.url === pathname);
+          if (found) return found.title;
+        }
+        if (item.url === pathname) return item.title;
+        if (pathname === "/" && item.url === "/") return item.title;
+      }
+    }
+    // Fallback to KPI Dashboard for home
+    if (pathname === "/") return "KPI Dashboard";
+    return "";
+  })();
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-stroke bg-white px-4 py-5 shadow-1 dark:border-stroke-dark dark:bg-gray-dark md:px-5 2xl:px-10">
@@ -36,7 +56,7 @@ export function Header() {
 
       <div className="max-xl:hidden">
         <h1 className="mb-0.5 text-heading-5 font-bold text-dark dark:text-white">
-          Huvud KPIer
+          {currentTitle || "KPI Dashboard"}
         </h1>
         <p className="font-medium">Next.js Admin Dashboard Solution</p>
       </div>

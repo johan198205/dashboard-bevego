@@ -9,8 +9,8 @@ export const NAV_DATA = [
         title: "Översikt",
         icon: Icons.HomeIcon,
         items: [
-          { title: "Huvud KPIer", url: "/" },
-          { title: "Generell besöksstatistik", url: "/oversikt/besok" },
+          { title: "KPI Dashboard", url: "/" },
+          { title: "GA4 Dashboard", url: "/oversikt/besok" },
         ],
       },
       { title: "Användare", url: "/anvandare", icon: Icons.User, items: [] },

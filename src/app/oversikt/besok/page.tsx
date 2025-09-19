@@ -6,6 +6,9 @@ import { ScoreCard } from "@/components/ui/scorecard";
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
 import * as overviewIcons from "@/app/(home)/_components/overview-cards/icons";
 import { getKpi } from "@/lib/resolver";
+export const metadata: import("next").Metadata = {
+  title: "GA4 Dashboard",
+};
 
 export default function Page() {
   const { state } = useFilters();
