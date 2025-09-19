@@ -155,21 +155,13 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
   }
 
   if (metric === "ndi") {
-    // 6 quarters of dummy NDI values 0..100
-    const now = new Date(range.end);
-    const quarters: { date: string; value: number }[] = [];
-    const currentQ = Math.floor(now.getUTCMonth() / 3);
-    for (let i = 5; i >= 0; i--) {
-      const qIndex = currentQ - i;
-      const qDate = new Date(Date.UTC(now.getUTCFullYear(), (qIndex) * 3, 1));
-      while (qDate > now) qDate.setUTCMonth(qDate.getUTCMonth() - 3);
-      const label = `${qDate.getUTCFullYear()}-Q${Math.floor(qDate.getUTCMonth() / 3) + 1}`;
-      quarters.push({ date: label, value: Math.round(60 + Math.random() * 30) });
-    }
-    const series = quarters.map((q) => ({ date: q.date, value: q.value }));
-    // previous 6 quarters for YoY comparison
-    const prevSeries = comparisonMode !== 'none' ? quarters.map((q) => ({ date: q.date, value: Math.round(q.value * (0.9 + Math.random() * 0.2)) })) : undefined;
-    return buildKpiResponse("ndi", series, prevSeries, ["Styrelse", "Medlem", "Förvaltare"], ["NDI är dummyvärden på kvartalsnivå", "Källa: Mockdata (NDI)"]);
+    // Generate daily NDI values 0..100 for the date range
+    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 75, noise: 0.08, seedKey: "ndi" }), scale);
+    const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 70, noise: 0.08, seedKey: "ndi_prev" }), scale) : undefined;
+    const series = aggregate(current, grain);
+    const prevAgg = previous ? aggregate(previous, grain) : undefined;
+    return buildKpiResponse("ndi", series, prevAgg, ["Styrelse", "Medlem", "Förvaltare"], ["NDI är dummyvärden på daglig nivå", "Källa: Mockdata (NDI)"]);
   }
 
   if (metric === "tasks_rate") {

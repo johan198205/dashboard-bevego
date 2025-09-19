@@ -13,6 +13,15 @@ import * as icons from "./icons";
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
 import { useFilters } from "@/components/GlobalFilters";
 import { generateTimeseries, aggregate } from "@/lib/mockData/generators";
+import { ndiTimeseriesToChart } from "@/lib/ndi-utils";
+
+// TODO replace with UI settings
+const KPI_PROGRESS_ENABLED_METRICS = ['mau', 'pageviews', 'clarity_score'];
+const KPI_ANNUAL_GOALS = {
+  mau: 100000, // Monthly Active Users
+  pageviews: 1500000, // Page views
+  clarity_score: 80, // Clarity Score (out of 100)
+};
 
 type OverviewData = {
   views: { value: number; growthRate: number };
@@ -89,12 +98,10 @@ export function OverviewCardsGroup() {
       const res = await getKpi({ metric: "features_rate", range: { start, end, grain, comparisonMode: state.range.comparisonMode }, filters });
       return (res.timeseries || []).map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
     },
-    // For demo metrics without server-backed series, reuse mock generator
-    // Deterministic and metric-specific by using different base/seasonality
-    ndi: async ({ start, end, grain }: any) => {
-      const daily = generateTimeseries({ start, end }, { base: 450, seasonalityByMonth: [0.95,1.0,1.02,1.05,1.06,1.04,0.97,0.99,1.01,1.03,1.05,1.02], noise: 0.05, seedKey: "ndi" });
-      const agg = aggregate(daily, grain);
-      return agg.map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
+    // Use resolver data for NDI with normalized 0-100 range
+    ndi: async ({ start, end, grain, filters }: any) => {
+      const res = await getKpi({ metric: "ndi", range: { start, end, grain, comparisonMode: state.range.comparisonMode }, filters });
+      return ndiTimeseriesToChart(res.timeseries || []);
     },
     tasks: async ({ start, end, grain }: any) => {
       const daily = generateTimeseries({ start, end }, { base: 1200, seasonalityByMonth: [0.9,0.92,0.95,1.0,1.1,1.15,1.2,1.18,1.05,0.98,0.95,0.92], noise: 0.08, seedKey: "tasks" });
@@ -187,6 +194,7 @@ export function OverviewCardsGroup() {
         variant="success"
         appearance="analytics"
         comparisonLabel={getComparisonLabel()}
+        metricId="pageviews"
         // Pageviews metric
         onClick={() => setDrawer({ metricId: "pageviews", title: "Sidvisningar" })}
         // Provide sparkline data
@@ -231,6 +239,7 @@ export function OverviewCardsGroup() {
         variant="primary"
         appearance="analytics"
         comparisonLabel={getComparisonLabel()}
+        metricId="mau"
         onClick={() => setDrawer({ metricId: "mau", title: "Användare (MAU)" })}
         getSeries={providers.mau}
       />

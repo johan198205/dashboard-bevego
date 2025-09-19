@@ -14,6 +14,11 @@ type PropsType = {
 
 
 export function ClarityScoreCard({ label, data, Icon, comparisonLabel = "vs. previous period", ...rest }: PropsType & { onClick?: () => void }) {
+  // TODO replace with UI settings
+  const KPI_ANNUAL_GOALS = {
+    clarity_score: 80, // Clarity Score (out of 100)
+  };
+  
   return (
     <ScoreCard
       label={label}
@@ -24,6 +29,9 @@ export function ClarityScoreCard({ label, data, Icon, comparisonLabel = "vs. pre
       appearance="analytics"
       comparisonLabel={comparisonLabel}
       source="Mock"
+      showProgress={true}
+      progressGoal={KPI_ANNUAL_GOALS.clarity_score}
+      progressUnit=""
       onClick={rest.onClick}
     />
   );

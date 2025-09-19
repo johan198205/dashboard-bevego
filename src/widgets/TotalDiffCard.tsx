@@ -9,6 +9,14 @@ import { UserIcon, GlobeIcon } from "@/assets/icons";
 import InfoTooltip from "@/components/InfoTooltip";
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
 
+// TODO replace with UI settings
+const KPI_PROGRESS_ENABLED_METRICS = ['mau', 'pageviews', 'clarity_score'];
+const KPI_ANNUAL_GOALS = {
+  mau: 100000, // Monthly Active Users
+  pageviews: 1500000, // Page views
+  clarity_score: 80, // Clarity Score (out of 100)
+};
+
 type Props = {
   title: string;
   metric: Params["metric"];
@@ -55,6 +63,22 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
   const summary = data?.summary;
   const Icon = getMetricIcon(metric);
   const variant = getMetricVariant(metric);
+  
+  // Check if this metric should show progress bar
+  const showProgress = KPI_PROGRESS_ENABLED_METRICS.includes(metric);
+  const progressGoal = KPI_ANNUAL_GOALS[metric as keyof typeof KPI_ANNUAL_GOALS];
+  
+  // Determine unit based on metric
+  const getProgressUnit = () => {
+    switch (metric) {
+      case 'mau':
+        return '';
+      case 'pageviews':
+        return '';
+      default:
+        return '';
+    }
+  };
   const getSeries = useMemo(() => async ({ start, end, grain, filters }: any) => {
     const res = await getKpi({ metric, range: { start, end, grain, comparisonMode: state.range.comparisonMode }, filters });
     return (res.timeseries || []).map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
@@ -76,6 +100,9 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
         Icon={Icon}
         variant={variant}
         source="Mock"
+        showProgress={showProgress}
+        progressGoal={progressGoal}
+        progressUnit={getProgressUnit()}
         onClick={() => setOpen(true)}
       />
       <div className="absolute top-2 right-2">

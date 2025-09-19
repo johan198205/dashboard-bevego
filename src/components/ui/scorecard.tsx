@@ -4,6 +4,7 @@ import { ArrowDownIcon, ArrowUpIcon } from "@/assets/icons";
 import { cn } from "@/lib/utils";
 import type { JSX, SVGProps } from "react";
 import { MiniSparkline } from "./mini-sparkline";
+import { KpiProgressBar } from "./kpi-progress-bar";
 
 type ScoreCardProps = {
   label: string;
@@ -19,6 +20,10 @@ type ScoreCardProps = {
   size?: "default" | "compact";
   appearance?: "default" | "analytics"; // New appearance variant for analytics cards
   comparisonLabel?: string; // For delta chip text like "vs. previous month"
+  // Progress bar props
+  showProgress?: boolean;
+  progressGoal?: number;
+  progressUnit?: string;
 };
 
 // Metric-specific color tokens for analytics appearance - all using red theme
@@ -78,6 +83,9 @@ export function ScoreCard({
   size = "default",
   appearance = "default",
   comparisonLabel = "vs. previous period",
+  showProgress = false,
+  progressGoal,
+  progressUnit = "",
 }: ScoreCardProps) {
   const isDecreasing = growthRate !== undefined && growthRate < 0;
   const styles = variantStyles[variant];
@@ -94,6 +102,33 @@ export function ScoreCard({
 
   // Force analytics layout for all cards
   const forceAnalytics = true;
+
+  // Calculate progress percentage for progress bar
+  const calculateProgress = () => {
+    if (!showProgress || !progressGoal) return 0;
+    
+    let numericValue: number;
+    
+    if (typeof value === 'string') {
+      // Handle different string formats
+      if (value.includes('/')) {
+        // Handle "73 / 100" format (Clarity Score)
+        const parts = value.split('/');
+        numericValue = parseFloat(parts[0]?.trim() || '0');
+      } else {
+        // Handle formatted numbers like "37 834" or "177 961"
+        numericValue = parseFloat(value.replace(/[^\d.-]/g, ''));
+      }
+    } else {
+      numericValue = value;
+    }
+    
+    if (isNaN(numericValue)) return 0;
+    
+    return (numericValue / progressGoal) * 100;
+  };
+
+  const progressPercentage = showProgress ? calculateProgress() : 0;
   
   // Analytics appearance layout (matches mockup exactly)
   if (forceAnalytics) {
@@ -160,6 +195,17 @@ export function ScoreCard({
             <Icon className="h-5 w-5 text-red-600" />
           </div>
         </div>
+
+        {/* Progress bar */}
+        {showProgress && progressGoal && (
+          <div className="mt-4">
+            <KpiProgressBar 
+              progress={progressPercentage}
+              goal={progressGoal}
+              unit={progressUnit}
+            />
+          </div>
+        )}
       </div>
     );
   }

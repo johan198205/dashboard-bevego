@@ -29,7 +29,9 @@ export default function ClientHome() {
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       <TotalDiffCard title="Användare (MAU)" metric="mau" range={range} />
       <TotalDiffCard title="Användning — Sidvisningar" metric="pageviews" range={range} />
-      <NdiCard range={range} />
+      <div className="row-span-2">
+        <NdiCard range={range} />
+      </div>
 
       {/* TODO(modal): Re-enable chart via modal on card */}
       {/* <TimeSeries title="MAU — trend" metric="mau" range={range} /> */}

@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import { useFilters } from "@/components/GlobalFilters";
 import type { Grain } from "@/lib/types";
 import { UserIcon, GlobeIcon, MessageOutlineIcon, CheckIcon, XIcon, TrendingUpIcon } from "@/assets/icons";
+import { Gauge } from "@/components/ui/gauge";
+import { selectNdiPercent } from "@/lib/ndi-utils";
 
 export type TimePoint = { x: number; y: number };
 
@@ -118,6 +120,7 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
   const [insight, setInsight] = useState<Insight | null>(null);
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [show, setShow] = useState(false);
+  const [currentValue, setCurrentValue] = useState<number>(0);
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
@@ -141,6 +144,15 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
       const anomaliesDetected = detectAnomalies(s);
       setAnomalies(anomaliesDetected);
       setInsight(generateInsights(metricId, s, anomaliesDetected, args.filters));
+      
+      // For NDI, get current value from summary
+      if (metricId === "ndi") {
+        import("@/lib/resolver").then(({ getKpi }) => {
+          getKpi({ metric: "ndi", range: { start: args.start, end: args.end, grain: args.grain, comparisonMode: state.range.comparisonMode }, filters: args.filters }).then((res) => {
+            setCurrentValue(res.summary.current);
+          });
+        });
+      }
     });
     if (getCompareSeries) getCompareSeries(args).then(setCompare).catch(() => setCompare([]));
     // body lock to ensure only drawer scrolls
@@ -288,7 +300,20 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
               {series.length === 0 ? (
                 <div className="h-52 animate-pulse rounded-xl bg-dark-2/10 dark:bg-white/10" />
               ) : (
-                <Chart options={options as any} series={[{ name: "Nuvarande", data: series }, ...(compare.length ? [{ name: "Jämförelse", data: compare }] : [])]} type="line" height={240} />
+                <div>
+                  {/* Show gauge for NDI metrics */}
+                  {metricId === "ndi" && (
+                    <div className="mb-6 flex justify-center">
+                      <Gauge 
+                        valuePct={selectNdiPercent(currentValue)} 
+                        size={160}
+                        strokeWidth={12}
+                        label="NDI"
+                      />
+                    </div>
+                  )}
+                  <Chart options={options as any} series={[{ name: "Nuvarande", data: series }, ...(compare.length ? [{ name: "Jämförelse", data: compare }] : [])]} type="line" height={240} />
+                </div>
               )}
             </SectionCard>
           )}
