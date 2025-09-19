@@ -62,6 +62,10 @@ function generateInsights(metricId: string, series: TimePoint[], anomalies: Anom
     features_rate: "Funktioner",
     clarity: "Clarity Score",
     cwv_total: "CWV total status",
+    sessions: "Sessions",
+    engagedSessions: "Engaged Sessions",
+    engagementRate: "Engagement Rate",
+    avgEngagementTime: "Avg Engagement Time",
   };
   const title = nameMap[metricId] || metricId;
   const values = series.map((p) => p.y);
@@ -176,7 +180,7 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
 
   if (!open) return null;
 
-  const isRateMetric = metricId === "tasks_rate" || metricId === "features_rate" || metricId === "clarity" || metricId === "cwv_total";
+  const isRateMetric = metricId === "tasks_rate" || metricId === "features_rate" || metricId === "clarity" || metricId === "cwv_total" || metricId === "engagementRate";
   const isGaugeMetric = metricId === "ndi" || metricId === "tasks_rate" || metricId === "features_rate" || metricId === "cwv_total";
   
   const options = {
@@ -188,7 +192,9 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
     yaxis: { 
       labels: { 
         style: { colors: "#6B7280" },
-        formatter: isRateMetric ? (value: number) => `${value.toFixed(1)}%` : undefined
+        formatter: isRateMetric ? (value: number) => `${value.toFixed(1)}%` : 
+                   metricId === "avgEngagementTime" ? (value: number) => `${Math.floor(value / 60)}m ${Math.round(value % 60)}s` :
+                   undefined
       } 
     },
     colors: ["#E01E26", "#9CA3AF"],

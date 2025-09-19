@@ -236,6 +236,89 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
     };
   }
 
+  if (metric === "sessions") {
+    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 45678, noise: 0.12, seedKey: "sessions" }), scale);
+    const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 40000, noise: 0.12, seedKey: "sessions_prev" }), scale) : undefined;
+    const series = aggregate(current, grain);
+    const prevAgg = previous ? aggregate(previous, grain) : undefined;
+    const breakdown = [
+      "Direkt",
+      "Organiskt", 
+      "Kampanj",
+      "E-post",
+      "Referral",
+      "Social",
+      "Betald sök",
+      "Display",
+      "Video",
+      "Övrigt",
+    ];
+    const dims = filters?.channel && filters.channel.length > 0 ? breakdown.filter((c) => filters.channel?.includes(c)) : breakdown;
+    return buildKpiResponse("sessions", series, prevAgg, dims, ["Källa: Mockdata (Sessions)"]);
+  }
+
+  if (metric === "engagedSessions") {
+    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 28456, noise: 0.10, seedKey: "engagedSessions" }), scale);
+    const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 25000, noise: 0.10, seedKey: "engagedSessions_prev" }), scale) : undefined;
+    const series = aggregate(current, grain);
+    const prevAgg = previous ? aggregate(previous, grain) : undefined;
+    const breakdown = [
+      "Direkt",
+      "Organiskt",
+      "Kampanj", 
+      "E-post",
+      "Referral",
+      "Social",
+      "Betald sök",
+      "Display",
+      "Video",
+      "Övrigt",
+    ];
+    const dims = filters?.channel && filters.channel.length > 0 ? breakdown.filter((c) => filters.channel?.includes(c)) : breakdown;
+    return buildKpiResponse("engagedSessions", series, prevAgg, dims, ["Källa: Mockdata (Engaged Sessions)"]);
+  }
+
+  if (metric === "engagementRate") {
+    // Generate engagement rate as percentage (0-100)
+    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 75.2, noise: 0.08, seedKey: "engagementRate" }), scale);
+    const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 70.0, noise: 0.08, seedKey: "engagementRate_prev" }), scale) : undefined;
+    const series = aggregate(current, grain);
+    const prevAgg = previous ? aggregate(previous, grain) : undefined;
+    
+    // Clamp to realistic range 60-90%
+    const clampedSeries = series.map(p => ({ ...p, value: Math.max(60, Math.min(90, p.value)) }));
+    const clampedPrevAgg = prevAgg ? prevAgg.map(p => ({ ...p, value: Math.max(60, Math.min(90, p.value)) })) : undefined;
+    
+    return buildKpiResponse("engagementRate", clampedSeries, clampedPrevAgg, [
+      "Styrelse",
+      "Medlem", 
+      "Förvaltare",
+      "Leverantör",
+    ], ["Engagement rate 60-90%", "Källa: Mockdata (Engagement Rate)"]);
+  }
+
+  if (metric === "avgEngagementTime") {
+    // Generate average engagement time in seconds
+    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 245, noise: 0.15, seedKey: "avgEngagementTime" }), scale);
+    const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 250, noise: 0.15, seedKey: "avgEngagementTime_prev" }), scale) : undefined;
+    const series = aggregate(current, grain);
+    const prevAgg = previous ? aggregate(previous, grain) : undefined;
+    
+    // Clamp to realistic range 120-600 seconds (2-10 minutes)
+    const clampedSeries = series.map(p => ({ ...p, value: Math.max(120, Math.min(600, p.value)) }));
+    const clampedPrevAgg = prevAgg ? prevAgg.map(p => ({ ...p, value: Math.max(120, Math.min(600, p.value)) })) : undefined;
+    
+    return buildKpiResponse("avgEngagementTime", clampedSeries, clampedPrevAgg, [
+      "Desktop",
+      "Mobil",
+      "Surfplatta",
+    ], ["Avg engagement time 2-10 min", "Källa: Mockdata (Avg Engagement Time)"]);
+  }
+
   if (metric === "perf") {
     // Static placeholders
     const series = [{ date: params.range.start, value: 1 }];
