@@ -100,18 +100,18 @@ export function Gauge({
             />
           </g>
         </svg>
-        
-        {/* Value text */}
-        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-center">
-          <div className="text-2xl font-bold text-gray-900 dark:text-white">
-            {Math.round(valuePct)}%
-          </div>
-          {label && (
-            <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {label}
-            </div>
-          )}
+      </div>
+      
+      {/* Value text - moved outside SVG container */}
+      <div className="text-center mt-2">
+        <div className="text-2xl font-bold text-gray-900 dark:text-white">
+          {Math.round(valuePct)}%
         </div>
+        {label && (
+          <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            {label}
+          </div>
+        )}
       </div>
     </div>
   );

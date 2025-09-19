@@ -8,7 +8,7 @@ import InfoTooltip from "@/components/InfoTooltip";
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
 import { selectNdiPercent, ndiTimeseriesToChart } from "@/lib/ndi-utils";
 
-export default function NdiCard({ range }: { range: Params["range"] }) {
+export default function NdiCard({ range, compact = false }: { range: Params["range"]; compact?: boolean }) {
   const [data, setData] = useState<KpiResponse | null>(null);
   const [open, setOpen] = useState(false);
   
@@ -31,40 +31,47 @@ export default function NdiCard({ range }: { range: Params["range"] }) {
   return (
     <div className="relative">
       <div 
-        className="relative overflow-hidden rounded-xl border border-stroke bg-white px-7.5 py-6 shadow-1 dark:border-strokedark dark:bg-boxdark cursor-pointer hover:shadow-2 transition-shadow duration-200"
+        className={`relative overflow-hidden rounded-xl border border-stroke bg-white shadow-1 dark:border-strokedark dark:bg-boxdark cursor-pointer hover:shadow-2 transition-shadow duration-200 ${
+          compact ? 'px-4 py-4' : 'px-7.5 py-6'
+        }`}
         onClick={() => setOpen(true)}
       >
         {/* Header - match other scorecards with icon on right and info in corner */}
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="text-title-md font-bold text-black dark:text-white">
+            <h4 className={`font-bold text-black dark:text-white ${
+              compact ? 'text-sm' : 'text-title-md'
+            }`}>
               Kundnöjdhet (NDI)
             </h4>
-            <p className="text-sm font-medium text-body-color">Mock</p>
+            <p className={`font-medium text-body-color ${
+              compact ? 'text-xs' : 'text-sm'
+            }`}>Mock</p>
           </div>
-          <div className="flex h-11.5 w-11.5 items-center justify-center rounded-lg bg-red/10">
-            <UserIcon className="text-red" />
+          <div className={`flex items-center justify-center rounded-lg bg-red/10 ${
+            compact ? 'h-8 w-8' : 'h-11.5 w-11.5'
+          }`}>
+            <UserIcon className={`text-red ${compact ? 'h-4 w-4' : 'h-5 w-5'}`} />
           </div>
         </div>
         
         {/* Info icon in top-right corner like other scorecards */}
-        <div className="absolute top-4 right-4">
+        <div className={`absolute ${compact ? 'top-2 right-2' : 'top-4 right-4'}`}>
           <InfoTooltip text="NDI kvartalsvärden. Mockdata." />
         </div>
         
         {/* Gauge */}
-        <div className="mt-6 flex justify-center">
+        <div className={`flex justify-center ${compact ? 'mt-3' : 'mt-6'}`}>
           <Gauge 
             valuePct={ndiPct} 
-            size={140}
-            strokeWidth={10}
-            label="NDI"
+            size={compact ? 100 : 140}
+            strokeWidth={compact ? 8 : 10}
           />
         </div>
         
         {/* Growth indicator - match other scorecards */}
         {s && s.yoyPct !== undefined && (
-          <div className="mt-4 flex justify-center">
+          <div className={`flex justify-center ${compact ? 'mt-2' : 'mt-4'}`}>
             <div className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
               s.yoyPct >= 0 
                 ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 

@@ -13,6 +13,7 @@ type Props = {
   metric: Params["metric"];
   range: Params["range"];
   baseValue?: number; // Base value for percentage calculation
+  compact?: boolean; // Compact size for top row
 };
 
 // Icon mapping for different metrics
@@ -29,7 +30,7 @@ const getMetricIcon = (metric: string) => {
   }
 };
 
-export default function GaugeCard({ title, metric, range, baseValue = 100 }: Props) {
+export default function GaugeCard({ title, metric, range, baseValue = 100, compact = false }: Props) {
   const [data, setData] = useState<KpiResponse | null>(null);
   const { state } = useFilters();
   const [open, setOpen] = useState(false);
@@ -60,40 +61,47 @@ export default function GaugeCard({ title, metric, range, baseValue = 100 }: Pro
   return (
     <div className="relative">
       <div 
-        className="relative overflow-hidden rounded-xl border border-stroke bg-white px-7.5 py-6 shadow-1 dark:border-strokedark dark:bg-boxdark cursor-pointer hover:shadow-2 transition-shadow duration-200"
+        className={`relative overflow-hidden rounded-xl border border-stroke bg-white shadow-1 dark:border-strokedark dark:bg-boxdark cursor-pointer hover:shadow-2 transition-shadow duration-200 ${
+          compact ? 'px-4 py-4' : 'px-7.5 py-6'
+        }`}
         onClick={() => setOpen(true)}
       >
         {/* Header - match other scorecards with icon on right */}
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="text-title-md font-bold text-black dark:text-white">
+            <h4 className={`font-bold text-black dark:text-white ${
+              compact ? 'text-sm' : 'text-title-md'
+            }`}>
               {title}
             </h4>
-            <p className="text-sm font-medium text-body-color">Mock</p>
+            <p className={`font-medium text-body-color ${
+              compact ? 'text-xs' : 'text-sm'
+            }`}>Mock</p>
           </div>
-          <div className="flex h-11.5 w-11.5 items-center justify-center rounded-lg bg-red/10">
-            <Icon className="text-red" />
+          <div className={`flex items-center justify-center rounded-lg bg-red/10 ${
+            compact ? 'h-8 w-8' : 'h-11.5 w-11.5'
+          }`}>
+            <Icon className={`text-red ${compact ? 'h-4 w-4' : 'h-5 w-5'}`} />
           </div>
         </div>
         
         {/* Info icon in top-right corner like other scorecards */}
-        <div className="absolute top-4 right-4">
+        <div className={`absolute ${compact ? 'top-2 right-2' : 'top-4 right-4'}`}>
           <InfoTooltip text={`Metrik: ${metric}. Mockdata och definitioner för demo.`} />
         </div>
         
         {/* Gauge */}
-        <div className="mt-6 flex justify-center">
+        <div className={`flex justify-center ${compact ? 'mt-3' : 'mt-6'}`}>
           <Gauge 
             valuePct={percentageValue} 
-            size={140}
-            strokeWidth={10}
-            label={title}
+            size={compact ? 100 : 140}
+            strokeWidth={compact ? 8 : 10}
           />
         </div>
         
         {/* Growth indicator - match other scorecards */}
         {summary && summary.yoyPct !== undefined && (
-          <div className="mt-4 flex justify-center">
+          <div className={`flex justify-center ${compact ? 'mt-2' : 'mt-4'}`}>
             <div className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
               summary.yoyPct >= 0 
                 ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 
