@@ -145,10 +145,10 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
       setAnomalies(anomaliesDetected);
       setInsight(generateInsights(metricId, s, anomaliesDetected, args.filters));
       
-      // For NDI, get current value from summary
-      if (metricId === "ndi") {
+      // For gauge metrics, get current value from summary
+      if (isGaugeMetric) {
         import("@/lib/resolver").then(({ getKpi }) => {
-          getKpi({ metric: "ndi", range: { start: args.start, end: args.end, grain: args.grain, comparisonMode: state.range.comparisonMode }, filters: args.filters }).then((res) => {
+          getKpi({ metric: metricId as any, range: { start: args.start, end: args.end, grain: args.grain, comparisonMode: state.range.comparisonMode }, filters: args.filters }).then((res) => {
             setCurrentValue(res.summary.current);
           });
         });
@@ -177,6 +177,7 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
   if (!open) return null;
 
   const isRateMetric = metricId === "tasks_rate" || metricId === "features_rate" || metricId === "clarity" || metricId === "cwv_total";
+  const isGaugeMetric = metricId === "ndi" || metricId === "tasks_rate" || metricId === "features_rate" || metricId === "cwv_total";
   
   const options = {
     chart: { type: "line", toolbar: { show: false }, fontFamily: "inherit" },
@@ -301,14 +302,14 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
                 <div className="h-52 animate-pulse rounded-xl bg-dark-2/10 dark:bg-white/10" />
               ) : (
                 <div>
-                  {/* Show gauge for NDI metrics */}
-                  {metricId === "ndi" && (
+                  {/* Show gauge for NDI and rate metrics */}
+                  {isGaugeMetric && (
                     <div className="mb-6 flex justify-center">
                       <Gauge 
-                        valuePct={selectNdiPercent(currentValue)} 
+                        valuePct={metricId === "ndi" ? selectNdiPercent(currentValue) : Math.min(100, Math.max(0, currentValue))} 
                         size={160}
                         strokeWidth={12}
-                        label="NDI"
+                        label={metricId === "ndi" ? "NDI" : metricId === "tasks_rate" ? "Tasks" : metricId === "features_rate" ? "Funktioner" : "CWV"}
                       />
                     </div>
                   )}

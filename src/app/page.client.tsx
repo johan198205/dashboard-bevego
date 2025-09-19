@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import TotalDiffCard from "@/widgets/TotalDiffCard";
+import GaugeCard from "@/widgets/GaugeCard";
 // TODO(modal): Re-enable chart via modal on card
 // import TimeSeries from "@/widgets/TimeSeries";
 // import ChannelTable from "@/widgets/ChannelTable";
@@ -13,17 +14,14 @@ import NdiCard from "@/widgets/NdiCard";
 // import WcagCard from "@/widgets/WcagCard";
 import { useFilters } from "@/components/GlobalFilters";
 import { ClarityScoreCard } from "./(home)/_components/overview-cards/clarity-score-card";
-import { CwvTotalStatusCard } from "@/components/shared/CwvTotalStatusCard";
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
 import { useClarityData } from "@/hooks/useClarityData";
-import { useCwvData } from "@/hooks/useCwvData";
 import * as overviewIcons from "./(home)/_components/overview-cards/icons";
 
 export default function ClientHome() {
   const { state } = useFilters();
   const range = state.range;
   const { clarityScore } = useClarityData();
-  const { summary: cwvSummary } = useCwvData();
   const [drawer, setDrawer] = useState<{ metricId: string; title: string } | null>(null);
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -38,8 +36,8 @@ export default function ClientHome() {
       {/* <TimeSeries title="Sidvisningar — tidsserie" metric="pageviews" range={range} /> */}
       {/* <ChannelTable metric="pageviews" range={range} /> */}
 
-      <TotalDiffCard title="Tasks" metric="tasks" range={range} />
-      <TotalDiffCard title="Funktioner" metric="features" range={range} />
+      <GaugeCard title="Tasks" metric="tasks_rate" range={range} />
+      <GaugeCard title="Funktioner" metric="features_rate" range={range} />
 
       {/* Added: Clarity Score card (placed last as requested) */}
       {clarityScore && (
@@ -56,23 +54,7 @@ export default function ClientHome() {
       )}
 
       {/* Added: CWV total status card (placed last as requested) */}
-      {cwvSummary && (
-        <CwvTotalStatusCard
-          label="CWV total status"
-          data={{
-            value: `${cwvSummary.totalStatus.percentage}%`,
-            percentage: cwvSummary.totalStatus.percentage,
-            status:
-              cwvSummary.totalStatus.percentage >= 75
-                ? "Pass"
-                : "Needs Improvement",
-            target: "> 75%",
-            description: "Klarar alla tre",
-          }}
-          Icon={overviewIcons.CwvTotalStatus}
-          onClick={() => setDrawer({ metricId: "cwv_total", title: "CWV total status" })}
-        />
-      )}
+      <GaugeCard title="CWV total status" metric="cwv_total" range={range} />
       {drawer && (
         <ScorecardDetailsDrawer
           open={!!drawer}
@@ -87,7 +69,7 @@ export default function ClientHome() {
             const e = new Date(end).getTime();
             const day = 1000 * 60 * 60 * 24;
             const points: { x: number; y: number }[] = [];
-            const base = drawer.metricId === "clarity" ? (clarityScore?.score ?? 75) : (cwvSummary?.totalStatus.percentage ?? 65);
+            const base = clarityScore?.score ?? 75;
             for (let t = s; t <= e; t += day) {
               const noise = Math.random() * 2 - 1; // small ±1 variation
               points.push({ x: t, y: Math.max(0, Math.min(100, Math.round(base + noise))) });
