@@ -42,7 +42,7 @@ export function KpiProgressBar({ progress, goal, unit = "", className }: KpiProg
           {isComplete ? "Mål uppnått!" : `${clampedProgress.toFixed(0)}% uppnått`}
         </span>
         <span>
-          {goal.toLocaleString()}{unit}
+          {goal.toLocaleString('sv-SE')}{unit}
         </span>
       </div>
     </div>

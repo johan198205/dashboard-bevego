@@ -90,7 +90,7 @@ export default function CwvTable({ data, className }: CwvTableProps) {
                 </span>
               </TableCell>
               <TableCell className="text-center">
-                {row.sessions ? row.sessions.toLocaleString() : '-'}
+                {row.sessions ? row.sessions.toLocaleString('sv-SE') : '-'}
               </TableCell>
               <TableCell className="text-center text-sm text-gray-600">
                 {row.lastTested}

@@ -74,13 +74,37 @@ export function FileUploader({ kind, onUploadComplete, className }: FileUploader
         body: formData,
       });
 
-      const result: ImportResult = await response.json();
+      const apiResult = await response.json();
+      
+      // Check if the response was successful
+      if (!response.ok) {
+        throw new Error(apiResult.error || 'Uppladdning misslyckades');
+      }
+      
+      // Convert API response to ImportResult format
+      const result: ImportResult = {
+        success: apiResult.ok || false,
+        fileId: apiResult.fileId || '',
+        validationReport: apiResult.validationReport || {
+          fileId: '',
+          detectedPeriods: [],
+          rowCount: 0,
+          ignoredRows: 0,
+          columnMapping: {},
+          warnings: []
+        },
+        error: apiResult.error || undefined
+      };
+      
       setUploadResult(result);
       
       if (onUploadComplete) {
         onUploadComplete(result);
       }
     } catch (error) {
+      console.error('Upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Ett fel uppstod vid uppladdning';
+      
       setUploadResult({
         success: false,
         fileId: '',
@@ -90,9 +114,9 @@ export function FileUploader({ kind, onUploadComplete, className }: FileUploader
           rowCount: 0,
           ignoredRows: 0,
           columnMapping: {},
-          warnings: ['Ett fel uppstod vid uppladdning']
+          warnings: [errorMessage]
         },
-        error: 'Ett fel uppstod vid uppladdning'
+        error: errorMessage
       });
     } finally {
       setIsUploading(false);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { NDISummary, Period } from '@/types/ndi';
 import { qoq, yoy, getPreviousQuarter, getPreviousYearQuarter, rolling4q } from '@/lib/ndi-calculations';
+import { prevQuarter, yoyQuarter } from '@/lib/period';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,20 +17,19 @@ export async function GET(request: NextRequest) {
     // Prefer aggregated data, fallback to calculated from breakdowns
     let ndiValue: number | null = null;
 
-    // First, try to get aggregated value
-    const aggregatedValue = await prisma.metricPoint.findFirst({
+    // First, try to get aggregated values and calculate average
+    const aggregatedValues = await prisma.metricPoint.findMany({
       where: {
         period,
         metric: 'NDI',
         source: 'AGGREGATED',
-        groupA: null,
-        groupB: null,
-        groupC: null,
       },
     });
 
-    if (aggregatedValue) {
-      ndiValue = aggregatedValue.value;
+    if (aggregatedValues.length > 0) {
+      // Calculate average of all aggregated values
+      const sum = aggregatedValues.reduce((sum, v) => sum + v.value, 0);
+      ndiValue = sum / aggregatedValues.length;
     } else {
       // Calculate from breakdowns
       const breakdownValues = await prisma.metricPoint.findMany({
@@ -41,17 +41,9 @@ export async function GET(request: NextRequest) {
       });
 
       if (breakdownValues.length > 0) {
-        // Calculate weighted average
-        const hasWeights = breakdownValues.some(v => v.weight && v.weight > 0);
-        
-        if (hasWeights) {
-          const numerator = breakdownValues.reduce((sum, v) => sum + v.value * (v.weight || 0), 0);
-          const denominator = breakdownValues.reduce((sum, v) => sum + (v.weight || 0), 0);
-          ndiValue = denominator > 0 ? numerator / denominator : null;
-        } else {
-          const sum = breakdownValues.reduce((sum, v) => sum + v.value, 0);
-          ndiValue = sum / breakdownValues.length;
-        }
+        // Use the existing NDI values directly - they are already calculated
+        const sum = breakdownValues.reduce((sum, v) => sum + v.value, 0);
+        ndiValue = sum / breakdownValues.length;
       }
     }
 
@@ -59,22 +51,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No data found for the specified period' }, { status: 404 });
     }
 
+    // Ensure ndiValue is finite
+    if (!isFinite(ndiValue)) {
+      return NextResponse.json({ error: 'Invalid data found for the specified period' }, { status: 500 });
+    }
+
     // Calculate QoQ change
     let qoqChange: number | undefined;
-    const prevQuarter = getPreviousQuarter(period);
-    if (prevQuarter) {
-      const prevValue = await getNDIValue(prevQuarter);
-      if (prevValue !== null) {
-        qoqChange = qoq(ndiValue, prevValue);
+    const prevQ = prevQuarter(period);
+    if (prevQ) {
+      const prevValue = await getNDIValue(prevQ);
+      if (prevValue !== null && isFinite(prevValue)) {
+        const qoqResult = qoq(ndiValue, prevValue);
+        qoqChange = qoqResult !== null ? qoqResult : undefined;
       }
     }
 
     // Calculate YoY change
     let yoyChange: number | undefined;
-    const prevYearQuarter = getPreviousYearQuarter(period);
-    const prevYearValue = await getNDIValue(prevYearQuarter);
-    if (prevYearValue !== null) {
-      yoyChange = yoy(ndiValue, prevYearValue);
+    const prevYearQ = yoyQuarter(period);
+    const prevYearValue = await getNDIValue(prevYearQ);
+    if (prevYearValue !== null && isFinite(prevYearValue)) {
+      const yoyResult = yoy(ndiValue, prevYearValue);
+      yoyChange = yoyResult !== null ? yoyResult : undefined;
     }
 
     // Calculate rolling 4Q average
@@ -100,20 +99,18 @@ export async function GET(request: NextRequest) {
 }
 
 async function getNDIValue(period: Period): Promise<number | null> {
-  // Try aggregated first
-  const aggregatedValue = await prisma.metricPoint.findFirst({
+  // Try aggregated first - calculate average of all aggregated values
+  const aggregatedValues = await prisma.metricPoint.findMany({
     where: {
       period,
       metric: 'NDI',
       source: 'AGGREGATED',
-      groupA: null,
-      groupB: null,
-      groupC: null,
     },
   });
 
-  if (aggregatedValue) {
-    return aggregatedValue.value;
+  if (aggregatedValues.length > 0) {
+    const sum = aggregatedValues.reduce((sum, v) => sum + v.value, 0);
+    return sum / aggregatedValues.length;
   }
 
   // Calculate from breakdowns
@@ -129,16 +126,9 @@ async function getNDIValue(period: Period): Promise<number | null> {
     return null;
   }
 
-  const hasWeights = breakdownValues.some(v => v.weight && v.weight > 0);
-  
-  if (hasWeights) {
-    const numerator = breakdownValues.reduce((sum, v) => sum + v.value * (v.weight || 0), 0);
-    const denominator = breakdownValues.reduce((sum, v) => sum + (v.weight || 0), 0);
-    return denominator > 0 ? numerator / denominator : null;
-  } else {
-    const sum = breakdownValues.reduce((sum, v) => sum + v.value, 0);
-    return sum / breakdownValues.length;
-  }
+  // Use the existing NDI values directly - they are already calculated
+  const sum = breakdownValues.reduce((sum, v) => sum + v.value, 0);
+  return sum / breakdownValues.length;
 }
 
 async function getNDISeries() {

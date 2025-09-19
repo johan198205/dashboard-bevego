@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { BreakdownRow, Period } from '@/types/ndi';
+import { Period, BreakdownRow } from '@/types/ndi';
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +32,8 @@ export async function GET(request: NextRequest) {
       ],
     });
 
-    const breakdownRows: BreakdownRow[] = breakdownData.map(row => ({
+    // Convert to breakdown format
+    const breakdown: BreakdownRow[] = breakdownData.map(row => ({
       period,
       groupA: row.groupA || undefined,
       groupB: row.groupB || undefined,
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
       weight: row.weight || undefined,
     }));
 
-    return NextResponse.json(breakdownRows);
+    return NextResponse.json(breakdown);
   } catch (error) {
     console.error('Error fetching NDI breakdown:', error);
     return NextResponse.json(

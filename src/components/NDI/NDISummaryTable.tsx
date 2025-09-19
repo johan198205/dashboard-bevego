@@ -11,8 +11,11 @@ interface NDISummaryTableProps {
 }
 
 export function NDISummaryTable({ data, className }: NDISummaryTableProps) {
-  const formatValue = (value: number | null) => {
-    if (value === null) return 'N/A';
+  // Ensure data is an array
+  const safeData = Array.isArray(data) ? data : [];
+
+  const formatValue = (value: number | null | undefined) => {
+    if (value === null || value === undefined) return 'N/A';
     return value.toFixed(1);
   };
 
@@ -22,21 +25,21 @@ export function NDISummaryTable({ data, className }: NDISummaryTableProps) {
 
   const calculateQoQ = (current: NDISeriesPoint, index: number) => {
     if (index === 0) return null;
-    const previous = data[index - 1];
+    const previous = safeData[index - 1];
     if (!previous || !previous.value || !current.value) return null;
     return ((current.value - previous.value) / previous.value) * 100;
   };
 
   const calculateYoY = (current: NDISeriesPoint, index: number) => {
     if (index < 4) return null;
-    const previousYear = data[index - 4];
+    const previousYear = safeData[index - 4];
     if (!previousYear || !previousYear.value || !current.value) return null;
     return ((current.value - previousYear.value) / previousYear.value) * 100;
   };
 
   const calculateRolling4Q = (current: NDISeriesPoint, index: number) => {
     const startIndex = Math.max(0, index - 3);
-    const relevantData = data.slice(startIndex, index + 1);
+    const relevantData = safeData.slice(startIndex, index + 1);
     const validValues = relevantData.filter(d => d.value !== null).map(d => d.value!);
     
     if (validValues.length === 0) return null;
@@ -56,7 +59,7 @@ export function NDISummaryTable({ data, className }: NDISummaryTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((point, index) => {
+          {safeData.map((point, index) => {
             const qoq = calculateQoQ(point, index);
             const yoy = calculateYoY(point, index);
             const rolling4q = calculateRolling4Q(point, index);
@@ -80,7 +83,7 @@ export function NDISummaryTable({ data, className }: NDISummaryTableProps) {
                       ) : qoq < 0 ? (
                         <ArrowDownIcon className="h-3 w-3" />
                       ) : null}
-                      {qoq > 0 ? '+' : ''}{qoq.toFixed(1)}%
+                      {qoq > 0 ? '+' : ''}{qoq?.toFixed(1) || '0.0'}%
                     </div>
                   ) : (
                     'N/A'
@@ -97,7 +100,7 @@ export function NDISummaryTable({ data, className }: NDISummaryTableProps) {
                       ) : yoy < 0 ? (
                         <ArrowDownIcon className="h-3 w-3" />
                       ) : null}
-                      {yoy > 0 ? '+' : ''}{yoy.toFixed(1)}%
+                      {yoy > 0 ? '+' : ''}{yoy?.toFixed(1) || '0.0'}%
                     </div>
                   ) : (
                     'N/A'

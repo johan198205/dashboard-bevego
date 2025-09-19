@@ -11,7 +11,8 @@ interface NDITopBottomProps {
 }
 
 export function NDITopBottom({ top, bottom, className }: NDITopBottomProps) {
-  const formatValue = (value: number) => {
+  const formatValue = (value: number | null | undefined) => {
+    if (value === null || value === undefined) return 'N/A';
     return value.toFixed(1);
   };
 
@@ -41,7 +42,7 @@ export function NDITopBottom({ top, bottom, className }: NDITopBottomProps) {
                 </div>
                 {row.weight && (
                   <div className="text-sm text-dark-6 dark:text-dark-4">
-                    {row.weight.toLocaleString()} svar
+                    {row.weight.toLocaleString('sv-SE')} svar
                   </div>
                 )}
               </div>
@@ -75,7 +76,7 @@ export function NDITopBottom({ top, bottom, className }: NDITopBottomProps) {
                 </div>
                 {row.weight && (
                   <div className="text-sm text-dark-6 dark:text-dark-4">
-                    {row.weight.toLocaleString()} svar
+                    {row.weight.toLocaleString('sv-SE')} svar
                   </div>
                 )}
               </div>

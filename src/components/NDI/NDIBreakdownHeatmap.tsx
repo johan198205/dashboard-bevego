@@ -13,7 +13,8 @@ interface NDIBreakdownHeatmapProps {
 export function NDIBreakdownHeatmap({ data, className }: NDIBreakdownHeatmapProps) {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const formatValue = (value: number) => {
+  const formatValue = (value: number | null | undefined) => {
+    if (value === null || value === undefined) return 'N/A';
     return value.toFixed(1);
   };
 
@@ -126,7 +127,7 @@ export function NDIBreakdownHeatmap({ data, className }: NDIBreakdownHeatmapProp
                 </TableCell>
                 {data.some(r => r.weight) && (
                   <TableCell className="text-right text-dark-6 dark:text-dark-4">
-                    {row.weight ? row.weight.toLocaleString() : '-'}
+                    {row.weight ? row.weight.toLocaleString('sv-SE') : '-'}
                   </TableCell>
                 )}
               </TableRow>

@@ -93,6 +93,7 @@ function parseNdiData(): { aggregated: Array<{ period: Period; value: number }>;
       }
     } catch (error) {
       console.warn('Failed to parse aggregated NDI file:', error);
+      // Continue without aggregated data if file cannot be read
     }
   }
 

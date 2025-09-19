@@ -2,18 +2,22 @@ import { Period, NDISeriesPoint } from '@/types/ndi';
 
 /**
  * Calculate quarter-over-quarter change in percentage
+ * Returns null if baseline is 0 or invalid values
  */
-export function qoq(current: number, prev: number): number {
-  if (prev === 0) return 0;
-  return ((current - prev) / prev) * 100;
+export function qoq(current: number, prev: number): number | null {
+  if (prev === 0 || !isFinite(current) || !isFinite(prev)) return null;
+  const change = ((current - prev) / prev) * 100;
+  return isFinite(change) ? change : null;
 }
 
 /**
  * Calculate year-over-year change in percentage
+ * Returns null if baseline is 0 or invalid values
  */
-export function yoy(current: number, lastYear: number): number {
-  if (lastYear === 0) return 0;
-  return ((current - lastYear) / lastYear) * 100;
+export function yoy(current: number, lastYear: number): number | null {
+  if (lastYear === 0 || !isFinite(current) || !isFinite(lastYear)) return null;
+  const change = ((current - lastYear) / lastYear) * 100;
+  return isFinite(change) ? change : null;
 }
 
 /**
@@ -60,6 +64,7 @@ export function getPreviousYearQuarter(period: Period): Period {
 
 /**
  * Calculate rolling 4-quarter average
+ * Requires at least 2 quarters of data to return a value
  */
 export function rolling4q(series: NDISeriesPoint[], targetPeriod: Period): number | null {
   const periods = [targetPeriod];
@@ -76,11 +81,13 @@ export function rolling4q(series: NDISeriesPoint[], targetPeriod: Period): numbe
   // Get values for these periods
   const values = periods
     .map(period => series.find(s => s.period === period)?.value)
-    .filter((value): value is number => value !== null && value !== undefined);
+    .filter((value): value is number => value !== null && value !== undefined && isFinite(value));
   
-  if (values.length === 0) return null;
+  // Require at least 2 quarters of valid data for rolling average
+  if (values.length < 2) return null;
   
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
+  const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+  return isFinite(average) ? average : null;
 }
 
 /**

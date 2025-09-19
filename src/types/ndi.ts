@@ -12,6 +12,7 @@ export interface NDISeriesPoint {
   period: Period;
   value: number | null;
   r4?: number | null;
+  yoy?: number | null; // Same quarter previous year
 }
 
 export interface BreakdownRow {

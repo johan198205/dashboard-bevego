@@ -134,7 +134,7 @@ export function ModernTable() {
               </TableCell>
 
               <TableCell className="text-right font-medium text-dark dark:text-white">
-                ${customer.revenue.toLocaleString()}
+                ${customer.revenue.toLocaleString('sv-SE')}
               </TableCell>
 
               <TableCell>

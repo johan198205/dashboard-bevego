@@ -89,7 +89,10 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      success: true,
+      ok: true,
+      periodsDetected: parsedData.validationReport.detectedPeriods,
+      rowsInserted: parsedData.validationReport.rowCount,
+      warnings: parsedData.validationReport.warnings,
       fileId: fileUpload.id,
       validationReport: parsedData.validationReport,
     });
