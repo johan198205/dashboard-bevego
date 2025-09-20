@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const aggregatedRows = aggregated.map((row, index) => ({
       rowIndex: index + 1,
       value: row.value,
-      label: row.groupA || 'Index',
+      label: row.groupA || `Index Row ${index + 1}`,
       originalLabel: row.groupB || 'Index'
     }));
 

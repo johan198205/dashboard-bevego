@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { Period } from '@/lib/excel-parsers';
+import { Period } from '@/types/ndi';
 
 // Cache for parsed data
 let cachedData: {

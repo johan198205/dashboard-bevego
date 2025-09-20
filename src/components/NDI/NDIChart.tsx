@@ -141,7 +141,7 @@ export function NDIChart({ data, className }: NDIChartProps) {
             onChange={(e) => setShowYoY(e.target.checked)}
             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
           />
-          <div className="w-4 h-0.5 bg-blue-600 border-dashed border-t-2 border-blue-600" style={{borderDasharray: '8px 8px'}}></div>
+          <div className="w-4 h-0.5 bg-blue-600 border-dashed border-t-2 border-blue-600"></div>
           <span className="text-gray-700 dark:text-gray-300">Samma kvartal året innan</span>
         </label>
       </div>

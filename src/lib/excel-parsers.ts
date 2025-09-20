@@ -1,4 +1,4 @@
-Mimport * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx';
 import { Period, ValidationReport, ImportResult } from '@/types/ndi';
 import { normalizePeriod, parsePeriod } from './ndi-calculations';
 
@@ -148,17 +148,80 @@ export function parseAggregatedFileFromBuffer(
   }
 
   // Find ALL rows containing the metric using alias matching
-  const metricRows: { index: number; name: string; row: any[] }[] = [];
+  const metricRows: { index: number; name: string; row: any[]; sectionTitle?: string; statement?: string }[] = [];
   
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
     if (row && row.length > 0) {
       const firstCell = row[0]?.toString() || '';
       if (matchesAlias(firstCell, VALUE_ALIASES)) {
+        // Look for section title and statement using "Bas:" markers
+        let sectionTitle: string | undefined;
+        let statement: string | undefined;
+        
+        // Look backwards for the nearest "Bas:" marker
+        let basMarkerIndex = -1;
+        for (let j = i - 1; j >= Math.max(0, i - 15); j--) {
+          const row = data[j];
+          if (row && row[0] && typeof row[0] === 'string') {
+            const firstCell = row[0].trim();
+            if (firstCell.toLowerCase().includes('bas:')) {
+              basMarkerIndex = j;
+              // Found "Bas:" marker
+              break;
+            }
+          }
+        }
+        
+        // If we found a "Bas:" marker, look for section title and statement before it
+        if (basMarkerIndex >= 0) {
+          // Look backwards from the "Bas:" marker for section title and statement
+          for (let j = basMarkerIndex - 1; j >= Math.max(0, basMarkerIndex - 20); j--) {
+            const prevRow = data[j];
+            if (prevRow && prevRow[0] && typeof prevRow[0] === 'string') {
+              const prevFirstCell = prevRow[0].trim();
+              
+              // Look for section title (uppercase, short, not a "Bas:" marker or metric type)
+              if (!sectionTitle && prevFirstCell && 
+                  prevFirstCell.length > 2 && 
+                  prevFirstCell.length < 50 &&
+                  prevFirstCell === prevFirstCell.toUpperCase() &&
+                  !prevFirstCell.toLowerCase().includes('bas:') &&
+                  !prevFirstCell.toLowerCase().includes('sida in') &&
+                  !prevFirstCell.toLowerCase().includes('mv (1-5)') &&
+                  !prevFirstCell.toLowerCase().includes('top box') &&
+                  !prevFirstCell.toLowerCase().includes('bottom box') &&
+                  !prevFirstCell.toLowerCase().includes('1 stämmer inte alls') &&
+                  !prevFirstCell.toLowerCase().includes('5 stämmer helt') &&
+                  !prevFirstCell.toLowerCase().includes('vet ej') &&
+                  !prevFirstCell.match(/^[1-5]$/)) { // Exclude single digits 1-5
+                sectionTitle = prevFirstCell;
+              }
+              
+              // Look for statement (longer text, contains common Swedish words)
+              if (!statement && prevFirstCell && 
+                  prevFirstCell.length > 15 && 
+                  (prevFirstCell.toLowerCase().includes('är') ||
+                   prevFirstCell.toLowerCase().includes('kan') ||
+                   prevFirstCell.toLowerCase().includes('ska') ||
+                   prevFirstCell.toLowerCase().includes('jag') ||
+                   prevFirstCell.toLowerCase().includes('mitt') ||
+                   prevFirstCell.toLowerCase().includes('rubriker') ||
+                   prevFirstCell.toLowerCase().includes('tydliga') ||
+                   prevFirstCell.endsWith('.') ||
+                   prevFirstCell.endsWith('?'))) {
+                statement = prevFirstCell;
+              }
+            }
+          }
+        }
+        
         metricRows.push({
           index: i,
           name: firstCell,
-          row: row
+          row: row,
+          sectionTitle,
+          statement
         });
       }
     }
@@ -190,11 +253,24 @@ export function parseAggregatedFileFromBuffer(
     for (const metricRow of metricRows) {
       const value = metricRow.row[columnIndex];
       if (typeof value === 'number' && !isNaN(value)) {
+        // Create descriptive label from section title and statement
+        let descriptiveLabel: string;
+        if (metricRow.sectionTitle && metricRow.statement) {
+          descriptiveLabel = `${metricRow.sectionTitle} – ${metricRow.statement}`;
+        } else if (metricRow.sectionTitle) {
+          descriptiveLabel = metricRow.sectionTitle;
+        } else if (metricRow.statement) {
+          descriptiveLabel = metricRow.statement;
+        } else {
+          // Fallback to generic label
+          descriptiveLabel = `Index Row ${metricRow.index + 1}`;
+        }
+        
         metricPoints.push({
-          period,
+          period: period as Period,
           metric: 'NDI',
           value: value,
-          groupA: `Index Row ${metricRow.index + 1}`,
+          groupA: descriptiveLabel,
           groupB: metricRow.name,
           groupC: undefined
         });
@@ -300,7 +376,7 @@ export function parseBreakdownFileFromBuffer(
       const value = indexRow[1]; // NDI values are always in column 1 for Index rows
       if (typeof value === 'number' && !isNaN(value)) {
         metricPoints.push({
-          period,
+          period: period as Period,
           metric: 'NDI',
           value,
           weight: undefined,
@@ -360,7 +436,7 @@ function parseIndexBasedBreakdown(
     const value = indexRow[1]; // NDI values are always in column 1
     if (typeof value === 'number' && !isNaN(value)) {
       metricPoints.push({
-        period,
+        period: period as Period,
         metric: 'NDI',
         value,
         weight: undefined,
@@ -414,7 +490,7 @@ function parseWideFormatBreakdown(
         // Create metric points for each Index value
         validValues.forEach((value, index) => {
           metricPoints.push({
-            period,
+            period: period as Period,
             metric: 'NDI',
             value,
             weight: undefined,
@@ -475,7 +551,7 @@ function parseWideFormatBreakdown(
         }
 
         metricPoints.push({
-          period,
+          period: period as Period,
           metric: 'NDI',
           value,
           weight,
@@ -600,7 +676,7 @@ function parseLongFormatBreakdown(
     const groupC = groupMapping.groupC !== -1 ? row[groupMapping.groupC]?.toString() : undefined;
 
     metricPoints.push({
-      period,
+      period: period as Period,
       metric: 'NDI',
       value,
       weight,
@@ -665,7 +741,7 @@ export function parseAggregatedFile(
   metricKey: string = 'NDI'
 ): ParsedData {
   const workbook = XLSX.readFile(filePath);
-  const buffer = Buffer.from(workbook);
+  const buffer = Buffer.from(XLSX.write(workbook, { type: 'buffer' }));
   return parseAggregatedFileFromBuffer(buffer, fileId, metricKey);
 }
 
@@ -678,6 +754,6 @@ export function parseBreakdownFile(
   valueColumnName: string = 'NDI'
 ): ParsedData {
   const workbook = XLSX.readFile(filePath);
-  const buffer = Buffer.from(workbook);
+  const buffer = Buffer.from(XLSX.write(workbook, { type: 'buffer' }));
   return parseBreakdownFileFromBuffer(buffer, fileId, valueColumnName);
 }

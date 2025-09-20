@@ -50,7 +50,7 @@ export function rolling4(series: {period: string, value: number | null}[]): {per
     result.push({ 
       period: point.period, 
       value: point.value,
-      r4: isFinite(r4) ? r4 : null 
+      r4: r4 !== null && isFinite(r4) ? r4 : null 
     });
   }
   
