@@ -4,14 +4,14 @@ import { useState, useEffect } from "react";
 import { NDICard } from "@/components/NDI/NDICard";
 import { NDIChart } from "@/components/NDI/NDIChart";
 import { NDISummaryTable } from "@/components/NDI/NDISummaryTable";
-import { NDITopBottom } from "@/components/NDI/NDITopBottom";
+import { NDICompleteList } from "@/components/NDI/NDICompleteList";
 import { NDIQuarterSelector } from "@/components/NDI/NDIQuarterSelector";
-import { NDISummary, NDISeriesPoint, BreakdownRow, Period } from "@/types/ndi";
+import { NDISummary, NDISeriesPoint, BreakdownRow, BreakdownWithHistory, Period } from "@/types/ndi";
 
 export function NDIDashboard() {
   const [summary, setSummary] = useState<NDISummary | null>(null);
   const [series, setSeries] = useState<NDISeriesPoint[]>([]);
-  const [topBottom, setTopBottom] = useState<{ top: BreakdownRow[]; bottom: BreakdownRow[] }>({ top: [], bottom: [] });
+  const [completeList, setCompleteList] = useState<BreakdownWithHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedQuarter, setSelectedQuarter] = useState<Period | null>(null);
@@ -66,20 +66,14 @@ export function NDIDashboard() {
         setSeries([]);
       }
 
-      // Fetch top/bottom performers
-      const breakdownResponse = await fetch(`/api/metrics/ndi/breakdown?period=${period}`);
+      // Fetch complete list with historical data
+      const breakdownResponse = await fetch(`/api/metrics/ndi/breakdown-with-history?period=${period}`);
       if (breakdownResponse.ok) {
         const breakdownData = await breakdownResponse.json();
-        
-        // Calculate top/bottom
-        const sorted = Array.isArray(breakdownData) ? [...breakdownData].sort((a, b) => b.value - a.value) : [];
-        setTopBottom({
-          top: sorted.slice(0, 3),
-          bottom: sorted.slice(-3).reverse()
-        });
+        setCompleteList(Array.isArray(breakdownData) ? breakdownData : []);
       } else {
         console.warn('Failed to fetch breakdown data:', breakdownResponse.status);
-        setTopBottom({ top: [], bottom: [] });
+        setCompleteList([]);
       }
 
     } catch (error) {
@@ -188,13 +182,10 @@ export function NDIDashboard() {
         <NDISummaryTable data={series} />
       </div>
 
-      {/* Top/Bottom Performers */}
-      {topBottom.top.length > 0 && (
+      {/* Complete List */}
+      {completeList.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-dark dark:text-white mb-4">
-            Bästa och sämsta prestanda
-          </h2>
-          <NDITopBottom top={topBottom.top} bottom={topBottom.bottom} />
+          <NDICompleteList data={completeList} />
         </div>
       )}
     </div>

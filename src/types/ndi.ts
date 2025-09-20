@@ -24,6 +24,13 @@ export interface BreakdownRow {
   weight?: number;
 }
 
+export interface BreakdownWithHistory extends BreakdownRow {
+  qoqChange?: number; // Quarter over Quarter change in %
+  yoyChange?: number; // Year over Year change in %
+  prevQuarterValue?: number; // Previous quarter value for display
+  prevYearValue?: number; // Previous year value for display
+}
+
 export interface FileUploadResponse {
   id: string;
   kind: 'AGGREGATED' | 'BREAKDOWN';

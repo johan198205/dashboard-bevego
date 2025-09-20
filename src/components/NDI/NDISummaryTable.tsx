@@ -27,14 +27,20 @@ export function NDISummaryTable({ data, className }: NDISummaryTableProps) {
     if (index === 0) return null;
     const previous = safeData[index - 1];
     if (!previous || !previous.value || !current.value) return null;
-    return ((current.value - previous.value) / previous.value) * 100;
+    return {
+      change: ((current.value - previous.value) / previous.value) * 100,
+      previousValue: previous.value
+    };
   };
 
   const calculateYoY = (current: NDISeriesPoint, index: number) => {
     if (index < 4) return null;
     const previousYear = safeData[index - 4];
     if (!previousYear || !previousYear.value || !current.value) return null;
-    return ((current.value - previousYear.value) / previousYear.value) * 100;
+    return {
+      change: ((current.value - previousYear.value) / previousYear.value) * 100,
+      previousValue: previousYear.value
+    };
   };
 
   const calculateRolling4Q = (current: NDISeriesPoint, index: number) => {
@@ -51,11 +57,11 @@ export function NDISummaryTable({ data, className }: NDISummaryTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Period</TableHead>
-            <TableHead className="text-right">NDI</TableHead>
-            <TableHead className="text-right">QoQ</TableHead>
-            <TableHead className="text-right">YoY</TableHead>
-            <TableHead className="text-right">Rullande 4Q</TableHead>
+            <TableHead className="text-dark dark:text-white">Period</TableHead>
+            <TableHead className="text-right text-dark dark:text-white">NDI</TableHead>
+            <TableHead className="text-right text-dark dark:text-white">QoQ</TableHead>
+            <TableHead className="text-right text-dark dark:text-white">YoY</TableHead>
+            <TableHead className="text-right text-dark dark:text-white">Rullande 4Q</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -76,14 +82,14 @@ export function NDISummaryTable({ data, className }: NDISummaryTableProps) {
                   {qoq !== null ? (
                     <div className={cn(
                       "flex items-center justify-end gap-1",
-                      qoq > 0 ? "text-green-600" : qoq < 0 ? "text-red-600" : "text-gray-600"
+                      qoq.change > 0 ? "text-green-600" : qoq.change < 0 ? "text-red-600" : "text-gray-600"
                     )}>
-                      {qoq > 0 ? (
+                      {qoq.change > 0 ? (
                         <ArrowUpIcon className="h-3 w-3" />
-                      ) : qoq < 0 ? (
+                      ) : qoq.change < 0 ? (
                         <ArrowDownIcon className="h-3 w-3" />
                       ) : null}
-                      {qoq > 0 ? '+' : ''}{qoq?.toFixed(1) || '0.0'}%
+                      {qoq.change > 0 ? '+' : ''}{qoq.change?.toFixed(1) || '0.0'}% ({qoq.previousValue.toFixed(1)})
                     </div>
                   ) : (
                     'N/A'
@@ -93,14 +99,14 @@ export function NDISummaryTable({ data, className }: NDISummaryTableProps) {
                   {yoy !== null ? (
                     <div className={cn(
                       "flex items-center justify-end gap-1",
-                      yoy > 0 ? "text-green-600" : yoy < 0 ? "text-red-600" : "text-gray-600"
+                      yoy.change > 0 ? "text-green-600" : yoy.change < 0 ? "text-red-600" : "text-gray-600"
                     )}>
-                      {yoy > 0 ? (
+                      {yoy.change > 0 ? (
                         <ArrowUpIcon className="h-3 w-3" />
-                      ) : yoy < 0 ? (
+                      ) : yoy.change < 0 ? (
                         <ArrowDownIcon className="h-3 w-3" />
                       ) : null}
-                      {yoy > 0 ? '+' : ''}{yoy?.toFixed(1) || '0.0'}%
+                      {yoy.change > 0 ? '+' : ''}{yoy.change?.toFixed(1) || '0.0'}% ({yoy.previousValue.toFixed(1)})
                     </div>
                   ) : (
                     'N/A'
