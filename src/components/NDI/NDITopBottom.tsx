@@ -17,6 +17,7 @@ export function NDITopBottom({ top, bottom, className }: NDITopBottomProps) {
   };
 
   const getCategoryName = (row: BreakdownRow) => {
+    // Use the same logic as sidebar - groupA contains the descriptive label
     return row.groupA || row.groupB || row.groupC || 'Okänd kategori';
   };
 

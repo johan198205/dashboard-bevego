@@ -11,12 +11,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Period parameter is required' }, { status: 400 });
     }
 
-    // Get breakdown data for the specified period
+    // Get breakdown data for the specified period (use AGGREGATED for descriptive labels)
     const breakdownData = await prisma.metricPoint.findMany({
       where: {
         period,
         metric: 'NDI',
-        source: 'BREAKDOWN',
+        source: 'AGGREGATED',
       },
       select: {
         groupA: true,
