@@ -57,31 +57,53 @@ export function NDICard({ data, className }: NDICardProps) {
           
           {/* QoQ Change */}
           {data.qoqChange !== null && data.qoqChange !== undefined && (
-            <div className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium bg-green-50 text-green-600 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 mb-2">
+            <div className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium border mb-2 ${
+              data.qoqChange > 0 
+                ? 'bg-green-50 text-green-600 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
+                : 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
+            }`}>
               {data.qoqChange > 0 ? (
                 <TrendingUpIcon className="h-3 w-3" aria-hidden="true" />
               ) : (
                 <ArrowDownIcon className="h-3 w-3" aria-hidden="true" />
               )}
               {Math.abs(data.qoqChange).toFixed(2)}%
-              <span className="text-neutral-600 dark:text-dark-5 ml-1">
-                vs. föregående kvartal
-              </span>
+              {data.prevQuarterValue !== undefined && data.prevQuarterValue !== null && (
+                <span className="text-neutral-600 dark:text-dark-5 ml-1">
+                  ({data.prevQuarterValue.toFixed(1)}) vs. föregående kvartal
+                </span>
+              )}
+              {(!data.prevQuarterValue || data.prevQuarterValue === null) && (
+                <span className="text-neutral-600 dark:text-dark-5 ml-1">
+                  vs. föregående kvartal
+                </span>
+              )}
             </div>
           )}
           
           {/* YoY Change */}
           {data.yoyChange !== null && data.yoyChange !== undefined && (
-            <div className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 ml-2">
+            <div className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium border ml-2 ${
+              data.yoyChange > 0 
+                ? 'bg-green-50 text-green-600 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
+                : 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
+            }`}>
               {data.yoyChange > 0 ? (
                 <TrendingUpIcon className="h-3 w-3" aria-hidden="true" />
               ) : (
                 <ArrowDownIcon className="h-3 w-3" aria-hidden="true" />
               )}
               {Math.abs(data.yoyChange).toFixed(1)}%
-              <span className="text-neutral-600 dark:text-dark-5 ml-1">
-                vs. föregående år
-              </span>
+              {data.prevYearValue !== undefined && data.prevYearValue !== null && (
+                <span className="text-neutral-600 dark:text-dark-5 ml-1">
+                  ({data.prevYearValue.toFixed(1)}) vs. föregående år
+                </span>
+              )}
+              {(!data.prevYearValue || data.prevYearValue === null) && (
+                <span className="text-neutral-600 dark:text-dark-5 ml-1">
+                  vs. föregående år
+                </span>
+              )}
             </div>
           )}
         </div>

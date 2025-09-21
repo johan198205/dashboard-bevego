@@ -12,20 +12,26 @@ export class NDIService {
 
     // Calculate QoQ change
     let qoqChange: number | undefined;
+    let prevQuarterValue: number | undefined;
     const prevQuarter = getPreviousQuarter(period);
     if (prevQuarter) {
       const prevValue = await this.getNDIValue(prevQuarter);
       if (prevValue !== null) {
-        qoqChange = qoq(ndiValue, prevValue);
+        prevQuarterValue = prevValue;
+        const qoqResult = qoq(ndiValue, prevValue);
+        qoqChange = qoqResult !== null ? qoqResult : undefined;
       }
     }
 
     // Calculate YoY change
     let yoyChange: number | undefined;
+    let prevYearValue: number | undefined;
     const prevYearQuarter = getPreviousYearQuarter(period);
-    const prevYearValue = await this.getNDIValue(prevYearQuarter);
-    if (prevYearValue !== null) {
-      yoyChange = yoy(ndiValue, prevYearValue);
+    const prevYearVal = await this.getNDIValue(prevYearQuarter);
+    if (prevYearVal !== null) {
+      prevYearValue = prevYearVal;
+      const yoyResult = yoy(ndiValue, prevYearVal);
+      yoyChange = yoyResult !== null ? yoyResult : undefined;
     }
 
     // Calculate rolling 4Q average
@@ -37,6 +43,8 @@ export class NDIService {
       total: ndiValue,
       qoqChange,
       yoyChange,
+      prevQuarterValue,
+      prevYearValue,
       rolling4q: rolling4qValue || undefined,
     };
   }

@@ -5,6 +5,8 @@ export interface NDISummary {
   total: number;
   qoqChange?: number; // i %
   yoyChange?: number; // i %
+  prevQuarterValue?: number; // Previous quarter value for display
+  prevYearValue?: number; // Previous year value for display
   rolling4q?: number;
   totalResponses?: number; // Total number of responses for this period
 }

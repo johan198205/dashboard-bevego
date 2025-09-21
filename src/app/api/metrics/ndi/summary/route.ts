@@ -58,10 +58,12 @@ export async function GET(request: NextRequest) {
 
     // Calculate QoQ change
     let qoqChange: number | undefined;
+    let prevQuarterValue: number | undefined;
     const prevQ = prevQuarter(period);
     if (prevQ) {
       const prevValue = await getNDIValue(prevQ);
       if (prevValue !== null && isFinite(prevValue)) {
+        prevQuarterValue = prevValue;
         const qoqResult = qoq(ndiValue, prevValue);
         qoqChange = qoqResult !== null ? qoqResult : undefined;
       }
@@ -69,10 +71,12 @@ export async function GET(request: NextRequest) {
 
     // Calculate YoY change
     let yoyChange: number | undefined;
+    let prevYearValue: number | undefined;
     const prevYearQ = yoyQuarter(period);
-    const prevYearValue = await getNDIValue(prevYearQ);
-    if (prevYearValue !== null && isFinite(prevYearValue)) {
-      const yoyResult = yoy(ndiValue, prevYearValue);
+    const prevYearVal = await getNDIValue(prevYearQ);
+    if (prevYearVal !== null && isFinite(prevYearVal)) {
+      prevYearValue = prevYearVal;
+      const yoyResult = yoy(ndiValue, prevYearVal);
       yoyChange = yoyResult !== null ? yoyResult : undefined;
     }
 
@@ -88,6 +92,8 @@ export async function GET(request: NextRequest) {
       total: ndiValue,
       qoqChange,
       yoyChange,
+      prevQuarterValue,
+      prevYearValue,
       rolling4q: rolling4qValue || undefined,
       totalResponses,
     };
