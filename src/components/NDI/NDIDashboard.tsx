@@ -8,6 +8,7 @@ import { NDICompleteList } from "@/components/NDI/NDICompleteList";
 import { NDIQuarterSelector } from "@/components/NDI/NDIQuarterSelector";
 import { NDIAreaBreakdownDrawer } from "@/components/NDI/NDIAreaBreakdownDrawer";
 import { NDIDemographicScorecards } from "@/components/NDI/NDIDemographicScorecards";
+import { NDIExcelScorecards } from "@/components/NDI/NDIExcelScorecards";
 import { useNDIDemographicBreakdown } from "@/hooks/useNDIDemographicBreakdown";
 import { NDISummary, NDISeriesPoint, BreakdownRow, BreakdownWithHistory, Period } from "@/types/ndi";
 
@@ -190,6 +191,22 @@ export function NDIDashboard() {
           Demografisk uppdelning
         </h2>
         <NDIDemographicScorecards 
+          data={demographicData} 
+          loading={demographicLoading}
+        />
+        {demographicError && (
+          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-sm text-red-600 dark:text-red-400">{demographicError}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Excel-based Breakdown Scorecards */}
+      <div className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-lg p-6">
+        <h2 className="text-lg font-semibold text-dark dark:text-white mb-4">
+          Övriga detaljer
+        </h2>
+        <NDIExcelScorecards 
           data={demographicData} 
           loading={demographicLoading}
         />

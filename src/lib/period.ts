@@ -155,11 +155,11 @@ export function sortPeriods(periods: Period[]): Period[] {
  */
 export function getPeriodRange(start: Period, end: Period): Period[] {
   const periods: Period[] = [];
-  let current = start;
+  let current: Period | null = start;
   
   while (current && current <= end) {
     periods.push(current);
-    current = prevQuarter(current) || null;
+    current = prevQuarter(current);
     if (!current) break;
   }
   

@@ -176,7 +176,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       const prevValue = previous && previous.length > 0 ? await getNdiCurrent(prevRange!, ndiFilters) : 0;
       
       return {
-        meta: { source: "uploaded", metric: "ndi", dims: breakdown.map(b => b.key) },
+        meta: { source: "mock", metric: "ndi", dims: breakdown.map(b => b.key) },
         summary: {
           current: currentValue,
           prev: prevValue,

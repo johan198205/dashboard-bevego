@@ -111,12 +111,12 @@ export function NDICompleteList({ data, className, onAreaClick }: NDICompleteLis
                     </div>
                   </td>
                   <td className="p-4 text-right align-middle">
-                    <div className={cn("", qoqFormatted.colorClass || 'text-dark dark:text-white')}>
+                    <div className={cn("", typeof qoqFormatted === 'string' ? 'text-dark dark:text-white' : qoqFormatted.colorClass)}>
                       {typeof qoqFormatted === 'string' ? qoqFormatted : qoqFormatted.text}
                     </div>
                   </td>
                   <td className="p-4 text-right align-middle">
-                    <div className={cn("", yoyFormatted.colorClass || 'text-dark dark:text-white')}>
+                    <div className={cn("", typeof yoyFormatted === 'string' ? 'text-dark dark:text-white' : yoyFormatted.colorClass)}>
                       {typeof yoyFormatted === 'string' ? yoyFormatted : yoyFormatted.text}
                     </div>
                   </td>

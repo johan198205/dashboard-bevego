@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { Period, DemographicBreakdown, DemographicSegment, GenderBreakdownScorecard, AgeGroupBreakdownScorecard, DeviceBreakdownScorecard, OSBreakdownScorecard, BrowserBreakdownScorecard } from '@/types/ndi';
+import { Period, DemographicBreakdown, DemographicSegment } from '@/types/ndi';
 
 export async function GET(request: NextRequest) {
   try {
@@ -93,6 +93,9 @@ export async function GET(request: NextRequest) {
       device: { mobile: { ndi: null, count: 0 }, desktop: { ndi: null, count: 0 }, delta: null },
       os: { android: { ndi: null, count: 0 }, ios: { ndi: null, count: 0 }, delta: null },
       browser: { chrome: { ndi: null, count: 0 }, safari: { ndi: null, count: 0 }, edge: { ndi: null, count: 0 } },
+      riksbyggenBuilt: { yes: { ndi: null, count: 0 }, no: { ndi: null, count: 0 }, delta: null },
+      riksbyggenManaged: { yes: { ndi: null, count: 0 }, no: { ndi: null, count: 0 }, delta: null },
+      informationFound: { yes: { ndi: null, count: 0 }, partially: { ndi: null, count: 0 }, no: { ndi: null, count: 0 } },
     };
 
     // Process each demographic dimension
@@ -145,6 +148,37 @@ export async function GET(request: NextRequest) {
         breakdown.browser.chrome = calculateSegmentAverage(chromeRows);
         breakdown.browser.safari = calculateSegmentAverage(safariRows);
         breakdown.browser.edge = calculateSegmentAverage(edgeRows);
+      }
+
+      // Riksbyggen Built breakdown - handle specific Excel column headers
+      else if (dimensionLower.includes('bor du i ett hus som riksbyggen byggt')) {
+        const yesRows = segmentMap.get('Ja') || segmentMap.get('Yes') || [];
+        const noRows = segmentMap.get('Nej') || segmentMap.get('No') || [];
+        
+        breakdown.riksbyggenBuilt.yes = calculateSegmentAverage(yesRows);
+        breakdown.riksbyggenBuilt.no = calculateSegmentAverage(noRows);
+        breakdown.riksbyggenBuilt.delta = calculateDelta(breakdown.riksbyggenBuilt.yes, breakdown.riksbyggenBuilt.no);
+      }
+
+      // Riksbyggen Managed breakdown - handle specific Excel column headers
+      else if (dimensionLower.includes('bor du i ett hus som riksbyggen förvaltar')) {
+        const yesRows = segmentMap.get('Ja') || segmentMap.get('Yes') || [];
+        const noRows = segmentMap.get('Nej') || segmentMap.get('No') || [];
+        
+        breakdown.riksbyggenManaged.yes = calculateSegmentAverage(yesRows);
+        breakdown.riksbyggenManaged.no = calculateSegmentAverage(noRows);
+        breakdown.riksbyggenManaged.delta = calculateDelta(breakdown.riksbyggenManaged.yes, breakdown.riksbyggenManaged.no);
+      }
+
+      // Information Found breakdown - handle specific Excel column headers
+      else if (dimensionLower.includes('hittade den information de sökte')) {
+        const yesRows = segmentMap.get('Ja') || segmentMap.get('Yes') || segmentMap.get('Ja/Ja, delvis') || [];
+        const partiallyRows = segmentMap.get('Ja, delvis') || segmentMap.get('Yes, partially') || segmentMap.get('Delvis') || segmentMap.get('Partially') || [];
+        const noRows = segmentMap.get('Nej') || segmentMap.get('No') || [];
+        
+        breakdown.informationFound.yes = calculateSegmentAverage(yesRows);
+        breakdown.informationFound.partially = calculateSegmentAverage(partiallyRows);
+        breakdown.informationFound.no = calculateSegmentAverage(noRows);
       }
     }
 

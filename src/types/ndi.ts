@@ -150,6 +150,24 @@ export interface BrowserBreakdownScorecard {
   edge: DemographicSegment;
 }
 
+export interface RiksbyggenBuiltBreakdownScorecard {
+  yes: DemographicSegment;
+  no: DemographicSegment;
+  delta: number | null; // percentage points difference (yes - no)
+}
+
+export interface RiksbyggenManagedBreakdownScorecard {
+  yes: DemographicSegment;
+  no: DemographicSegment;
+  delta: number | null; // percentage points difference (yes - no)
+}
+
+export interface InformationFoundBreakdownScorecard {
+  yes: DemographicSegment;
+  partially: DemographicSegment;
+  no: DemographicSegment;
+}
+
 export interface DemographicBreakdown {
   period: Period;
   gender: GenderBreakdownScorecard;
@@ -157,4 +175,7 @@ export interface DemographicBreakdown {
   device: DeviceBreakdownScorecard;
   os: OSBreakdownScorecard;
   browser: BrowserBreakdownScorecard;
+  riksbyggenBuilt: RiksbyggenBuiltBreakdownScorecard;
+  riksbyggenManaged: RiksbyggenManagedBreakdownScorecard;
+  informationFound: InformationFoundBreakdownScorecard;
 }

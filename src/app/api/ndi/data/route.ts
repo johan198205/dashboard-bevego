@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, readdirSync } from 'fs';
+import * as XLSX from 'xlsx';
 import { join } from 'path';
 import { Period } from '@/types/ndi';
 
@@ -22,8 +23,7 @@ function getUploadedFiles(): { aggregated?: string; breakdown?: string } {
 
   // Look for files with specific patterns
   try {
-    const fs = require('fs');
-    const fileList = fs.readdirSync(uploadsDir);
+    const fileList = readdirSync(uploadsDir);
     
     for (const file of fileList) {
       if (file.includes('Tabeller.xlsx') && !file.includes('nedbrytningar')) {
@@ -50,7 +50,6 @@ function parseNdiData(): { aggregated: Array<{ period: Period; value: number; we
   // Parse aggregated file with custom logic for the specific format
   if (files.aggregated && existsSync(files.aggregated)) {
     try {
-      const XLSX = require('xlsx');
       const workbook = XLSX.readFile(files.aggregated);
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];

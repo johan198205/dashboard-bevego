@@ -2,7 +2,7 @@
 
 import { DemographicBreakdown, DemographicSegment } from '@/types/ndi';
 
-interface NDIDemographicScorecardsProps {
+interface NDIExcelScorecardsProps {
   data: DemographicBreakdown | null;
   loading?: boolean;
 }
@@ -36,7 +36,6 @@ function ScorecardChip({ label, segment, showCount = false }: ScorecardChipProps
 interface DeltaChipProps {
   label: string;
   delta: number | null;
-  isPositive?: boolean;
 }
 
 function DeltaChip({ label, delta }: DeltaChipProps) {
@@ -81,16 +80,17 @@ function Scorecard({ title, children }: ScorecardProps) {
   );
 }
 
-export function NDIDemographicScorecards({ data, loading }: NDIDemographicScorecardsProps) {
+export function NDIExcelScorecards({ data, loading }: NDIExcelScorecardsProps) {
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {[...Array(5)].map((_, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[...Array(3)].map((_, i) => (
           <div key={i} className="animate-pulse">
             <div className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-2xl p-6">
               <div className="space-y-3">
                 <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
                 <div className="space-y-2">
+                  <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
                   <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
                   <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
                 </div>
@@ -112,77 +112,37 @@ export function NDIDemographicScorecards({ data, loading }: NDIDemographicScorec
             </svg>
           </div>
           <h3 className="text-lg font-semibold text-dark dark:text-white mb-2">
-            Ingen demografisk data
+            Ingen Excel-baserad data
           </h3>
           <p className="text-dark-6 dark:text-dark-4">
-            Demografiska uppdelningar är inte tillgängliga för detta kvartal
+            Excel-baserade uppdelningar är inte tillgängliga för detta kvartal
           </p>
         </div>
       </div>
     );
   }
 
-  // Age groups mapping - TODO(config): move to constants
-  const ageGroupLabels: Record<string, string> = {
-    '18-25': '18-25',
-    '26-35': '26-35', 
-    '36-45': '36-45',
-    '46-55': '46-55',
-    '56-65': '56-65',
-    '65+': '65+',
-    '-25': 'Under 25',
-    '25-35': '25-35',
-    '35-45': '35-45',
-    '45-55': '45-55',
-    '55-65': '55-65',
-  };
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-      {/* Gender Scorecard */}
-      <Scorecard title="Kön">
-        <ScorecardChip label="Män" segment={data.gender.male} showCount />
-        <ScorecardChip label="Kvinnor" segment={data.gender.female} showCount />
-        <DeltaChip label="Diff (K-M)" delta={data.gender.delta} />
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Riksbyggen Built Scorecard */}
+      <Scorecard title="Riksbyggen byggt">
+        <ScorecardChip label="Ja" segment={data.riksbyggenBuilt.yes} showCount />
+        <ScorecardChip label="Nej" segment={data.riksbyggenBuilt.no} showCount />
+        <DeltaChip label="Diff (Ja–Nej)" delta={data.riksbyggenBuilt.delta} />
       </Scorecard>
 
-      {/* Age Groups Scorecard */}
-      <Scorecard title="Åldersgrupper">
-        {Object.entries(data.ageGroups)
-          .sort(([a], [b]) => {
-            // Sort by age order
-            const ageOrder = ['18-25', '26-35', '36-45', '46-55', '56-65', '65+', '-25', '25-35', '35-45', '45-55', '55-65'];
-            return ageOrder.indexOf(a) - ageOrder.indexOf(b);
-          })
-          .map(([ageGroup, segment]) => (
-            <ScorecardChip
-              key={ageGroup}
-              label={ageGroupLabels[ageGroup] || ageGroup}
-              segment={segment}
-              showCount
-            />
-          ))}
+      {/* Riksbyggen Managed Scorecard */}
+      <Scorecard title="Riksbyggen förvaltar">
+        <ScorecardChip label="Ja" segment={data.riksbyggenManaged.yes} showCount />
+        <ScorecardChip label="Nej" segment={data.riksbyggenManaged.no} showCount />
+        <DeltaChip label="Diff (Ja–Nej)" delta={data.riksbyggenManaged.delta} />
       </Scorecard>
 
-      {/* Device Scorecard */}
-      <Scorecard title="Enhet">
-        <ScorecardChip label="Mobile" segment={data.device.mobile} showCount />
-        <ScorecardChip label="Desktop" segment={data.device.desktop} showCount />
-        <DeltaChip label="Diff (M-D)" delta={data.device.delta} />
-      </Scorecard>
-
-      {/* OS Scorecard */}
-      <Scorecard title="Operativsystem">
-        <ScorecardChip label="Android" segment={data.os.android} showCount />
-        <ScorecardChip label="iOS" segment={data.os.ios} showCount />
-        <DeltaChip label="Diff (iOS-Android)" delta={data.os.delta} />
-      </Scorecard>
-
-      {/* Browser Scorecard */}
-      <Scorecard title="Webbläsare">
-        <ScorecardChip label="Chrome" segment={data.browser.chrome} showCount />
-        <ScorecardChip label="Safari" segment={data.browser.safari} showCount />
-        <ScorecardChip label="Edge" segment={data.browser.edge} showCount />
+      {/* Information Found Scorecard */}
+      <Scorecard title="Hittade informationen">
+        <ScorecardChip label="Ja" segment={data.informationFound.yes} showCount />
+        <ScorecardChip label="Ja, delvis" segment={data.informationFound.partially} showCount />
+        <ScorecardChip label="Nej" segment={data.informationFound.no} showCount />
       </Scorecard>
     </div>
   );

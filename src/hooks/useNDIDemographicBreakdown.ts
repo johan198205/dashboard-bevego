@@ -108,6 +108,44 @@ export function useNDIDemographicBreakdown(period: Period | null) {
           ndi: data.browser.edge.ndi !== null ? Math.round(data.browser.edge.ndi * 10) / 10 : null,
         },
       },
+      riksbyggenBuilt: {
+        ...data.riksbyggenBuilt,
+        yes: {
+          ...data.riksbyggenBuilt.yes,
+          ndi: data.riksbyggenBuilt.yes.ndi !== null ? Math.round(data.riksbyggenBuilt.yes.ndi * 10) / 10 : null,
+        },
+        no: {
+          ...data.riksbyggenBuilt.no,
+          ndi: data.riksbyggenBuilt.no.ndi !== null ? Math.round(data.riksbyggenBuilt.no.ndi * 10) / 10 : null,
+        },
+        delta: data.riksbyggenBuilt.delta !== null ? Math.round(data.riksbyggenBuilt.delta * 10) / 10 : null,
+      },
+      riksbyggenManaged: {
+        ...data.riksbyggenManaged,
+        yes: {
+          ...data.riksbyggenManaged.yes,
+          ndi: data.riksbyggenManaged.yes.ndi !== null ? Math.round(data.riksbyggenManaged.yes.ndi * 10) / 10 : null,
+        },
+        no: {
+          ...data.riksbyggenManaged.no,
+          ndi: data.riksbyggenManaged.no.ndi !== null ? Math.round(data.riksbyggenManaged.no.ndi * 10) / 10 : null,
+        },
+        delta: data.riksbyggenManaged.delta !== null ? Math.round(data.riksbyggenManaged.delta * 10) / 10 : null,
+      },
+      informationFound: {
+        yes: {
+          ...data.informationFound.yes,
+          ndi: data.informationFound.yes.ndi !== null ? Math.round(data.informationFound.yes.ndi * 10) / 10 : null,
+        },
+        partially: {
+          ...data.informationFound.partially,
+          ndi: data.informationFound.partially.ndi !== null ? Math.round(data.informationFound.partially.ndi * 10) / 10 : null,
+        },
+        no: {
+          ...data.informationFound.no,
+          ndi: data.informationFound.no.ndi !== null ? Math.round(data.informationFound.no.ndi * 10) / 10 : null,
+        },
+      },
     };
   }, [data]);
 
