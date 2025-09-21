@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
       orderBy: { period: 'asc' },
     });
 
-    // Group by normalized period and calculate average values
-    const periodMap = new Map<string, number[]>();
+    // Group by normalized period and calculate values using same logic as summary
+    const periodMap = new Map<string, { aggregated: number[], breakdown: number[] }>();
     
     for (const point of allPeriods) {
       // Normalize the period to standard format (YYYYQn)
@@ -34,17 +34,33 @@ export async function GET(request: NextRequest) {
       if (!normalizedPeriod) continue;
       
       if (!periodMap.has(normalizedPeriod)) {
-        periodMap.set(normalizedPeriod, []);
+        periodMap.set(normalizedPeriod, { aggregated: [], breakdown: [] });
       }
-      periodMap.get(normalizedPeriod)!.push(point.value);
+      
+      if (point.source === 'AGGREGATED') {
+        periodMap.get(normalizedPeriod)!.aggregated.push(point.value);
+      } else if (point.source === 'BREAKDOWN') {
+        periodMap.get(normalizedPeriod)!.breakdown.push(point.value);
+      }
     }
 
-    // Calculate average for each period
+    // Calculate average for each period using same logic as summary API
     const periodAverages = new Map<string, number>();
-    for (const [period, values] of periodMap) {
-      if (values.length > 0) {
-        const sum = values.reduce((sum, v) => sum + v, 0);
-        periodAverages.set(period, sum / values.length);
+    for (const [period, data] of periodMap) {
+      let ndiValue: number | null = null;
+      
+      // First, try to get aggregated values and calculate average
+      if (data.aggregated.length > 0) {
+        const sum = data.aggregated.reduce((sum, v) => sum + v, 0);
+        ndiValue = sum / data.aggregated.length;
+      } else if (data.breakdown.length > 0) {
+        // Calculate from breakdowns
+        const sum = data.breakdown.reduce((sum, v) => sum + v, 0);
+        ndiValue = sum / data.breakdown.length;
+      }
+      
+      if (ndiValue !== null) {
+        periodAverages.set(period, ndiValue);
       }
     }
 
