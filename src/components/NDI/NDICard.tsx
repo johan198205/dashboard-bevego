@@ -26,36 +26,66 @@ export function NDICard({ data, className }: NDICardProps) {
 
   return (
     <>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* Main NDI Score */}
-      <ScoreCard
-        label="NDI - Senaste kvartal"
-        value={formatValue(data.total)}
-        growthRate={data.qoqChange}
-        comparisonLabel="vs. föregående kvartal"
-        Icon={data.qoqChange && data.qoqChange > 0 ? TrendingUpIcon : ArrowDownIcon}
-        variant="primary"
-        className={className}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Main NDI Score with QoQ and YoY */}
+      <div 
+        className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-2xl p-6 relative overflow-hidden hover:border-red hover:shadow-lg transition-all cursor-pointer"
         onClick={() => setShowCalculation(true)}
-      />
-
-      {/* QoQ Change */}
-      <ScoreCard
-        label="Förändring QoQ"
-        value={data.qoqChange ? `${formatChange(data.qoqChange)}%` : 'N/A'}
-        Icon={TrendingUpIcon}
-        variant="info"
-        className={className}
-      />
-
-      {/* YoY Change */}
-      <ScoreCard
-        label="Förändring YoY"
-        value={data.yoyChange ? `${formatChange(data.yoyChange)}%` : 'N/A'}
-        Icon={TrendingUpIcon}
-        variant="info"
-        className={className}
-      />
+      >
+        
+        {/* Icon */}
+        <div className="absolute top-6 right-6 bg-red/10 rounded-lg p-2">
+          <TrendingUpIcon className="h-5 w-5 text-red" />
+        </div>
+        
+        {/* Content */}
+        <div className="pr-16">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            NDI - Senaste kvartal
+          </h3>
+          
+          <div className="text-4xl font-semibold text-neutral-900 dark:text-white leading-none mb-2">
+            {formatValue(data.total)}
+          </div>
+          
+          {/* Total Responses */}
+          {data.totalResponses && (
+            <div className="text-sm text-gray-600 dark:text-gray-400 font-medium mb-3">
+              {data.totalResponses.toLocaleString()} svar
+            </div>
+          )}
+          
+          {/* QoQ Change */}
+          {data.qoqChange !== null && data.qoqChange !== undefined && (
+            <div className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium bg-green-50 text-green-600 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 mb-2">
+              {data.qoqChange > 0 ? (
+                <TrendingUpIcon className="h-3 w-3" aria-hidden="true" />
+              ) : (
+                <ArrowDownIcon className="h-3 w-3" aria-hidden="true" />
+              )}
+              {Math.abs(data.qoqChange).toFixed(2)}%
+              <span className="text-neutral-600 dark:text-dark-5 ml-1">
+                vs. föregående kvartal
+              </span>
+            </div>
+          )}
+          
+          {/* YoY Change */}
+          {data.yoyChange !== null && data.yoyChange !== undefined && (
+            <div className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 ml-2">
+              {data.yoyChange > 0 ? (
+                <TrendingUpIcon className="h-3 w-3" aria-hidden="true" />
+              ) : (
+                <ArrowDownIcon className="h-3 w-3" aria-hidden="true" />
+              )}
+              {Math.abs(data.yoyChange).toFixed(1)}%
+              <span className="text-neutral-600 dark:text-dark-5 ml-1">
+                vs. föregående år
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Rolling 4Q */}
       <ScoreCard

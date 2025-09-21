@@ -80,12 +80,16 @@ export async function GET(request: NextRequest) {
     const series = await getNDISeries();
     const rolling4qValue = rolling4q(series, period);
 
+    // Calculate total responses for this period
+    const totalResponses = await getTotalResponses(period);
+
     const summary: NDISummary = {
       period,
       total: ndiValue,
       qoqChange,
       yoyChange,
       rolling4q: rolling4qValue || undefined,
+      totalResponses,
     };
 
     return NextResponse.json(summary);
@@ -184,4 +188,64 @@ async function getNDISeries() {
     period: period as Period,
     value: data.value,
   }));
+}
+
+async function getTotalResponses(period: Period): Promise<number | undefined> {
+  try {
+    // First try to get weight from aggregated data
+    const aggregatedData = await prisma.metricPoint.findMany({
+      where: {
+        period,
+        metric: 'NDI',
+        source: 'AGGREGATED',
+        weight: {
+          not: null, // Only get rows that have weight data
+        },
+      },
+      select: {
+        weight: true,
+        value: true,
+      },
+    });
+
+    if (aggregatedData.length > 0) {
+      // Use weight from aggregated data (should be the same for all rows)
+      const totalResponses = aggregatedData[0].weight;
+      console.log(`Found weight data from aggregated file for period ${period}: ${totalResponses} responses`);
+      return totalResponses || undefined;
+    }
+
+    // Fallback: Get weight from breakdown data
+    const breakdownData = await prisma.metricPoint.findMany({
+      where: {
+        period,
+        metric: 'NDI',
+        source: 'BREAKDOWN',
+        groupA: 'Index', // Only get Index rows which represent total responses
+        weight: {
+          not: null, // Only get rows that have weight data
+        },
+      },
+      select: {
+        weight: true,
+        value: true,
+      },
+    });
+
+    if (breakdownData.length === 0) {
+      console.log(`No weight data found for period ${period} - totalResponses will be undefined`);
+      return undefined;
+    }
+
+    // Sum up all weights (which represent response counts)
+    const totalResponses = breakdownData.reduce((sum, row) => {
+      return sum + (row.weight || 0);
+    }, 0);
+
+    console.log(`Found ${breakdownData.length} rows with weight data from breakdown, total responses: ${totalResponses}`);
+    return totalResponses > 0 ? totalResponses : undefined;
+  } catch (error) {
+    console.error('Error calculating total responses:', error);
+    return undefined;
+  }
 }

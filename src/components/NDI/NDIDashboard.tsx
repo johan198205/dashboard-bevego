@@ -6,6 +6,9 @@ import { NDIChart } from "@/components/NDI/NDIChart";
 import { NDISummaryTable } from "@/components/NDI/NDISummaryTable";
 import { NDICompleteList } from "@/components/NDI/NDICompleteList";
 import { NDIQuarterSelector } from "@/components/NDI/NDIQuarterSelector";
+import { NDIAreaBreakdownDrawer } from "@/components/NDI/NDIAreaBreakdownDrawer";
+import { NDIDemographicScorecards } from "@/components/NDI/NDIDemographicScorecards";
+import { useNDIDemographicBreakdown } from "@/hooks/useNDIDemographicBreakdown";
 import { NDISummary, NDISeriesPoint, BreakdownRow, BreakdownWithHistory, Period } from "@/types/ndi";
 
 export function NDIDashboard() {
@@ -15,6 +18,11 @@ export function NDIDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedQuarter, setSelectedQuarter] = useState<Period | null>(null);
+  const [selectedArea, setSelectedArea] = useState<string | null>(null);
+  const [breakdownDrawerOpen, setBreakdownDrawerOpen] = useState(false);
+
+  // Demographic breakdown hook
+  const { data: demographicData, loading: demographicLoading, error: demographicError } = useNDIDemographicBreakdown(selectedQuarter);
 
   const fetchData = async (targetPeriod?: Period | null) => {
     try {
@@ -95,11 +103,21 @@ export function NDIDashboard() {
     }
   }, [selectedQuarter]);
 
+  const handleAreaClick = (area: string) => {
+    setSelectedArea(area);
+    setBreakdownDrawerOpen(true);
+  };
+
+  const handleCloseBreakdownDrawer = () => {
+    setBreakdownDrawerOpen(false);
+    setSelectedArea(null);
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[...Array(2)].map((_, i) => (
             <div key={i} className="animate-pulse">
               <div className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-2xl p-6">
                 <div className="space-y-3">
@@ -150,7 +168,7 @@ export function NDIDashboard() {
         <h1 className="text-2xl font-bold text-dark dark:text-white">
           NDI Dashboard
         </h1>
-        <p className="text-dark-6 dark:text-dark-4 mt-1">
+        <p className="text-gray-600 dark:text-dark-4 mt-1">
           Översikt över Net Promoter Index och kundnöjdhet
         </p>
       </div>
@@ -165,6 +183,22 @@ export function NDIDashboard() {
 
       {/* Scorecards */}
       {summary && <NDICard data={summary} />}
+
+      {/* Demographic Breakdown Scorecards */}
+      <div className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-lg p-6">
+        <h2 className="text-lg font-semibold text-dark dark:text-white mb-4">
+          Demografisk uppdelning
+        </h2>
+        <NDIDemographicScorecards 
+          data={demographicData} 
+          loading={demographicLoading}
+        />
+        {demographicError && (
+          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-sm text-red-600 dark:text-red-400">{demographicError}</p>
+          </div>
+        )}
+      </div>
 
       {/* Chart */}
       <div className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-lg p-6">
@@ -185,8 +219,21 @@ export function NDIDashboard() {
       {/* Complete List */}
       {completeList.length > 0 && (
         <div>
-          <NDICompleteList data={completeList} />
+          <NDICompleteList 
+            data={completeList} 
+            onAreaClick={handleAreaClick}
+          />
         </div>
+      )}
+
+      {/* Area Breakdown Drawer */}
+      {selectedArea && selectedQuarter && (
+        <NDIAreaBreakdownDrawer
+          open={breakdownDrawerOpen}
+          onClose={handleCloseBreakdownDrawer}
+          area={selectedArea}
+          period={selectedQuarter}
+        />
       )}
     </div>
   );

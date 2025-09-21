@@ -40,6 +40,132 @@ function matchesAlias(name: string, aliases: string[]): boolean {
 }
 
 /**
+ * Detect demographic columns in header row
+ */
+function detectDemographicColumns(headers: string[]): Array<{index: number, dimension: string, segment: string}> {
+  const demographicColumns: Array<{index: number, dimension: string, segment: string}> = [];
+  
+  // Define demographic mappings
+  const demographicMappings = {
+    // Gender
+    'kön': { dimension: 'Kön', segments: ['Man', 'Kvinna'] },
+    'gender': { dimension: 'Kön', segments: ['Man', 'Kvinna'] },
+    'sex': { dimension: 'Kön', segments: ['Man', 'Kvinna'] },
+    
+    // Age groups
+    'ålder': { dimension: 'Ålder', segments: ['18-25', '26-35', '36-45', '46-55', '56-65', '65+'] },
+    'age': { dimension: 'Ålder', segments: ['18-25', '26-35', '36-45', '46-55', '56-65', '65+'] },
+    
+    // Device
+    'enhet': { dimension: 'Enhet', segments: ['Mobile', 'Desktop'] },
+    'device': { dimension: 'Enhet', segments: ['Mobile', 'Desktop'] },
+    
+    // OS
+    'os': { dimension: 'OS', segments: ['Android', 'iOS'] },
+    'operativsystem': { dimension: 'OS', segments: ['Android', 'iOS'] },
+    'platform': { dimension: 'OS', segments: ['Android', 'iOS'] },
+    
+    // Browser
+    'browser': { dimension: 'Browser', segments: ['Chrome', 'Safari', 'Edge'] },
+    'webbläsare': { dimension: 'Browser', segments: ['Chrome', 'Safari', 'Edge'] },
+  };
+  
+  for (let i = 0; i < headers.length; i++) {
+    const header = headers[i]?.toString() || '';
+    const normalizedHeader = header.toLowerCase().trim();
+    
+    // Check for exact segment matches first
+    for (const [dimension, config] of Object.entries(demographicMappings)) {
+      for (const segment of config.segments) {
+        if (normalizedHeader === segment.toLowerCase() || 
+            normalizedHeader.includes(segment.toLowerCase()) ||
+            segment.toLowerCase().includes(normalizedHeader)) {
+          demographicColumns.push({
+            index: i,
+            dimension: config.dimension,
+            segment: segment
+          });
+        }
+      }
+    }
+  }
+  
+  return demographicColumns;
+}
+
+/**
+ * Parse wide format demographic breakdown
+ */
+function parseWideDemographicBreakdown(
+  data: any[][],
+  indexRows: any[][],
+  demographicColumns: Array<{index: number, dimension: string, segment: string}>,
+  validationReport: ValidationReport
+): ParsedData {
+  const metricPoints: ParsedMetricPoint[] = [];
+  const period = '2024Q4' as Period;
+  
+  // Look for "Bas: Samtliga" rows to get weight data
+  const basRows = data.filter(row => 
+    row[0] && row[0].toString().includes('Bas: Samtliga')
+  );
+  
+  // Find the target period column (Q4 2024 = column 6)
+  const headerRow = data[0] || [];
+  let targetColumnIndex = -1;
+  
+  for (let i = 0; i < headerRow.length; i++) {
+    const header = headerRow[i]?.toString().trim();
+    if (header && header.includes('Q4 2024')) {
+      targetColumnIndex = i;
+      break;
+    }
+  }
+  
+  // Get total weight from the first "Bas: Samtliga" row for the target period
+  let totalWeight = undefined;
+  if (basRows.length > 0 && targetColumnIndex >= 0) {
+    const weightValue = basRows[0][targetColumnIndex];
+    if (typeof weightValue === 'number' && !isNaN(weightValue)) {
+      totalWeight = weightValue;
+    }
+  }
+  
+  // Process each Index row
+  indexRows.forEach((indexRow, rowIndex) => {
+    // Process each demographic column
+    demographicColumns.forEach(({ index, dimension, segment }) => {
+      const value = indexRow[index];
+      
+      if (typeof value === 'number' && !isNaN(value)) {
+        metricPoints.push({
+          period,
+          metric: 'NDI',
+          value,
+          weight: totalWeight, // Use the total weight from "Bas: Samtliga" row
+          groupA: 'Index',
+          groupB: dimension,
+          groupC: segment
+        });
+      }
+    });
+  });
+  
+  validationReport.detectedPeriods = [period];
+  validationReport.rowCount = metricPoints.length;
+  validationReport.columnMapping.value = 'Index rows with demographic columns';
+  validationReport.warnings.push(`Found ${indexRows.length} Index rows with ${demographicColumns.length} demographic columns`);
+  
+  if (totalWeight !== undefined) {
+    validationReport.warnings.push(`Found total weight from "Bas: Samtliga" row: ${totalWeight} responses`);
+  } else {
+    validationReport.warnings.push('No weight data found in "Bas: Samtliga" rows - weight data will be undefined');
+  }
+  
+  return { metricPoints, validationReport };
+}
+
+/**
  * Find the best matching column index for a given alias list
  */
 function findColumnByAlias(headers: string[], aliases: string[]): number {
@@ -243,10 +369,32 @@ export function parseAggregatedFileFromBuffer(
     return { metricPoints, validationReport };
   }
 
+  // Find "Bas: Samtliga" rows to get weight data
+  const basRows: { index: number; row: any[] }[] = [];
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    if (row && row[0] && row[0].toString().includes('Bas: Samtliga')) {
+      basRows.push({ index: i, row });
+    }
+  }
+
   // Extract values for each quarter - save each Index row separately
   for (const { key, period } of quarterColumns) {
     const columnIndex = headerRow.findIndex(h => h?.toString() === key);
     if (columnIndex === -1) continue;
+    
+        // Get weight from first "Bas: Samtliga" row that has a valid value for this period
+        let weight: number | undefined;
+        if (basRows.length > 0) {
+          // Find the first Bas row that has a valid weight value for this column
+          for (const basRow of basRows) {
+            const weightValue = basRow.row[columnIndex];
+            if (typeof weightValue === 'number' && !isNaN(weightValue)) {
+              weight = weightValue;
+              break; // Use the first valid weight value found
+            }
+          }
+        }
     
     // Save each Index row as a separate metric point
     let validRowsFound = 0;
@@ -270,6 +418,7 @@ export function parseAggregatedFileFromBuffer(
           period: period as Period,
           metric: 'NDI',
           value: value,
+          weight: weight, // Add weight data from "Bas: Samtliga" row
           groupA: descriptiveLabel,
           groupB: metricRow.name,
           groupC: undefined
@@ -299,6 +448,13 @@ export function parseAggregatedFileFromBuffer(
   // Add info about how many Index rows were found
   if (metricRows.length > 1) {
     validationReport.warnings.push(`Found ${metricRows.length} Index rows: ${metricRows.map(r => r.name).join(', ')}`);
+  }
+  
+  // Add info about weight data
+  if (basRows.length > 0) {
+    validationReport.warnings.push(`Found ${basRows.length} "Bas: Samtliga" rows for weight data`);
+  } else {
+    validationReport.warnings.push('No "Bas: Samtliga" rows found - weight data will be undefined');
   }
   
   return { metricPoints, validationReport };
@@ -366,31 +522,39 @@ export function parseBreakdownFileFromBuffer(
   const quarterColumns = detectQuarterColumns(headerRow);
   const isWideFormat = quarterColumns.length > 0 && periodColumnIndex === -1;
 
-  // Check for Index-based files first - override all other logic
+  // Check for Index-based files with demographic breakdown (wide format)
   const indexRows = dataRows.filter(row => row && row[0] && row[0].toString().toLowerCase().includes('index'));
   if (indexRows.length > 0) {
-    // This is an Index-based file - use simple direct parsing
-    const period = '2024Q4' as Period;
+    // This is an Index-based file - check if it has demographic columns
+    const hasDemographicColumns = detectDemographicColumns(headerRow);
     
-    indexRows.forEach((indexRow, index) => {
-      const value = indexRow[1]; // NDI values are always in column 1 for Index rows
-      if (typeof value === 'number' && !isNaN(value)) {
-        metricPoints.push({
-          period: period as Period,
-          metric: 'NDI',
-          value,
-          weight: undefined,
-          groupA: undefined,
-          groupB: undefined,
-          groupC: undefined
-        });
-      }
-    });
+    if (hasDemographicColumns.length > 0) {
+      // Wide format with demographic breakdown
+      return parseWideDemographicBreakdown(data, indexRows, hasDemographicColumns, validationReport);
+    } else {
+      // Simple Index file without demographics
+      const period = '2024Q4' as Period;
+      
+      indexRows.forEach((indexRow, index) => {
+        const value = indexRow[1]; // NDI values are always in column 1 for Index rows
+        if (typeof value === 'number' && !isNaN(value)) {
+          metricPoints.push({
+            period: period as Period,
+            metric: 'NDI',
+            value,
+            weight: undefined,
+            groupA: undefined,
+            groupB: undefined,
+            groupC: undefined
+          });
+        }
+      });
 
-    validationReport.detectedPeriods = [period];
-    validationReport.rowCount = metricPoints.length;
-    validationReport.columnMapping.value = 'Index (column 1)';
-    return { metricPoints, validationReport };
+      validationReport.detectedPeriods = [period];
+      validationReport.rowCount = metricPoints.length;
+      validationReport.columnMapping.value = 'Index (column 1)';
+      return { metricPoints, validationReport };
+    }
   }
 
   if (isWideFormat) {

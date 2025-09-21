@@ -8,9 +8,10 @@ import { formatPercent } from "@/lib/format";
 interface NDICompleteListProps {
   data: BreakdownWithHistory[];
   className?: string;
+  onAreaClick?: (area: string) => void;
 }
 
-export function NDICompleteList({ data, className }: NDICompleteListProps) {
+export function NDICompleteList({ data, className, onAreaClick }: NDICompleteListProps) {
   const [showAll, setShowAll] = useState(false);
   
   // TODO(config): Get initial display count from UI settings
@@ -54,16 +55,10 @@ export function NDICompleteList({ data, className }: NDICompleteListProps) {
 
   return (
     <div className={cn("bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-lg p-6", className)}>
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4">
         <h3 className="text-lg font-semibold text-dark dark:text-white">
           Alla områden sorterade på NDI
         </h3>
-        <button
-          onClick={() => setShowAll(!showAll)}
-          className="px-4 py-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-        >
-          {showAll ? 'Visa färre' : 'Visa alla'}
-        </button>
       </div>
 
       <div className="relative w-full overflow-auto">
@@ -89,10 +84,21 @@ export function NDICompleteList({ data, className }: NDICompleteListProps) {
               const qoqFormatted = formatChange(row.qoqChange, row.prevQuarterValue);
               const yoyFormatted = formatChange(row.yoyChange, row.prevYearValue);
               
+              const handleRowClick = () => {
+                if (onAreaClick) {
+                  const areaName = getCategoryName(row);
+                  onAreaClick(areaName);
+                }
+              };
+
               return (
                 <tr 
                   key={index} 
-                  className="border-b border-stroke/60 transition-colors hover:bg-neutral-50/80 data-[state=selected]:bg-neutral-100 dark:border-dark-3/60 dark:hover:bg-dark-2/80 dark:data-[state=selected]:bg-neutral-800/80 even:bg-neutral-50/20 dark:even:bg-dark-2/20"
+                  onClick={handleRowClick}
+                  className={cn(
+                    "border-b border-stroke/60 transition-colors hover:bg-neutral-50/80 data-[state=selected]:bg-neutral-100 dark:border-dark-3/60 dark:hover:bg-dark-2/80 dark:data-[state=selected]:bg-neutral-800/80 even:bg-neutral-50/20 dark:even:bg-dark-2/20",
+                    onAreaClick && "cursor-pointer"
+                  )}
                 >
                   <td className="p-4 align-middle">
                     <div className="font-medium text-dark dark:text-white">
@@ -122,8 +128,27 @@ export function NDICompleteList({ data, className }: NDICompleteListProps) {
       </div>
 
       {!showAll && sortedData.length > INITIAL_DISPLAY_COUNT && (
-        <div className="mt-4 text-center text-sm text-dark-6 dark:text-dark-4">
-          Visar {INITIAL_DISPLAY_COUNT} av {sortedData.length} områden
+        <div className="mt-4 text-center space-y-3">
+          <div className="text-sm text-gray-600 dark:text-dark-4">
+            Visar {INITIAL_DISPLAY_COUNT} av {sortedData.length} områden
+          </div>
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="px-4 py-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+          >
+            Visa alla
+          </button>
+        </div>
+      )}
+      
+      {showAll && sortedData.length > INITIAL_DISPLAY_COUNT && (
+        <div className="mt-4 text-center">
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="px-4 py-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+          >
+            Visa färre
+          </button>
         </div>
       )}
     </div>

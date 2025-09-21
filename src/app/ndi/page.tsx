@@ -10,7 +10,7 @@ export default function NDIPage() {
             <h1 className="text-2xl font-bold text-dark dark:text-white">
               NDI Dashboard
             </h1>
-            <p className="text-dark-6 dark:text-dark-4 mt-1">
+            <p className="text-gray-600 dark:text-dark-4 mt-1">
               Översikt över Net Promoter Index och kundnöjdhet
             </p>
           </div>

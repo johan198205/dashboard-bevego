@@ -5,7 +5,7 @@ import { Period } from '@/types/ndi';
 
 // Cache for parsed data
 let cachedData: {
-  aggregated: Array<{ period: Period; value: number }>;
+  aggregated: Array<{ period: Period; value: number; weight?: number }>;
   breakdown: Array<{ period: Period; value: number; groupA?: string; groupB?: string; groupC?: string }>;
   lastModified: number;
 } | null = null;
@@ -42,9 +42,9 @@ function getUploadedFiles(): { aggregated?: string; breakdown?: string } {
 /**
  * Parse NDI data from uploaded files
  */
-function parseNdiData(): { aggregated: Array<{ period: Period; value: number }>; breakdown: Array<{ period: Period; value: number; groupA?: string; groupB?: string; groupC?: string }> } {
+function parseNdiData(): { aggregated: Array<{ period: Period; value: number; weight?: number }>; breakdown: Array<{ period: Period; value: number; groupA?: string; groupB?: string; groupC?: string }> } {
   const files = getUploadedFiles();
-  const aggregated: Array<{ period: Period; value: number }> = [];
+  const aggregated: Array<{ period: Period; value: number; weight?: number }> = [];
   const breakdown: Array<{ period: Period; value: number; groupA?: string; groupB?: string; groupC?: string }> = [];
 
   // Parse aggregated file with custom logic for the specific format
@@ -66,9 +66,30 @@ function parseNdiData(): { aggregated: Array<{ period: Period; value: number }>;
         }
       }
 
+          // Find the first "Bas: Samtliga" row that has valid weight data
+          let basRowIndex = -1;
+          for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            if (row && row[0] && row[0].toString().includes('Bas: Samtliga')) {
+              // Check if this row has valid weight data in any column
+              let hasValidWeight = false;
+              for (let j = 1; j < row.length; j++) {
+                if (typeof row[j] === 'number' && !isNaN(row[j])) {
+                  hasValidWeight = true;
+                  break;
+                }
+              }
+              if (hasValidWeight) {
+                basRowIndex = i;
+                break;
+              }
+            }
+          }
+
       if (indexRowIndex !== -1) {
         const headerRow = data[0];
         const indexRow = data[indexRowIndex];
+        const basRow = basRowIndex !== -1 ? data[basRowIndex] : null;
 
         // Parse quarter columns (format: "Q3 2023", "Q4 2023", etc.)
         for (let i = 1; i < headerRow.length; i++) {
@@ -78,15 +99,22 @@ function parseNdiData(): { aggregated: Array<{ period: Period; value: number }>;
             if (match) {
               const quarter = match[1];
               const year = match[2];
-              const period = `${year}Q${quarter}` as Period;
-              const value = indexRow[i];
-              
-              if (typeof value === 'number' && !isNaN(value)) {
-                aggregated.push({
-                  period,
-                  value: Math.max(0, Math.min(100, value)), // Clamp to 0-100%
-                });
-              }
+                  const period = `${year}Q${quarter}` as Period;
+                  const value = indexRow[i];
+                  
+                  // Get weight from basRow, but only if it's a valid number
+                  let weight: number | undefined;
+                  if (basRow && typeof basRow[i] === 'number' && !isNaN(basRow[i])) {
+                    weight = basRow[i];
+                  }
+
+                  if (typeof value === 'number' && !isNaN(value)) {
+                    aggregated.push({
+                      period,
+                      value: Math.max(0, Math.min(100, value)), // Clamp to 0-100%
+                      weight,
+                    });
+                  }
             }
           }
         }
@@ -103,7 +131,7 @@ function parseNdiData(): { aggregated: Array<{ period: Period; value: number }>;
 /**
  * Get cached or fresh NDI data
  */
-function getNdiData(): { aggregated: Array<{ period: Period; value: number }>; breakdown: Array<{ period: Period; value: number; groupA?: string; groupB?: string; groupC?: string }> } {
+function getNdiData(): { aggregated: Array<{ period: Period; value: number; weight?: number }>; breakdown: Array<{ period: Period; value: number; groupA?: string; groupB?: string; groupC?: string }> } {
   const now = Date.now();
   
   // Use cache if less than 5 minutes old
