@@ -68,6 +68,15 @@ function detectDemographicColumns(headers: string[]): Array<{index: number, dime
     // Browser
     'browser': { dimension: 'Browser', segments: ['Chrome', 'Safari', 'Edge'] },
     'webbläsare': { dimension: 'Browser', segments: ['Chrome', 'Safari', 'Edge'] },
+    
+    // New Excel-based columns
+    'riksbyggen byggt': { dimension: 'Riksbyggen byggt', segments: ['Ja', 'Nej'] },
+    'byggt': { dimension: 'Riksbyggen byggt', segments: ['Ja', 'Nej'] },
+    'riksbyggen förvaltar': { dimension: 'Riksbyggen förvaltar', segments: ['Ja', 'Nej'] },
+    'förvaltar': { dimension: 'Riksbyggen förvaltar', segments: ['Ja', 'Nej'] },
+    'hittade informationen': { dimension: 'Hittade informationen', segments: ['Ja', 'Ja, delvis', 'Nej'] },
+    'hittade den information': { dimension: 'Hittade informationen', segments: ['Ja', 'Ja, delvis', 'Nej'] },
+    'information': { dimension: 'Hittade informationen', segments: ['Ja', 'Ja, delvis', 'Nej'] },
   };
   
   for (let i = 0; i < headers.length; i++) {
