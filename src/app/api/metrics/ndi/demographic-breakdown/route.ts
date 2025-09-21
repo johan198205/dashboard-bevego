@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Period, DemographicBreakdown, DemographicSegment } from '@/types/ndi';
+import { prevQuarter } from '@/lib/period';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,12 +12,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Period parameter is required' }, { status: 400 });
     }
 
-    // Get all demographic breakdown rows for the specified period from AGGREGATED source
+    // Get all demographic breakdown rows for the specified period from BREAKDOWN source
     const indexRows = await prisma.metricPoint.findMany({
       where: {
-        period,
+        periodId: period,
         metric: 'NDI',
         source: 'BREAKDOWN',
+        superseded: false,
         groupA: 'Index', // groupA should be "Index" for demographic breakdowns
         groupC: {
           not: null, // groupC should contain demographic segment values
@@ -64,8 +66,8 @@ export async function GET(request: NextRequest) {
       { groupA: 'Index', groupB: 'Gender', groupC: 'Female', value: 62.5, weight: 255 },
     ];
     
-    // Add Excel data to existing data
-    indexRows.push(...realExcelData);
+    // Add Excel data to existing data (commented out for production)
+    // indexRows.push(...realExcelData);
 
 
 
@@ -94,6 +96,141 @@ export async function GET(request: NextRequest) {
         return null;
       }
       return segment1.ndi - segment2.ndi;
+    };
+
+
+    // Helper function to add QoQ data to all segments in breakdown
+    const addQoQData = async (breakdown: DemographicBreakdown, targetPeriod: Period): Promise<DemographicBreakdown> => {
+      const prevQ = prevQuarter(targetPeriod);
+      if (!prevQ) {
+        return breakdown;
+      }
+
+      // Helper to get previous quarter segment data
+      const getPrevSegmentData = async (dimension: string, segment: string): Promise<{ ndi: number | null, count: number }> => {
+        try {
+          const prevRows = await prisma.metricPoint.findMany({
+            where: {
+              periodId: prevQ,
+              metric: 'NDI',
+              source: 'BREAKDOWN',
+              superseded: false,
+              groupA: 'Index',
+              groupB: dimension,
+              groupC: segment,
+            },
+            select: {
+              value: true,
+              weight: true,
+            },
+          });
+
+          if (prevRows.length === 0) {
+            return { ndi: null, count: 0 };
+          }
+
+          const hasWeights = prevRows.some(row => row.weight && row.weight > 0);
+          let prevValue: number | null = null;
+          let prevCount = 0;
+
+          if (hasWeights) {
+            const totalWeight = prevRows.reduce((sum, row) => sum + (row.weight || 0), 0);
+            const weightedSum = prevRows.reduce((sum, row) => sum + (row.value * (row.weight || 0)), 0);
+            prevValue = totalWeight > 0 ? weightedSum / totalWeight : null;
+            prevCount = Math.round(totalWeight);
+          } else {
+            prevValue = prevRows.reduce((sum, row) => sum + row.value, 0) / prevRows.length;
+            prevCount = prevRows.length;
+          }
+
+          return { ndi: prevValue, count: prevCount };
+        } catch (error) {
+          console.error(`Error fetching previous quarter data for ${dimension}/${segment}:`, error);
+          return { ndi: null, count: 0 };
+        }
+      };
+
+      // Add QoQ data to gender breakdown
+      const malePrevData = await getPrevSegmentData('Kön', 'Man');
+      const femalePrevData = await getPrevSegmentData('Kön', 'Kvinna');
+      
+      breakdown.gender.male = {
+        ...breakdown.gender.male,
+        qoqChange: breakdown.gender.male.ndi !== null && malePrevData.ndi !== null && malePrevData.ndi !== 0 ? 
+          ((breakdown.gender.male.ndi - malePrevData.ndi) / malePrevData.ndi) * 100 : null,
+        prevQuarterValue: malePrevData.ndi
+      };
+      
+      breakdown.gender.female = {
+        ...breakdown.gender.female,
+        qoqChange: breakdown.gender.female.ndi !== null && femalePrevData.ndi !== null && femalePrevData.ndi !== 0 ? 
+          ((breakdown.gender.female.ndi - femalePrevData.ndi) / femalePrevData.ndi) * 100 : null,
+        prevQuarterValue: femalePrevData.ndi
+      };
+
+      // Add QoQ data to device breakdown
+      const mobilePrevData = await getPrevSegmentData('Enhet', 'Mobile');
+      const desktopPrevData = await getPrevSegmentData('Enhet', 'Desktop');
+      
+      breakdown.device.mobile = {
+        ...breakdown.device.mobile,
+        qoqChange: breakdown.device.mobile.ndi !== null && mobilePrevData.ndi !== null && mobilePrevData.ndi !== 0 ? 
+          ((breakdown.device.mobile.ndi - mobilePrevData.ndi) / mobilePrevData.ndi) * 100 : null,
+        prevQuarterValue: mobilePrevData.ndi
+      };
+      
+      breakdown.device.desktop = {
+        ...breakdown.device.desktop,
+        qoqChange: breakdown.device.desktop.ndi !== null && desktopPrevData.ndi !== null && desktopPrevData.ndi !== 0 ? 
+          ((breakdown.device.desktop.ndi - desktopPrevData.ndi) / desktopPrevData.ndi) * 100 : null,
+        prevQuarterValue: desktopPrevData.ndi
+      };
+
+      // Add QoQ data to OS breakdown
+      const androidPrevData = await getPrevSegmentData('OS', 'Android');
+      const iosPrevData = await getPrevSegmentData('OS', 'iOS');
+      
+      breakdown.os.android = {
+        ...breakdown.os.android,
+        qoqChange: breakdown.os.android.ndi !== null && androidPrevData.ndi !== null && androidPrevData.ndi !== 0 ? 
+          ((breakdown.os.android.ndi - androidPrevData.ndi) / androidPrevData.ndi) * 100 : null,
+        prevQuarterValue: androidPrevData.ndi
+      };
+      
+      breakdown.os.ios = {
+        ...breakdown.os.ios,
+        qoqChange: breakdown.os.ios.ndi !== null && iosPrevData.ndi !== null && iosPrevData.ndi !== 0 ? 
+          ((breakdown.os.ios.ndi - iosPrevData.ndi) / iosPrevData.ndi) * 100 : null,
+        prevQuarterValue: iosPrevData.ndi
+      };
+
+      // Add QoQ data to browser breakdown
+      const chromePrevData = await getPrevSegmentData('Browser', 'Chrome');
+      const safariPrevData = await getPrevSegmentData('Browser', 'Safari');
+      const edgePrevData = await getPrevSegmentData('Browser', 'Edge');
+      
+      breakdown.browser.chrome = {
+        ...breakdown.browser.chrome,
+        qoqChange: breakdown.browser.chrome.ndi !== null && chromePrevData.ndi !== null && chromePrevData.ndi !== 0 ? 
+          ((breakdown.browser.chrome.ndi - chromePrevData.ndi) / chromePrevData.ndi) * 100 : null,
+        prevQuarterValue: chromePrevData.ndi
+      };
+      
+      breakdown.browser.safari = {
+        ...breakdown.browser.safari,
+        qoqChange: breakdown.browser.safari.ndi !== null && safariPrevData.ndi !== null && safariPrevData.ndi !== 0 ? 
+          ((breakdown.browser.safari.ndi - safariPrevData.ndi) / safariPrevData.ndi) * 100 : null,
+        prevQuarterValue: safariPrevData.ndi
+      };
+      
+      breakdown.browser.edge = {
+        ...breakdown.browser.edge,
+        qoqChange: breakdown.browser.edge.ndi !== null && edgePrevData.ndi !== null && edgePrevData.ndi !== 0 ? 
+          ((breakdown.browser.edge.ndi - edgePrevData.ndi) / edgePrevData.ndi) * 100 : null,
+        prevQuarterValue: edgePrevData.ndi
+      };
+
+      return breakdown;
     };
 
     // We already filtered for rows with groupC not null, so we should have demographic data
@@ -243,7 +380,10 @@ export async function GET(request: NextRequest) {
         }
     }
 
-    return NextResponse.json(breakdown);
+    // Add QoQ data to all segments
+    const breakdownWithQoQ = await addQoQData(breakdown, period);
+
+    return NextResponse.json(breakdownWithQoQ);
   } catch (error) {
     console.error('Error fetching demographic breakdown:', error);
     return NextResponse.json(

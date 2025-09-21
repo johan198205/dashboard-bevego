@@ -4,6 +4,7 @@ import { join } from 'path';
 import { prisma } from '@/lib/prisma';
 import { parseExcelFileFromBuffer } from '@/lib/excel-parsers';
 import { FileKind } from '@prisma/client';
+import { randomUUID } from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,28 +57,52 @@ export async function POST(request: NextRequest) {
 
     // Store metric points in database
     if (parsedData.metricPoints.length > 0) {
-      // Delete existing metric points for the same source and periods
-      const periods = [...new Set(parsedData.metricPoints.map(p => p.period))];
-      await prisma.metricPoint.deleteMany({
-        where: {
-          source: kind,
-          period: { in: periods }
+      const batchId = randomUUID();
+      const periodIds = [...new Set(parsedData.metricPoints.map(p => p.periodId))];
+      
+      // Use upsert for each metric point to handle unique constraints
+      for (const point of parsedData.metricPoints) {
+        try {
+              await prisma.metricPoint.upsert({
+                where: {
+                  unique_metric_period: {
+                    periodId: point.periodId,
+                    metric: point.metric,
+                    source: kind,
+                    groupA: point.groupA || '',
+                    groupB: point.groupB || '',
+                    groupC: point.groupC || ''
+                  }
+                },
+            update: {
+              value: point.value,
+              weight: point.weight,
+              ingestionBatchId: batchId,
+              superseded: false
+            },
+            create: {
+              id: randomUUID(),
+              period: point.period,
+              periodId: point.periodId,
+              periodStart: point.periodStart,
+              periodEnd: point.periodEnd,
+              metric: point.metric,
+              value: point.value,
+              weight: point.weight,
+              source: kind,
+              groupA: point.groupA,
+              groupB: point.groupB,
+              groupC: point.groupC,
+              ingestionBatchId: batchId,
+              superseded: false,
+              createdAt: new Date(),
+            }
+          });
+        } catch (error) {
+          console.error('Error upserting metric point:', error);
+          // Continue with other points even if one fails
         }
-      });
-
-      // Insert new metric points
-      await prisma.metricPoint.createMany({
-        data: parsedData.metricPoints.map(point => ({
-          period: point.period,
-          metric: point.metric,
-          value: point.value,
-          weight: point.weight,
-          source: kind,
-          groupA: point.groupA,
-          groupB: point.groupB,
-          groupC: point.groupC,
-        })),
-      });
+      }
 
       // Update file record with detected periods
       await prisma.fileUpload.update({

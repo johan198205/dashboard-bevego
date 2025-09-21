@@ -28,6 +28,23 @@ function ScorecardChip({ label, segment, showCount = false }: ScorecardChipProps
             {segment.count || 0} svar
           </div>
         )}
+        {/* QoQ Change */}
+        {segment.qoqChange !== null && segment.qoqChange !== undefined && (
+          <div className={`text-xs font-medium ${
+            segment.qoqChange > 0 
+              ? 'text-green-600 dark:text-green-400' 
+              : segment.qoqChange < 0 
+                ? 'text-red-600 dark:text-red-400' 
+                : 'text-gray-600 dark:text-gray-400'
+          }`}>
+            {segment.qoqChange > 0 ? '+' : ''}{segment.qoqChange.toFixed(1)}%
+            {segment.prevQuarterValue !== null && segment.prevQuarterValue !== undefined && (
+              <span className="text-gray-500 dark:text-gray-400 ml-1">
+                ({segment.prevQuarterValue.toFixed(1)})
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

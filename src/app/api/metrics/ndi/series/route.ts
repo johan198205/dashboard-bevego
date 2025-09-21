@@ -19,18 +19,31 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all NDI data for the specified period range (or all data if no range specified)
+    // Only get non-superseded records
     const allPeriods = await prisma.metricPoint.findMany({
-      where: whereClause,
-      select: { period: true, value: true, source: true, groupA: true, groupB: true, groupC: true, weight: true },
-      orderBy: { period: 'asc' },
+      where: {
+        ...whereClause,
+        superseded: false
+      },
+      select: { 
+        period: true, 
+        periodId: true,
+        value: true, 
+        source: true, 
+        groupA: true, 
+        groupB: true, 
+        groupC: true, 
+        weight: true 
+      },
+      orderBy: { periodId: 'asc' },
     });
 
     // Group by normalized period and calculate values using same logic as summary
     const periodMap = new Map<string, { aggregated: number[], breakdown: number[] }>();
     
     for (const point of allPeriods) {
-      // Normalize the period to standard format (YYYYQn)
-      const normalizedPeriod = normalizePeriod(point.period);
+      // Use periodId as the normalized period identifier
+      const normalizedPeriod = point.periodId;
       if (!normalizedPeriod) continue;
       
       if (!periodMap.has(normalizedPeriod)) {
@@ -81,21 +94,29 @@ export async function GET(request: NextRequest) {
     // Calculate rolling 4Q averages
     const seriesWithRolling = rolling4(series);
 
-    // Add YoY comparison (same quarter previous year)
-    const seriesWithYoY = seriesWithRolling.map(point => {
+    // Add YoY and QoQ comparisons
+    const seriesWithComparisons = seriesWithRolling.map((point, index) => {
       const [year, quarter] = point.period.split('Q').map(Number);
+      
+      // YoY: same quarter previous year
       const prevYear = year - 1;
       const prevYearPeriod = `${prevYear}Q${quarter}` as Period;
-      
       const prevYearData = series.find(s => s.period === prevYearPeriod);
+      
+      // QoQ: previous quarter
+      let prevQuarterData = null;
+      if (index > 0) {
+        prevQuarterData = seriesWithRolling[index - 1];
+      }
       
       return {
         ...point,
-        yoy: prevYearData?.value || null
+        yoy: prevYearData?.value || null,
+        qoq: prevQuarterData?.value || null
       };
     });
 
-    return NextResponse.json(seriesWithYoY);
+    return NextResponse.json(seriesWithComparisons);
   } catch (error) {
     console.error('Error fetching NDI series:', error);
     return NextResponse.json(

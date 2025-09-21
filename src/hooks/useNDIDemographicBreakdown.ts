@@ -54,10 +54,14 @@ export function useNDIDemographicBreakdown(period: Period | null) {
         male: {
           ...data.gender.male,
           ndi: data.gender.male.ndi !== null ? Math.round(data.gender.male.ndi * 10) / 10 : null,
+          qoqChange: data.gender.male.qoqChange !== null && data.gender.male.qoqChange !== undefined ? Math.round(data.gender.male.qoqChange * 10) / 10 : null,
+          prevQuarterValue: data.gender.male.prevQuarterValue !== null && data.gender.male.prevQuarterValue !== undefined ? Math.round(data.gender.male.prevQuarterValue * 10) / 10 : null,
         },
         female: {
           ...data.gender.female,
           ndi: data.gender.female.ndi !== null ? Math.round(data.gender.female.ndi * 10) / 10 : null,
+          qoqChange: data.gender.female.qoqChange !== null && data.gender.female.qoqChange !== undefined ? Math.round(data.gender.female.qoqChange * 10) / 10 : null,
+          prevQuarterValue: data.gender.female.prevQuarterValue !== null && data.gender.female.prevQuarterValue !== undefined ? Math.round(data.gender.female.prevQuarterValue * 10) / 10 : null,
         },
         delta: data.gender.delta !== null ? Math.round(data.gender.delta * 10) / 10 : null,
       },
@@ -67,6 +71,8 @@ export function useNDIDemographicBreakdown(period: Period | null) {
           {
             ...value,
             ndi: value.ndi !== null ? Math.round(value.ndi * 10) / 10 : null,
+            qoqChange: value.qoqChange !== null && value.qoqChange !== undefined ? Math.round(value.qoqChange * 10) / 10 : null,
+            prevQuarterValue: value.prevQuarterValue !== null && value.prevQuarterValue !== undefined ? Math.round(value.prevQuarterValue * 10) / 10 : null,
           },
         ])
       ),
@@ -75,10 +81,14 @@ export function useNDIDemographicBreakdown(period: Period | null) {
         mobile: {
           ...data.device.mobile,
           ndi: data.device.mobile.ndi !== null ? Math.round(data.device.mobile.ndi * 10) / 10 : null,
+          qoqChange: data.device.mobile.qoqChange !== null && data.device.mobile.qoqChange !== undefined ? Math.round(data.device.mobile.qoqChange * 10) / 10 : null,
+          prevQuarterValue: data.device.mobile.prevQuarterValue !== null && data.device.mobile.prevQuarterValue !== undefined ? Math.round(data.device.mobile.prevQuarterValue * 10) / 10 : null,
         },
         desktop: {
           ...data.device.desktop,
           ndi: data.device.desktop.ndi !== null ? Math.round(data.device.desktop.ndi * 10) / 10 : null,
+          qoqChange: data.device.desktop.qoqChange !== null && data.device.desktop.qoqChange !== undefined ? Math.round(data.device.desktop.qoqChange * 10) / 10 : null,
+          prevQuarterValue: data.device.desktop.prevQuarterValue !== null && data.device.desktop.prevQuarterValue !== undefined ? Math.round(data.device.desktop.prevQuarterValue * 10) / 10 : null,
         },
         delta: data.device.delta !== null ? Math.round(data.device.delta * 10) / 10 : null,
       },
@@ -87,10 +97,14 @@ export function useNDIDemographicBreakdown(period: Period | null) {
         android: {
           ...data.os.android,
           ndi: data.os.android.ndi !== null ? Math.round(data.os.android.ndi * 10) / 10 : null,
+          qoqChange: data.os.android.qoqChange !== null && data.os.android.qoqChange !== undefined ? Math.round(data.os.android.qoqChange * 10) / 10 : null,
+          prevQuarterValue: data.os.android.prevQuarterValue !== null && data.os.android.prevQuarterValue !== undefined ? Math.round(data.os.android.prevQuarterValue * 10) / 10 : null,
         },
         ios: {
           ...data.os.ios,
           ndi: data.os.ios.ndi !== null ? Math.round(data.os.ios.ndi * 10) / 10 : null,
+          qoqChange: data.os.ios.qoqChange !== null && data.os.ios.qoqChange !== undefined ? Math.round(data.os.ios.qoqChange * 10) / 10 : null,
+          prevQuarterValue: data.os.ios.prevQuarterValue !== null && data.os.ios.prevQuarterValue !== undefined ? Math.round(data.os.ios.prevQuarterValue * 10) / 10 : null,
         },
         delta: data.os.delta !== null ? Math.round(data.os.delta * 10) / 10 : null,
       },
@@ -98,14 +112,20 @@ export function useNDIDemographicBreakdown(period: Period | null) {
         chrome: {
           ...data.browser.chrome,
           ndi: data.browser.chrome.ndi !== null ? Math.round(data.browser.chrome.ndi * 10) / 10 : null,
+          qoqChange: data.browser.chrome.qoqChange !== null && data.browser.chrome.qoqChange !== undefined ? Math.round(data.browser.chrome.qoqChange * 10) / 10 : null,
+          prevQuarterValue: data.browser.chrome.prevQuarterValue !== null && data.browser.chrome.prevQuarterValue !== undefined ? Math.round(data.browser.chrome.prevQuarterValue * 10) / 10 : null,
         },
         safari: {
           ...data.browser.safari,
           ndi: data.browser.safari.ndi !== null ? Math.round(data.browser.safari.ndi * 10) / 10 : null,
+          qoqChange: data.browser.safari.qoqChange !== null && data.browser.safari.qoqChange !== undefined ? Math.round(data.browser.safari.qoqChange * 10) / 10 : null,
+          prevQuarterValue: data.browser.safari.prevQuarterValue !== null && data.browser.safari.prevQuarterValue !== undefined ? Math.round(data.browser.safari.prevQuarterValue * 10) / 10 : null,
         },
         edge: {
           ...data.browser.edge,
           ndi: data.browser.edge.ndi !== null ? Math.round(data.browser.edge.ndi * 10) / 10 : null,
+          qoqChange: data.browser.edge.qoqChange !== null && data.browser.edge.qoqChange !== undefined ? Math.round(data.browser.edge.qoqChange * 10) / 10 : null,
+          prevQuarterValue: data.browser.edge.prevQuarterValue !== null && data.browser.edge.prevQuarterValue !== undefined ? Math.round(data.browser.edge.prevQuarterValue * 10) / 10 : null,
         },
       },
       riksbyggenBuilt: {

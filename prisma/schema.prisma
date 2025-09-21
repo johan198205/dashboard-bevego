@@ -39,9 +39,18 @@ model MetricPoint {
   groupA     String?  // t.ex. "Fråga" / "Kategori"
   groupB     String?  // valfritt
   groupC     String?  // valfritt
+  // Quarterly history support
+  periodId   String   // "2024Q4" - normalized period identifier
+  periodStart DateTime? // Start of quarter for metadata
+  periodEnd   DateTime? // End of quarter for metadata
+  ingestionBatchId String? // For tracking upload batches
+  superseded Boolean @default(false) // For idempotent uploads
   
   @@index([period, metric])
   @@index([metric, period])
   @@index([groupA, groupB, groupC])
+  @@index([periodId, metric, source])
+  @@index([periodId, superseded])
+  @@unique([periodId, metric, source, groupA, groupB, groupC], name: "unique_metric_period")
   @@map("metric_points")
 }

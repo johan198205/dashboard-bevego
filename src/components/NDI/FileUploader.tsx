@@ -85,13 +85,13 @@ export function FileUploader({ kind, onUploadComplete, className }: FileUploader
       const result: ImportResult = {
         success: apiResult.ok || false,
         fileId: apiResult.fileId || '',
-        validationReport: apiResult.validationReport || {
-          fileId: '',
-          detectedPeriods: [],
-          rowCount: 0,
+        validationReport: {
+          fileId: apiResult.fileId || '',
+          detectedPeriods: apiResult.periodsDetected || [],
+          rowCount: apiResult.rowsInserted || 0,
           ignoredRows: 0,
           columnMapping: {},
-          warnings: []
+          warnings: apiResult.warnings || []
         },
         error: apiResult.error || undefined
       };

@@ -12,11 +12,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Get breakdown data for the specified period (use AGGREGATED for descriptive labels)
+    // Only get non-superseded records
     const breakdownData = await prisma.metricPoint.findMany({
       where: {
-        period,
+        periodId: period,
         metric: 'NDI',
         source: 'AGGREGATED',
+        superseded: false,
       },
       select: {
         groupA: true,

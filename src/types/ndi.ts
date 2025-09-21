@@ -120,6 +120,8 @@ export interface AreaBreakdown {
 export interface DemographicSegment {
   ndi: number | null;
   count?: number;
+  qoqChange?: number | null; // QoQ change in percentage points
+  prevQuarterValue?: number | null; // Previous quarter's value
 }
 
 export interface GenderBreakdownScorecard {

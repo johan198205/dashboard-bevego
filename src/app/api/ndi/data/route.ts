@@ -3,6 +3,7 @@ import { readFileSync, existsSync, readdirSync } from 'fs';
 import * as XLSX from 'xlsx';
 import { join } from 'path';
 import { Period } from '@/types/ndi';
+import { prisma } from '@/lib/prisma';
 
 // Cache for parsed data
 let cachedData: {
@@ -128,9 +129,84 @@ function parseNdiData(): { aggregated: Array<{ period: Period; value: number; we
 }
 
 /**
- * Get cached or fresh NDI data
+ * Get NDI data from database (preferred method)
  */
-function getNdiData(): { aggregated: Array<{ period: Period; value: number; weight?: number }>; breakdown: Array<{ period: Period; value: number; groupA?: string; groupB?: string; groupC?: string }> } {
+async function getNdiDataFromDB(): Promise<{ aggregated: Array<{ period: Period; value: number; weight?: number }>; breakdown: Array<{ period: Period; value: number; groupA?: string; groupB?: string; groupC?: string }> }> {
+  try {
+    // Get all non-superseded NDI data from database
+    const dbData = await prisma.metricPoint.findMany({
+      where: {
+        metric: 'NDI',
+        superseded: false
+      },
+      select: {
+        periodId: true,
+        value: true,
+        weight: true,
+        source: true,
+        groupA: true,
+        groupB: true,
+        groupC: true
+      },
+      orderBy: { periodId: 'asc' }
+    });
+
+    const aggregated: Array<{ period: Period; value: number; weight?: number }> = [];
+    const breakdown: Array<{ period: Period; value: number; groupA?: string; groupB?: string; groupC?: string }> = [];
+
+    // Group by period and source
+    const periodMap = new Map<string, { aggregated: any[], breakdown: any[] }>();
+    
+    for (const point of dbData) {
+      if (!periodMap.has(point.periodId)) {
+        periodMap.set(point.periodId, { aggregated: [], breakdown: [] });
+      }
+      
+      if (point.source === 'AGGREGATED') {
+        periodMap.get(point.periodId)!.aggregated.push(point);
+      } else if (point.source === 'BREAKDOWN') {
+        periodMap.get(point.periodId)!.breakdown.push(point);
+      }
+    }
+
+    // Process aggregated data
+    for (const [periodId, data] of periodMap) {
+      if (data.aggregated.length > 0) {
+        // Calculate average for aggregated data
+        const sum = data.aggregated.reduce((sum, p) => sum + p.value, 0);
+        const avgValue = sum / data.aggregated.length;
+        const avgWeight = data.aggregated[0]?.weight; // Use first weight if available
+        
+        aggregated.push({
+          period: periodId as Period,
+          value: avgValue,
+          weight: avgWeight
+        });
+      }
+      
+      // Add breakdown data
+      for (const point of data.breakdown) {
+        breakdown.push({
+          period: periodId as Period,
+          value: point.value,
+          groupA: point.groupA || undefined,
+          groupB: point.groupB || undefined,
+          groupC: point.groupC || undefined
+        });
+      }
+    }
+
+    return { aggregated, breakdown };
+  } catch (error) {
+    console.warn('Failed to get NDI data from database, falling back to file parsing:', error);
+    return getNdiDataFromFiles();
+  }
+}
+
+/**
+ * Get cached or fresh NDI data (fallback to file parsing)
+ */
+function getNdiDataFromFiles(): { aggregated: Array<{ period: Period; value: number; weight?: number }>; breakdown: Array<{ period: Period; value: number; groupA?: string; groupB?: string; groupC?: string }> } {
   const now = Date.now();
   
   // Use cache if less than 5 minutes old
@@ -170,7 +246,8 @@ export async function GET(request: Request) {
     const start = searchParams.get('start');
     const end = searchParams.get('end');
 
-    const { aggregated, breakdown } = getNdiData();
+    // Try to get data from database first, fallback to file parsing
+    const { aggregated, breakdown } = await getNdiDataFromDB();
 
     if (type === 'timeseries' && start && end) {
       // Return timeseries data

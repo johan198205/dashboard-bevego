@@ -20,9 +20,10 @@ export async function GET(request: NextRequest) {
     // First, try to get aggregated values and calculate average
     const aggregatedValues = await prisma.metricPoint.findMany({
       where: {
-        period,
+        periodId: period,
         metric: 'NDI',
         source: 'AGGREGATED',
+        superseded: false,
       },
     });
 
@@ -34,9 +35,10 @@ export async function GET(request: NextRequest) {
       // Calculate from breakdowns
       const breakdownValues = await prisma.metricPoint.findMany({
         where: {
-          period,
+          periodId: period,
           metric: 'NDI',
           source: 'BREAKDOWN',
+          superseded: false,
         },
       });
 
@@ -112,9 +114,10 @@ async function getNDIValue(period: Period): Promise<number | null> {
   // Try aggregated first - calculate average of all aggregated values
   const aggregatedValues = await prisma.metricPoint.findMany({
     where: {
-      period,
+      periodId: period,
       metric: 'NDI',
       source: 'AGGREGATED',
+      superseded: false,
     },
   });
 
@@ -126,9 +129,10 @@ async function getNDIValue(period: Period): Promise<number | null> {
   // Calculate from breakdowns
   const breakdownValues = await prisma.metricPoint.findMany({
     where: {
-      period,
+      periodId: period,
       metric: 'NDI',
       source: 'BREAKDOWN',
+      superseded: false,
     },
   });
 
@@ -143,20 +147,21 @@ async function getNDIValue(period: Period): Promise<number | null> {
 
 async function getNDISeries() {
   const allPeriods = await prisma.metricPoint.findMany({
-    where: { metric: 'NDI' },
-    select: { period: true, value: true, source: true, groupA: true, groupB: true, groupC: true, weight: true },
-    orderBy: { period: 'asc' },
+    where: { metric: 'NDI', superseded: false },
+    select: { period: true, periodId: true, value: true, source: true, groupA: true, groupB: true, groupC: true, weight: true },
+    orderBy: { periodId: 'asc' },
   });
 
   // Group by period and calculate values
   const periodMap = new Map<string, { value: number | null; source: string }>();
   
   for (const point of allPeriods) {
-    if (!periodMap.has(point.period)) {
-      periodMap.set(point.period, { value: null, source: 'BREAKDOWN' });
+    const normalizedPeriod = point.periodId || point.period;
+    if (!periodMap.has(normalizedPeriod)) {
+      periodMap.set(normalizedPeriod, { value: null, source: 'BREAKDOWN' });
     }
     
-    const existing = periodMap.get(point.period)!;
+    const existing = periodMap.get(normalizedPeriod)!;
     
     // Prefer aggregated data
     if (point.source === 'AGGREGATED' && point.groupA === null) {
@@ -172,7 +177,7 @@ async function getNDISeries() {
   for (const [period, data] of periodMap) {
     if (data.source === 'BREAKDOWN') {
       const breakdownValues = allPeriods.filter(p => 
-        p.period === period && p.source === 'BREAKDOWN'
+        (p.periodId || p.period) === period && p.source === 'BREAKDOWN'
       );
       
       if (breakdownValues.length > 0) {
@@ -201,9 +206,10 @@ async function getTotalResponses(period: Period): Promise<number | undefined> {
     // First try to get weight from aggregated data
     const aggregatedData = await prisma.metricPoint.findMany({
       where: {
-        period,
+        periodId: period,
         metric: 'NDI',
         source: 'AGGREGATED',
+        superseded: false,
         weight: {
           not: null, // Only get rows that have weight data
         },
@@ -224,9 +230,10 @@ async function getTotalResponses(period: Period): Promise<number | undefined> {
     // Fallback: Get weight from breakdown data
     const breakdownData = await prisma.metricPoint.findMany({
       where: {
-        period,
+        periodId: period,
         metric: 'NDI',
         source: 'BREAKDOWN',
+        superseded: false,
         groupA: 'Index', // Only get Index rows which represent total responses
         weight: {
           not: null, // Only get rows that have weight data

@@ -2,6 +2,20 @@ import * as XLSX from 'xlsx';
 import { Period, ValidationReport, ImportResult } from '@/types/ndi';
 import { normalizePeriod, parsePeriod } from './ndi-calculations';
 
+/**
+ * Get quarter start and end dates from period ID
+ */
+function getQuarterDates(periodId: string): { periodStart: Date; periodEnd: Date } {
+  const [year, quarter] = periodId.split('Q').map(Number);
+  const quarterStartMonth = (quarter - 1) * 3 + 1; // Q1=1, Q2=4, Q3=7, Q4=10
+  const quarterEndMonth = quarter * 3; // Q1=3, Q2=6, Q3=9, Q4=12
+  
+  const periodStart = new Date(year, quarterStartMonth - 1, 1);
+  const periodEnd = new Date(year, quarterEndMonth, 0); // Last day of quarter
+  
+  return { periodStart, periodEnd };
+}
+
 // Alias lists for fuzzy matching
 const VALUE_ALIASES = [
   "NDI", "Index", "Nöjdhet", "Nöjd Index", "NDI total", "Kundnöjdhet", "NKI"
@@ -103,6 +117,243 @@ function detectDemographicColumns(headers: string[]): Array<{index: number, dime
 }
 
 /**
+ * Parse JSON-like breakdown files (when Excel is parsed as objects)
+ */
+function parseJsonLikeBreakdown(
+  data: any[][],
+  validationReport: ValidationReport
+): ParsedData {
+  const metricPoints: ParsedMetricPoint[] = [];
+  
+  // Extract period from the first column name that contains quarter info
+  let periodId = '2024Q4'; // fallback
+  let period = '2024Q4' as Period; // fallback
+  
+  // Look for period in column names
+  for (const row of data) {
+    if (!row || typeof row !== 'object') continue;
+    for (const columnName in row) {
+      if (Object.prototype.hasOwnProperty.call(row, columnName)) {
+        // Match patterns like "Mitt Riksbyggen Q4 2024: Q4 2024" or "Q1 2025"
+        console.log('Checking column name for period:', columnName);
+        const periodMatch = columnName.match(/Q([1-4])\s+(\d{4})/) || columnName.match(/Q([1-4])\s+(\d{4})/) || columnName.match(/Q([1-4]).*?(\d{4})/);
+        if (periodMatch) {
+          const quarter = periodMatch[1];
+          const year = periodMatch[2];
+          periodId = `${year}Q${quarter}`;
+          period = periodId as Period;
+          console.log('Found period:', periodId);
+          break;
+        }
+      }
+    }
+    if (periodId !== '2024Q4') break; // Found a match, stop looking
+  }
+  
+  const { periodStart, periodEnd } = getQuarterDates(periodId);
+
+  // Find the "Bas: Samtliga" row for weights
+  const basRow = data.find(row => {
+    if (!row || typeof row !== 'object') return false;
+    // Look for any column that contains "Bas: Samtliga"
+    for (const columnName in row) {
+      if (Object.prototype.hasOwnProperty.call(row, columnName)) {
+        const value = (row as any)[columnName];
+        if (value && value.toString().toLowerCase().includes('bas: samtliga')) {
+          return true;
+        }
+      }
+    }
+    return false;
+  });
+
+  // Process each row
+  for (const row of data) {
+    if (!row || typeof row !== 'object') continue;
+    
+    // Find the first column (label column)
+    const firstColumnName = Object.keys(row)[0];
+    const firstColumn = firstColumnName ? (row as any)[firstColumnName] : null;
+    if (!firstColumn) continue;
+    
+    const rowLabel = firstColumn.toString();
+    
+    // Skip non-data rows
+    if (rowLabel.toLowerCase().includes('profil') || 
+        rowLabel.toLowerCase().includes('bas:') ||
+        rowLabel.toLowerCase().includes('total') ||
+        rowLabel.toLowerCase().includes('information') ||
+        rowLabel.toLowerCase().includes('helhetsbetyg') ||
+        rowLabel.toLowerCase().includes('sida in')) {
+      continue;
+    }
+
+    // Check if this is an NDI scale row (1-10 or "10 Mycket troligt")
+    let ndiValue: number | null = null;
+    if (rowLabel.includes('1 Stämmer inte alls')) {
+      ndiValue = 1;
+    } else if (rowLabel.includes('2')) {
+      ndiValue = 2;
+    } else if (rowLabel.includes('3')) {
+      ndiValue = 3;
+    } else if (rowLabel.includes('4')) {
+      ndiValue = 4;
+    } else if (rowLabel.includes('5')) {
+      ndiValue = 5;
+    } else if (rowLabel.includes('6')) {
+      ndiValue = 6;
+    } else if (rowLabel.includes('7')) {
+      ndiValue = 7;
+    } else if (rowLabel.includes('8')) {
+      ndiValue = 8;
+    } else if (rowLabel.includes('9')) {
+      ndiValue = 9;
+    } else if (rowLabel.includes('10 Mycket troligt')) {
+      ndiValue = 10;
+    }
+
+    if (ndiValue !== null) {
+      // Process each demographic column
+      for (const [columnName, value] of Object.entries(row)) {
+        if (columnName === firstColumnName) continue; // Skip the label column
+        
+        if (typeof value === 'number' && !isNaN(value)) {
+          // Get weight from corresponding "Bas: Samtliga" row if available
+          let weight: number | undefined;
+          if (basRow && (basRow as any)[columnName] && typeof (basRow as any)[columnName] === 'number') {
+            weight = (basRow as any)[columnName] * value / 100; // Convert percentage to actual count
+          }
+
+          // Determine demographic dimension and segment
+          let dimension = 'Unknown';
+          let segment = columnName;
+          
+          if (columnName.includes('Mobile') || columnName.includes('Desktop')) {
+            dimension = 'Enhet';
+          } else if (columnName.includes('Android') || columnName.includes('Ios')) {
+            dimension = 'OS';
+          } else if (columnName.includes('Chrome') || columnName.includes('Safari') || columnName.includes('Edge')) {
+            dimension = 'Browser';
+          } else if (columnName.includes('Man') || columnName.includes('Kvinna')) {
+            dimension = 'Kön';
+          } else if (columnName.includes('år')) {
+            dimension = 'Ålder';
+          } else if (columnName.includes('Ja') || columnName.includes('Nej')) {
+            dimension = 'Bostad';
+          }
+
+          metricPoints.push({
+            period,
+            periodId,
+            periodStart,
+            periodEnd,
+            metric: 'NDI',
+            value: ndiValue,
+            weight,
+            groupA: 'Index',
+            groupB: dimension,
+            groupC: segment
+          });
+        }
+      }
+    }
+  }
+
+  validationReport.detectedPeriods = [period];
+  validationReport.rowCount = metricPoints.length;
+  validationReport.columnMapping.value = 'NDI scale values (1-10) with demographic percentages';
+  
+  if (!basRow) {
+    validationReport.warnings.push('No weight data found in "Bas: Samtliga" rows - weight data will be undefined');
+  }
+
+  return { metricPoints, validationReport };
+}
+
+/**
+ * Parse percentage-based breakdown files
+ */
+function parsePercentageBreakdown(
+  data: any[][],
+  percentageRows: any[][],
+  demographicColumns: Array<{index: number, dimension: string, segment: string}>,
+  validationReport: ValidationReport
+): ParsedData {
+  const metricPoints: ParsedMetricPoint[] = [];
+  const period = '2024Q4' as Period;
+  const periodId = '2024Q4';
+  const { periodStart, periodEnd } = getQuarterDates(periodId);
+
+  // Get weight from "Bas: Samtliga" row if available
+  const basRows = data.slice(1).filter(row => 
+    row && row[0] && row[0].toString().toLowerCase().includes('bas: samtliga')
+  );
+
+  for (const row of percentageRows) {
+    if (!row || !row[0]) continue;
+    
+    const rowLabel = row[0].toString();
+    
+    // Skip non-data rows
+    if (rowLabel.toLowerCase().includes('profil') || 
+        rowLabel.toLowerCase().includes('bas:') ||
+        rowLabel.toLowerCase().includes('total') ||
+        rowLabel.toLowerCase().includes('information') ||
+        rowLabel.toLowerCase().includes('helhetsbetyg')) {
+      continue;
+    }
+
+    // Check if this is an NDI scale row (1-10 or "10 Mycket troligt")
+    let ndiValue: number | null = null;
+    if (typeof row[0] === 'number' && row[0] >= 1 && row[0] <= 10) {
+      ndiValue = row[0];
+    } else if (rowLabel.includes('10 Mycket troligt')) {
+      ndiValue = 10;
+    }
+
+    if (ndiValue !== null) {
+      // Process each demographic column
+      for (const col of demographicColumns) {
+        const percentage = row[col.index];
+        if (typeof percentage === 'number' && !isNaN(percentage)) {
+          // Get weight from corresponding "Bas: Samtliga" row if available
+          let weight: number | undefined;
+          if (basRows.length > 0) {
+            const weightValue = basRows[0][col.index];
+            if (typeof weightValue === 'number' && !isNaN(weightValue)) {
+              weight = weightValue;
+            }
+          }
+
+          metricPoints.push({
+            period,
+            periodId,
+            periodStart,
+            periodEnd,
+            metric: 'NDI',
+            value: ndiValue,
+            weight: weight ? (weight * percentage / 100) : undefined, // Convert percentage to actual count
+            groupA: 'Index',
+            groupB: col.dimension,
+            groupC: col.segment
+          });
+        }
+      }
+    }
+  }
+
+  validationReport.detectedPeriods = [period];
+  validationReport.rowCount = metricPoints.length;
+  validationReport.columnMapping.value = 'NDI scale values (1-10) with demographic percentages';
+  
+  if (basRows.length === 0) {
+    validationReport.warnings.push('No weight data found in "Bas: Samtliga" rows - weight data will be undefined');
+  }
+
+  return { metricPoints, validationReport };
+}
+
+/**
  * Parse wide format demographic breakdown
  */
 function parseWideDemographicBreakdown(
@@ -112,7 +363,29 @@ function parseWideDemographicBreakdown(
   validationReport: ValidationReport
 ): ParsedData {
   const metricPoints: ParsedMetricPoint[] = [];
-  const period = '2024Q4' as Period;
+  
+  // Extract period from filename or column headers
+  let periodId = '2024Q4'; // fallback
+  let period = '2024Q4' as Period; // fallback
+  
+  // Look for period in first row (headers)
+  if (data.length > 0 && data[0]) {
+    for (const cell of data[0]) {
+      if (typeof cell === 'string') {
+        const periodMatch = cell.match(/Q([1-4])\s+(\d{4})/) || cell.match(/Q([1-4]).*?(\d{4})/);
+        if (periodMatch) {
+          const quarter = periodMatch[1];
+          const year = periodMatch[2];
+          periodId = `${year}Q${quarter}`;
+          period = periodId as Period;
+          console.log('Found period in header:', periodId);
+          break;
+        }
+      }
+    }
+  }
+  
+  const { periodStart, periodEnd } = getQuarterDates(periodId);
   
   // Look for "Bas: Samtliga" rows to get weight data
   const basRows = data.filter(row => 
@@ -149,6 +422,9 @@ function parseWideDemographicBreakdown(
       if (typeof value === 'number' && !isNaN(value)) {
         metricPoints.push({
           period,
+          periodId,
+          periodStart,
+          periodEnd,
           metric: 'NDI',
           value,
           weight: totalWeight, // Use the total weight from "Bas: Samtliga" row
@@ -240,6 +516,9 @@ function detectQuarterColumns(headers: string[]): { key: string, period: Period 
 
 export interface ParsedMetricPoint {
   period: Period;
+  periodId: string; // Normalized period identifier (e.g., "2024Q4")
+  periodStart?: Date; // Start of quarter
+  periodEnd?: Date; // End of quarter
   metric: string;
   value: number;
   weight?: number;
@@ -392,6 +671,9 @@ export function parseAggregatedFileFromBuffer(
     const columnIndex = headerRow.findIndex(h => h?.toString() === key);
     if (columnIndex === -1) continue;
     
+    const periodId = period;
+    const { periodStart, periodEnd } = getQuarterDates(periodId);
+    
         // Get weight from first "Bas: Samtliga" row that has a valid value for this period
         let weight: number | undefined;
         if (basRows.length > 0) {
@@ -425,6 +707,9 @@ export function parseAggregatedFileFromBuffer(
         
         metricPoints.push({
           period: period as Period,
+          periodId,
+          periodStart,
+          periodEnd,
           metric: 'NDI',
           value: value,
           weight: weight, // Add weight data from "Bas: Samtliga" row
@@ -505,6 +790,82 @@ export function parseBreakdownFileFromBuffer(
   // The NDI values are in rows that start with "Index"
   let valueColumnIndex = -1;
   
+  // Check if this is an Index-based file first
+  const indexRows = dataRows.filter(row => row && row[0] && row[0].toString().toLowerCase().includes('index'));
+  if (indexRows.length > 0) {
+    // This is an Index-based file - use the existing logic
+    const hasDemographicColumns = detectDemographicColumns(headerRow);
+    
+    if (hasDemographicColumns.length > 0) {
+      // Wide format with demographic breakdown
+      return parseWideDemographicBreakdown(data, indexRows, hasDemographicColumns, validationReport);
+    } else {
+      // Simple Index file without demographics - use the existing logic
+      const period = '2024Q4' as Period;
+      const { periodStart, periodEnd } = getQuarterDates(period);
+      
+      indexRows.forEach((indexRow, index) => {
+        const value = indexRow[1]; // NDI values are always in column 1 for Index rows
+        if (typeof value === 'number' && !isNaN(value)) {
+          metricPoints.push({
+            period: period as Period,
+            periodId: period,
+            periodStart,
+            periodEnd,
+            metric: 'NDI',
+            value,
+            weight: undefined,
+            groupA: `Index ${index + 1}`,
+            groupB: undefined,
+            groupC: undefined
+          });
+        }
+      });
+
+      validationReport.detectedPeriods = [period];
+      validationReport.rowCount = metricPoints.length;
+      validationReport.columnMapping.value = 'Index (column 1)';
+      return { metricPoints, validationReport };
+    }
+  }
+  
+  // Check for percentage-based breakdown files (different structure)
+  // Look for rows that contain percentage values in demographic columns
+  const percentageRows = dataRows.filter(row => {
+    if (!row || !row[0]) return false;
+    const firstCell = row[0].toString();
+    // Look for rows that don't start with "Index", "Bas:", "PROFIL", or "Total"
+    return !firstCell.toLowerCase().includes('index') && 
+           !firstCell.toLowerCase().includes('bas:') && 
+           !firstCell.toLowerCase().includes('profil') &&
+           !firstCell.toLowerCase().includes('total') &&
+           row.length > 1;
+  });
+  
+  if (percentageRows.length > 0) {
+    // This is a percentage-based breakdown file
+    const hasDemographicColumns = detectDemographicColumns(headerRow);
+    if (hasDemographicColumns.length > 0) {
+      return parsePercentageBreakdown(data, percentageRows, hasDemographicColumns, validationReport);
+    }
+  }
+  
+  // Special handling for JSON-like structure (when Excel is parsed as objects)
+  // Check if we have a structure like {"Mitt Riksbyggen Q4 2024: Q4 2024": "1 Stämmer inte alls", "Total": 7.69, ...}
+  if (dataRows.length > 0 && typeof dataRows[0] === 'object' && !Array.isArray(dataRows[0])) {
+    console.log('Detected JSON-like structure, calling parseJsonLikeBreakdown');
+    return parseJsonLikeBreakdown(data, validationReport);
+  }
+  
+  // Try alternative parsing for percentage-based files
+  // If we have demographic columns but no Index rows, try to parse as percentage breakdown
+  const hasDemographicColumns = detectDemographicColumns(headerRow);
+  if (hasDemographicColumns.length > 0 && percentageRows.length === 0) {
+    console.log('Trying alternative parsing for percentage-based file');
+    // Try to parse the entire file as percentage breakdown
+    return parsePercentageBreakdown(data, dataRows, hasDemographicColumns, validationReport);
+  }
+  
   // Fallback: try to find value column using alias matching (not used for Index files)
   valueColumnIndex = findColumnByAlias(headerRow, VALUE_ALIASES);
   
@@ -531,40 +892,6 @@ export function parseBreakdownFileFromBuffer(
   const quarterColumns = detectQuarterColumns(headerRow);
   const isWideFormat = quarterColumns.length > 0 && periodColumnIndex === -1;
 
-  // Check for Index-based files with demographic breakdown (wide format)
-  const indexRows = dataRows.filter(row => row && row[0] && row[0].toString().toLowerCase().includes('index'));
-  if (indexRows.length > 0) {
-    // This is an Index-based file - check if it has demographic columns
-    const hasDemographicColumns = detectDemographicColumns(headerRow);
-    
-    if (hasDemographicColumns.length > 0) {
-      // Wide format with demographic breakdown
-      return parseWideDemographicBreakdown(data, indexRows, hasDemographicColumns, validationReport);
-    } else {
-      // Simple Index file without demographics
-      const period = '2024Q4' as Period;
-      
-      indexRows.forEach((indexRow, index) => {
-        const value = indexRow[1]; // NDI values are always in column 1 for Index rows
-        if (typeof value === 'number' && !isNaN(value)) {
-          metricPoints.push({
-            period: period as Period,
-            metric: 'NDI',
-            value,
-            weight: undefined,
-            groupA: undefined,
-            groupB: undefined,
-            groupC: undefined
-          });
-        }
-      });
-
-      validationReport.detectedPeriods = [period];
-      validationReport.rowCount = metricPoints.length;
-      validationReport.columnMapping.value = 'Index (column 1)';
-      return { metricPoints, validationReport };
-    }
-  }
 
   if (isWideFormat) {
     // Wide format: periods are column headers, need to pivot
@@ -604,12 +931,16 @@ function parseIndexBasedBreakdown(
   // For this specific file, we know there's only one quarter (2024Q4)
   // and the NDI values are in column 1 of Index rows
   const period = '2024Q4' as Period;
+  const { periodStart, periodEnd } = getQuarterDates(period);
   
   indexRows.forEach((indexRow, index) => {
     const value = indexRow[1]; // NDI values are always in column 1
     if (typeof value === 'number' && !isNaN(value)) {
       metricPoints.push({
         period: period as Period,
+        periodId: period,
+        periodStart,
+        periodEnd,
         metric: 'NDI',
         value,
         weight: undefined,
@@ -661,9 +992,13 @@ function parseWideFormatBreakdown(
 
       if (validValues.length > 0) {
         // Create metric points for each Index value
+        const { periodStart, periodEnd } = getQuarterDates(period);
         validValues.forEach((value, index) => {
           metricPoints.push({
             period: period as Period,
+            periodId: period,
+            periodStart,
+            periodEnd,
             metric: 'NDI',
             value,
             weight: undefined,
@@ -723,8 +1058,12 @@ function parseWideFormatBreakdown(
           }
         }
 
+        const { periodStart, periodEnd } = getQuarterDates(period);
         metricPoints.push({
           period: period as Period,
+          periodId: period,
+          periodStart,
+          periodEnd,
           metric: 'NDI',
           value,
           weight,
@@ -848,8 +1187,12 @@ function parseLongFormatBreakdown(
     const groupB = groupMapping.groupB !== -1 ? row[groupMapping.groupB]?.toString() : undefined;
     const groupC = groupMapping.groupC !== -1 ? row[groupMapping.groupC]?.toString() : undefined;
 
+    const { periodStart, periodEnd } = getQuarterDates(period);
     metricPoints.push({
       period: period as Period,
+      periodId: period,
+      periodStart,
+      periodEnd,
       metric: 'NDI',
       value,
       weight,
