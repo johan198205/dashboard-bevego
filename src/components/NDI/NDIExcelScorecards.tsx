@@ -14,7 +14,7 @@ interface ScorecardChipProps {
 }
 
 function ScorecardChip({ label, segment, showCount = false }: ScorecardChipProps) {
-  const displayValue = segment.ndi !== null ? segment.ndi.toFixed(1) : 'N/A';
+  const displayValue = segment.ndi !== null ? segment.ndi.toFixed(2) : 'N/A';
 
   return (
     <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -57,7 +57,7 @@ function DeltaChip({ label, delta }: DeltaChipProps) {
       <span className="text-sm font-medium text-dark dark:text-white">{label}</span>
       <div className="flex items-center space-x-1">
         <span className={`text-sm font-bold ${deltaColor}`}>
-          {isDeltaPositive ? '+' : ''}{delta.toFixed(1)} p.p.
+          {isDeltaPositive ? '+' : ''}{delta.toFixed(2)} p.p.
         </span>
       </div>
     </div>
