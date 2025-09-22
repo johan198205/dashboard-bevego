@@ -387,30 +387,39 @@ function parseWideDemographicBreakdown(
   
   const { periodStart, periodEnd } = getQuarterDates(periodId);
   
-  // Look for "Bas: Samtliga" rows to get weight data
-  const basRows = data.filter(row => 
-    row[0] && row[0].toString().includes('Bas: Samtliga')
-  );
+  // Look for "Bas: Samtliga" near the top to get GLOBAL weight data per demographic column
+  const basRows = data
+    .map((row, i) => ({ i, row }))
+    .filter(({ row }) => {
+      const cell = row[0];
+      return cell && cell.toString().trim().toLowerCase().includes('bas: samtliga');
+    });
   
-  // Find the target period column (Q4 2024 = column 6)
-  const headerRow = data[0] || [];
-  let targetColumnIndex = -1;
+  // Create a weight map for each demographic column
+  const weightMap = new Map<number, number>();
   
-  for (let i = 0; i < headerRow.length; i++) {
-    const header = headerRow[i]?.toString().trim();
-    if (header && header.includes('Q4 2024')) {
-      targetColumnIndex = i;
-      break;
-    }
-  }
-  
-  // Get total weight from the first "Bas: Samtliga" row for the target period
-  let totalWeight = undefined;
-  if (basRows.length > 0 && targetColumnIndex >= 0) {
-    const weightValue = basRows[0][targetColumnIndex];
-    if (typeof weightValue === 'number' && !isNaN(weightValue)) {
-      totalWeight = weightValue;
-    }
+  if (basRows.length > 0) {
+    // Build candidate rows: 1) rows near header first, then by largest total
+    const HEADER_WINDOW = 12;
+    const nearHeader = basRows.filter(({ i }) => i <= HEADER_WINDOW).map(({ row }) => row);
+    const rest = basRows.filter(({ i }) => i > HEADER_WINDOW).map(({ row }) => row);
+    rest.sort((a, b) => {
+      const ta = typeof a?.[1] === 'number' ? (a[1] as number) : -1;
+      const tb = typeof b?.[1] === 'number' ? (b[1] as number) : -1;
+      return tb - ta; // descending
+    });
+    const candidates: any[][] = [...nearHeader, ...rest];
+
+    // For each demographic column, take the first numeric value found across candidates
+    demographicColumns.forEach(({ index }) => {
+      for (const row of candidates) {
+        const v = row?.[index];
+        if (typeof v === 'number' && !isNaN(v)) {
+          weightMap.set(index, v);
+          break;
+        }
+      }
+    });
   }
   
   // Process each Index row
@@ -427,7 +436,7 @@ function parseWideDemographicBreakdown(
           periodEnd,
           metric: 'NDI',
           value,
-          weight: totalWeight, // Use the total weight from "Bas: Samtliga" row
+          weight: weightMap.get(index), // Use the specific weight for this demographic column
           groupA: 'Index',
           groupB: dimension,
           groupC: segment
@@ -441,8 +450,8 @@ function parseWideDemographicBreakdown(
   validationReport.columnMapping.value = 'Index rows with demographic columns';
   validationReport.warnings.push(`Found ${indexRows.length} Index rows with ${demographicColumns.length} demographic columns`);
   
-  if (totalWeight !== undefined) {
-    validationReport.warnings.push(`Found total weight from "Bas: Samtliga" row: ${totalWeight} responses`);
+  if (weightMap.size > 0) {
+    validationReport.warnings.push(`Found GLOBAL weights from top "Bas: Samtliga" (columns with weights: ${weightMap.size})`);
   } else {
     validationReport.warnings.push('No weight data found in "Bas: Samtliga" rows - weight data will be undefined');
   }

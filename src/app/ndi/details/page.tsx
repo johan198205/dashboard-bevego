@@ -6,6 +6,10 @@ import { PeriodSelect } from "@/components/NDI/PeriodSelect";
 import { BreakdownRow, Period } from "@/types/ndi";
 
 export default function NDIDetailsPage() {
+  // Sidan avpublicerad: omdirigera till /ndi
+  if (typeof window !== 'undefined') {
+    window.location.replace('/ndi');
+  }
   const [selectedPeriod, setSelectedPeriod] = useState<Period | undefined>();
   const [breakdownData, setBreakdownData] = useState<BreakdownRow[]>([]);
   const [loading, setLoading] = useState(false);

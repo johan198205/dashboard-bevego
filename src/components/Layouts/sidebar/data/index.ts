@@ -22,7 +22,6 @@ export const NAV_DATA = [
         icon: Icons.FourCircle, 
         items: [
           { title: "NDI Dashboard", url: "/ndi" },
-          { title: "NDI Detaljer", url: "/ndi/details" },
           { title: "NDI Inställningar", url: "/ndi/settings" },
         ]
       },
