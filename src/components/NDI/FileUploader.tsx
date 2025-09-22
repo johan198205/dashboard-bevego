@@ -72,6 +72,8 @@ export function FileUploader({ kind, onUploadComplete, className }: FileUploader
       const response = await fetch('/api/files/upload', {
         method: 'POST',
         body: formData,
+        // Add timeout to prevent hanging
+        signal: AbortSignal.timeout(60000) // 60 seconds timeout
       });
 
       const apiResult = await response.json();
@@ -103,7 +105,17 @@ export function FileUploader({ kind, onUploadComplete, className }: FileUploader
       }
     } catch (error) {
       console.error('Upload error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Ett fel uppstod vid uppladdning';
+      let errorMessage = 'Ett fel uppstod vid uppladdning';
+      
+      if (error instanceof Error) {
+        if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
+          errorMessage = 'Uppladdningen tog för lång tid. Filen kan vara för stor eller innehålla felaktig data.';
+        } else if (error.name === 'AbortError') {
+          errorMessage = 'Uppladdningen avbröts.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
       
       setUploadResult({
         success: false,

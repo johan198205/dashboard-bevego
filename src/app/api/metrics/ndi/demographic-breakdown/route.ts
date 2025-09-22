@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
         metric: 'NDI',
         source: 'BREAKDOWN',
         superseded: false,
-        groupA: 'Index', // groupA should be "Index" for demographic breakdowns
+        groupA: { startsWith: 'Index' }, // groupA should start with "Index" (including 'Index_xxx' for multiple rows)
         groupC: {
           not: null, // groupC should contain demographic segment values
         },
@@ -37,39 +37,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No Index data found for the specified period' }, { status: 404 });
     }
 
-    // Add real Excel data with correct values from nedbrytningsfilen (enkelt medelvärde från alla Index-rader + korrekt antal svar från "Bas: Samtliga")
-    const realExcelData = [
-      // Riksbyggen byggt: Ja (enkelt medelvärde: 59.22, antal svar: 372 från "Bas: Samtliga")
-      { groupA: 'Index', groupB: 'Riksbyggen byggt: Ja', groupC: 'Ja', value: 59.22, weight: 372 },
-      // Riksbyggen byggt: Nej (enkelt medelvärde: 62.01, antal svar: 153 från "Bas: Samtliga")
-      { groupA: 'Index', groupB: 'Riksbyggen byggt: Nej', groupC: 'Nej', value: 62.01, weight: 153 },
-      // Riksbyggen förvaltar: Ja (enkelt medelvärde: 59.02, antal svar: 509 från "Bas: Samtliga")
-      { groupA: 'Index', groupB: 'Riksbyggen förvaltar: Ja', groupC: 'Ja', value: 59.02, weight: 509 },
-      // Riksbyggen förvaltar: Nej (enkelt medelvärde: 67.42, antal svar: 71 från "Bas: Samtliga")
-      { groupA: 'Index', groupB: 'Riksbyggen förvaltar: Nej', groupC: 'Nej', value: 67.42, weight: 71 },
-      // Hittade informationen: Ja/Ja, delvis (enkelt medelvärde: 65.57, antal svar: 361 från "Bas: Samtliga")
-      { groupA: 'Index', groupB: 'Hittade informationen: Ja', groupC: 'Ja', value: 65.57, weight: 361 },
-      // Hittade informationen: Ja, delvis (samma värde som Ja)
-      { groupA: 'Index', groupB: 'Hittade informationen: Ja, delvis', groupC: 'Ja, delvis', value: 65.57, weight: 361 },
-      // Hittade informationen: Nej (enkelt medelvärde: 31.37, antal svar: 81 från "Bas: Samtliga")
-      { groupA: 'Index', groupB: 'Hittade informationen: Nej', groupC: 'Nej', value: 31.37, weight: 81 },
-      
-      // Demografisk uppdelning - korrekt antal svar från "Bas: Samtliga" (Total=628)
-      { groupA: 'Index', groupB: 'Device', groupC: 'Mobile', value: 58.6, weight: 303 },
-      { groupA: 'Index', groupB: 'Device', groupC: 'Desktop', value: 60.3, weight: 325 },
-      { groupA: 'Index', groupB: 'OS', groupC: 'Android', value: 61.2, weight: 121 },
-      { groupA: 'Index', groupB: 'OS', groupC: 'iOS', value: 58.2, weight: 163 },
-      { groupA: 'Index', groupB: 'Browser', groupC: 'Chrome', value: 59.5, weight: 147 },
-      { groupA: 'Index', groupB: 'Browser', groupC: 'Safari', value: 61.4, weight: 64 },
-      { groupA: 'Index', groupB: 'Browser', groupC: 'Edge', value: 62.1, weight: 94 },
-      { groupA: 'Index', groupB: 'Gender', groupC: 'Male', value: 59.5, weight: 331 },
-      { groupA: 'Index', groupB: 'Gender', groupC: 'Female', value: 62.5, weight: 255 },
-    ];
-    
-    // Add Excel data to existing data (commented out for production)
-    // indexRows.push(...realExcelData);
+    // Note: Data is now read directly from MetricPoint table in database
+    // The Excel parser stores Index values from Row 24 with NETTO base from Row 10/20
 
 
+
+  // Helper function to round to 2 decimals with HALF_UP rounding (rounds 0.5 up instead of to even)
+  const roundToTwoDecimals = (value: number): number => {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
+  };
 
     // Helper function to calculate average NDI for a segment
     const calculateSegmentAverage = (rows: typeof indexRows): DemographicSegment => {
@@ -83,10 +59,17 @@ export async function GET(request: NextRequest) {
         const totalWeight = rows.reduce((sum, row) => sum + (row.weight || 0), 0);
         const weightedSum = rows.reduce((sum, row) => sum + (row.value * (row.weight || 0)), 0);
         const avgNDI = totalWeight > 0 ? weightedSum / totalWeight : null;
-        return { ndi: avgNDI, count: Math.round(totalWeight) };
+        
+        if (avgNDI !== null) {
+          // Round NDI value to 2 decimals
+          return { ndi: roundToTwoDecimals(avgNDI), count: Math.round(totalWeight) };
+        }
+        
+        return { ndi: null, count: Math.round(totalWeight) };
       } else {
         const avgNDI = rows.reduce((sum, row) => sum + row.value, 0) / rows.length;
-        return { ndi: avgNDI, count: rows.length };
+        // Round NDI value to 2 decimals
+        return { ndi: roundToTwoDecimals(avgNDI), count: rows.length };
       }
     };
 
@@ -136,10 +119,12 @@ export async function GET(request: NextRequest) {
           if (hasWeights) {
             const totalWeight = prevRows.reduce((sum, row) => sum + (row.weight || 0), 0);
             const weightedSum = prevRows.reduce((sum, row) => sum + (row.value * (row.weight || 0)), 0);
-            prevValue = totalWeight > 0 ? weightedSum / totalWeight : null;
+            const avgNDI = totalWeight > 0 ? weightedSum / totalWeight : null;
+            prevValue = avgNDI !== null ? roundToTwoDecimals(avgNDI) : null;
             prevCount = Math.round(totalWeight);
           } else {
-            prevValue = prevRows.reduce((sum, row) => sum + row.value, 0) / prevRows.length;
+            const avgNDI = prevRows.reduce((sum, row) => sum + row.value, 0) / prevRows.length;
+            prevValue = roundToTwoDecimals(avgNDI);
             prevCount = prevRows.length;
           }
 

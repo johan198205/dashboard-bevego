@@ -22,7 +22,7 @@ const VALUE_ALIASES = [
 ];
 
 const WEIGHT_ALIASES = [
-  "Antal", "Svar", "Count", "n", "Sample", "Bas"
+  "Antal", "Svar", "Count", "n", "Sample", "Bas", "Netto"
 ];
 
 const PERIOD_ALIASES = [
@@ -152,14 +152,15 @@ function parseJsonLikeBreakdown(
   
   const { periodStart, periodEnd } = getQuarterDates(periodId);
 
-  // Find the "Bas: Samtliga" row for weights
+  // Find the "Bas: Netto" or "Bas: Samtliga" row for weights
   const basRow = data.find(row => {
     if (!row || typeof row !== 'object') return false;
-    // Look for any column that contains "Bas: Samtliga"
+    // Look for any column that contains "Bas: Netto" or "Bas: Samtliga"
     for (const columnName in row) {
       if (Object.prototype.hasOwnProperty.call(row, columnName)) {
         const value = (row as any)[columnName];
-        if (value && value.toString().toLowerCase().includes('bas: samtliga')) {
+        if (value && (value.toString().toLowerCase().includes('bas: netto') || 
+                     value.toString().toLowerCase().includes('bas: samtliga'))) {
           return true;
         }
       }
@@ -218,7 +219,7 @@ function parseJsonLikeBreakdown(
         if (columnName === firstColumnName) continue; // Skip the label column
         
         if (typeof value === 'number' && !isNaN(value)) {
-          // Get weight from corresponding "Bas: Samtliga" row if available
+          // Get weight from corresponding "Bas: Netto" or "Bas: Samtliga" row if available
           let weight: number | undefined;
           if (basRow && (basRow as any)[columnName] && typeof (basRow as any)[columnName] === 'number') {
             weight = (basRow as any)[columnName] * value / 100; // Convert percentage to actual count
@@ -264,7 +265,7 @@ function parseJsonLikeBreakdown(
   validationReport.columnMapping.value = 'NDI scale values (1-10) with demographic percentages';
   
   if (!basRow) {
-    validationReport.warnings.push('No weight data found in "Bas: Samtliga" rows - weight data will be undefined');
+    validationReport.warnings.push('No weight data found in "Bas: Netto" or "Bas: Samtliga" rows - weight data will be undefined');
   }
 
   return { metricPoints, validationReport };
@@ -284,9 +285,10 @@ function parsePercentageBreakdown(
   const periodId = '2024Q4';
   const { periodStart, periodEnd } = getQuarterDates(periodId);
 
-  // Get weight from "Bas: Samtliga" row if available
+  // Get weight from "Bas: Netto" or "Bas: Samtliga" row if available
   const basRows = data.slice(1).filter(row => 
-    row && row[0] && row[0].toString().toLowerCase().includes('bas: samtliga')
+    row && row[0] && (row[0].toString().toLowerCase().includes('bas: netto') ||
+                     row[0].toString().toLowerCase().includes('bas: samtliga'))
   );
 
   for (const row of percentageRows) {
@@ -316,7 +318,7 @@ function parsePercentageBreakdown(
       for (const col of demographicColumns) {
         const percentage = row[col.index];
         if (typeof percentage === 'number' && !isNaN(percentage)) {
-          // Get weight from corresponding "Bas: Samtliga" row if available
+          // Get weight from corresponding "Bas: Netto" or "Bas: Samtliga" row if available
           let weight: number | undefined;
           if (basRows.length > 0) {
             const weightValue = basRows[0][col.index];
@@ -347,7 +349,7 @@ function parsePercentageBreakdown(
   validationReport.columnMapping.value = 'NDI scale values (1-10) with demographic percentages';
   
   if (basRows.length === 0) {
-    validationReport.warnings.push('No weight data found in "Bas: Samtliga" rows - weight data will be undefined');
+    validationReport.warnings.push('No weight data found in "Bas: Netto" or "Bas: Samtliga" rows - weight data will be undefined');
   }
 
   return { metricPoints, validationReport };
@@ -387,12 +389,13 @@ function parseWideDemographicBreakdown(
   
   const { periodStart, periodEnd } = getQuarterDates(periodId);
   
-  // Look for "Bas: Samtliga" near the top to get GLOBAL weight data per demographic column
+  // Look for "Bas: Netto" or "Bas: Samtliga" near the top to get GLOBAL weight data per demographic column
   const basRows = data
     .map((row, i) => ({ i, row }))
     .filter(({ row }) => {
       const cell = row[0];
-      return cell && cell.toString().trim().toLowerCase().includes('bas: samtliga');
+      return cell && (cell.toString().trim().toLowerCase().includes('bas: netto') ||
+                     cell.toString().trim().toLowerCase().includes('bas: samtliga'));
     });
   
   // Create a weight map for each demographic column
@@ -451,9 +454,9 @@ function parseWideDemographicBreakdown(
   validationReport.warnings.push(`Found ${indexRows.length} Index rows with ${demographicColumns.length} demographic columns`);
   
   if (weightMap.size > 0) {
-    validationReport.warnings.push(`Found GLOBAL weights from top "Bas: Samtliga" (columns with weights: ${weightMap.size})`);
+    validationReport.warnings.push(`Found GLOBAL weights from top "Bas: Netto" or "Bas: Samtliga" (columns with weights: ${weightMap.size})`);
   } else {
-    validationReport.warnings.push('No weight data found in "Bas: Samtliga" rows - weight data will be undefined');
+    validationReport.warnings.push('No weight data found in "Bas: Netto" or "Bas: Samtliga" rows - weight data will be undefined');
   }
   
   return { metricPoints, validationReport };
@@ -666,11 +669,11 @@ export function parseAggregatedFileFromBuffer(
     return { metricPoints, validationReport };
   }
 
-  // Find "Bas: Samtliga" rows to get weight data
+  // Find "Bas: Netto" or "Bas: Samtliga" rows to get weight data
   const basRows: { index: number; row: any[] }[] = [];
   for (let i = 0; i < data.length; i++) {
     const row = data[i];
-    if (row && row[0] && row[0].toString().includes('Bas: Samtliga')) {
+    if (row && row[0] && (row[0].toString().includes('Bas: Netto') || row[0].toString().includes('Bas: Samtliga'))) {
       basRows.push({ index: i, row });
     }
   }
@@ -683,7 +686,7 @@ export function parseAggregatedFileFromBuffer(
     const periodId = period;
     const { periodStart, periodEnd } = getQuarterDates(periodId);
     
-        // Get weight from first "Bas: Samtliga" row that has a valid value for this period
+        // Get weight from first "Bas: Netto" or "Bas: Samtliga" row that has a valid value for this period
         let weight: number | undefined;
         if (basRows.length > 0) {
           // Find the first Bas row that has a valid weight value for this column
@@ -721,7 +724,7 @@ export function parseAggregatedFileFromBuffer(
           periodEnd,
           metric: 'NDI',
           value: value,
-          weight: weight, // Add weight data from "Bas: Samtliga" row
+          weight: weight, // Add weight data from "Bas: Netto" or "Bas: Samtliga" row
           groupA: descriptiveLabel,
           groupB: metricRow.name,
           groupC: undefined
@@ -755,9 +758,9 @@ export function parseAggregatedFileFromBuffer(
   
   // Add info about weight data
   if (basRows.length > 0) {
-    validationReport.warnings.push(`Found ${basRows.length} "Bas: Samtliga" rows for weight data`);
+    validationReport.warnings.push(`Found ${basRows.length} "Bas: Netto" or "Bas: Samtliga" rows for weight data`);
   } else {
-    validationReport.warnings.push('No "Bas: Samtliga" rows found - weight data will be undefined');
+    validationReport.warnings.push('No "Bas: Netto" or "Bas: Samtliga" rows found - weight data will be undefined');
   }
   
   return { metricPoints, validationReport };
@@ -927,7 +930,7 @@ function parseIndexBasedBreakdown(
   const metricPoints: ParsedMetricPoint[] = [];
   const dataRows = data.slice(1);
 
-  // Find Index rows - these contain the actual NDI values
+  // Find Index rows - these contain the NDI values
   const indexRows = dataRows.filter(row => 
     row && row[0] && row[0].toString().toLowerCase().includes('index')
   );
@@ -942,8 +945,10 @@ function parseIndexBasedBreakdown(
   const period = '2024Q4' as Period;
   const { periodStart, periodEnd } = getQuarterDates(period);
   
+  // For this specific file format, we assume values are in column 1
+  // This function is used for files with a single period
   indexRows.forEach((indexRow, index) => {
-    const value = indexRow[1]; // NDI values are always in column 1
+    const value = indexRow[1]; // NDI values are in column 1 for single-period files
     if (typeof value === 'number' && !isNaN(value)) {
       metricPoints.push({
         period: period as Period,
@@ -984,7 +989,7 @@ function parseWideFormatBreakdown(
   const indexRows = dataRows.filter(row => row && row[0] && row[0].toString().toLowerCase().includes('index'));
   
   if (indexRows.length > 0) {
-    // This is an Index-based file - extract values from Index rows
+    // This is an Index-based file - extract NDI values from these rows
     for (const { key, period } of quarterColumns) {
       const columnIndex = headerRow.findIndex(h => h?.toString() === key);
       if (columnIndex === -1) continue;
@@ -992,8 +997,8 @@ function parseWideFormatBreakdown(
       // Collect all valid Index values for this period
       const validValues: number[] = [];
       for (const indexRow of indexRows) {
-        // For Index rows, the NDI values are in column 1 (second column)
-        const value = indexRow[1];
+        // For Index rows, the NDI values are in the column corresponding to this period
+        const value = indexRow[columnIndex];
         if (typeof value === 'number' && !isNaN(value)) {
           validValues.push(value);
         }
@@ -1155,11 +1160,11 @@ function parseLongFormatBreakdown(
     const row = dataRows[i];
     if (!row || row.length === 0) continue;
 
-    // Get period - use file period if row period is "Bas: Samtliga"
+    // Get period - use file period if row period is "Bas: Netto" or "Bas: Samtliga"
     const periodValue = row[periodColumnIndex];
     
     let period: string | null = null;
-    if (periodValue?.toString().includes('Bas:') || periodValue?.toString().includes('Samtliga')) {
+    if (periodValue?.toString().includes('Bas:') || periodValue?.toString().includes('Netto') || periodValue?.toString().includes('Samtliga')) {
       // Use the period extracted from header
       period = filePeriod;
     } else {

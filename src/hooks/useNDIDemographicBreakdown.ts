@@ -1,6 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Period, DemographicBreakdown } from '@/types/ndi';
 
+  // HALF_UP rounding function (rounds 0.5 up instead of to even)
+  const roundHalfUp = (value: number, decimals: number = 2): number => {
+    const factor = Math.pow(10, decimals);
+    return Math.round((value + Number.EPSILON) * factor) / factor;
+  };
+
 export function useNDIDemographicBreakdown(period: Period | null) {
   const [data, setData] = useState<DemographicBreakdown | null>(null);
   const [loading, setLoading] = useState(false);
@@ -53,26 +59,26 @@ export function useNDIDemographicBreakdown(period: Period | null) {
         ...data.gender,
         male: {
           ...data.gender.male,
-          ndi: data.gender.male.ndi !== null ? Math.round(data.gender.male.ndi * 10) / 10 : null,
-          qoqChange: data.gender.male.qoqChange !== null && data.gender.male.qoqChange !== undefined ? Math.round(data.gender.male.qoqChange * 10) / 10 : null,
-          prevQuarterValue: data.gender.male.prevQuarterValue !== null && data.gender.male.prevQuarterValue !== undefined ? Math.round(data.gender.male.prevQuarterValue * 10) / 10 : null,
+          ndi: data.gender.male.ndi !== null ? roundHalfUp(data.gender.male.ndi) : null,
+          qoqChange: data.gender.male.qoqChange !== null && data.gender.male.qoqChange !== undefined ? roundHalfUp(data.gender.male.qoqChange) : null,
+          prevQuarterValue: data.gender.male.prevQuarterValue !== null && data.gender.male.prevQuarterValue !== undefined ? roundHalfUp(data.gender.male.prevQuarterValue) : null,
         },
         female: {
           ...data.gender.female,
-          ndi: data.gender.female.ndi !== null ? Math.round(data.gender.female.ndi * 10) / 10 : null,
-          qoqChange: data.gender.female.qoqChange !== null && data.gender.female.qoqChange !== undefined ? Math.round(data.gender.female.qoqChange * 10) / 10 : null,
-          prevQuarterValue: data.gender.female.prevQuarterValue !== null && data.gender.female.prevQuarterValue !== undefined ? Math.round(data.gender.female.prevQuarterValue * 10) / 10 : null,
+          ndi: data.gender.female.ndi !== null ? roundHalfUp(data.gender.female.ndi) : null,
+          qoqChange: data.gender.female.qoqChange !== null && data.gender.female.qoqChange !== undefined ? roundHalfUp(data.gender.female.qoqChange) : null,
+          prevQuarterValue: data.gender.female.prevQuarterValue !== null && data.gender.female.prevQuarterValue !== undefined ? roundHalfUp(data.gender.female.prevQuarterValue) : null,
         },
-        delta: data.gender.delta !== null ? Math.round(data.gender.delta * 10) / 10 : null,
+        delta: data.gender.delta !== null ? roundHalfUp(data.gender.delta) : null,
       },
       ageGroups: Object.fromEntries(
         Object.entries(data.ageGroups).map(([key, value]) => [
           key,
           {
             ...value,
-            ndi: value.ndi !== null ? Math.round(value.ndi * 10) / 10 : null,
-            qoqChange: value.qoqChange !== null && value.qoqChange !== undefined ? Math.round(value.qoqChange * 10) / 10 : null,
-            prevQuarterValue: value.prevQuarterValue !== null && value.prevQuarterValue !== undefined ? Math.round(value.prevQuarterValue * 10) / 10 : null,
+            ndi: value.ndi !== null ? roundHalfUp(value.ndi) : null,
+            qoqChange: value.qoqChange !== null && value.qoqChange !== undefined ? roundHalfUp(value.qoqChange) : null,
+            prevQuarterValue: value.prevQuarterValue !== null && value.prevQuarterValue !== undefined ? roundHalfUp(value.prevQuarterValue) : null,
           },
         ])
       ),
@@ -80,90 +86,90 @@ export function useNDIDemographicBreakdown(period: Period | null) {
         ...data.device,
         mobile: {
           ...data.device.mobile,
-          ndi: data.device.mobile.ndi !== null ? Math.round(data.device.mobile.ndi * 10) / 10 : null,
-          qoqChange: data.device.mobile.qoqChange !== null && data.device.mobile.qoqChange !== undefined ? Math.round(data.device.mobile.qoqChange * 10) / 10 : null,
-          prevQuarterValue: data.device.mobile.prevQuarterValue !== null && data.device.mobile.prevQuarterValue !== undefined ? Math.round(data.device.mobile.prevQuarterValue * 10) / 10 : null,
+          ndi: data.device.mobile.ndi !== null ? roundHalfUp(data.device.mobile.ndi) : null,
+          qoqChange: data.device.mobile.qoqChange !== null && data.device.mobile.qoqChange !== undefined ? roundHalfUp(data.device.mobile.qoqChange) : null,
+          prevQuarterValue: data.device.mobile.prevQuarterValue !== null && data.device.mobile.prevQuarterValue !== undefined ? roundHalfUp(data.device.mobile.prevQuarterValue) : null,
         },
         desktop: {
           ...data.device.desktop,
-          ndi: data.device.desktop.ndi !== null ? Math.round(data.device.desktop.ndi * 10) / 10 : null,
-          qoqChange: data.device.desktop.qoqChange !== null && data.device.desktop.qoqChange !== undefined ? Math.round(data.device.desktop.qoqChange * 10) / 10 : null,
-          prevQuarterValue: data.device.desktop.prevQuarterValue !== null && data.device.desktop.prevQuarterValue !== undefined ? Math.round(data.device.desktop.prevQuarterValue * 10) / 10 : null,
+          ndi: data.device.desktop.ndi !== null ? roundHalfUp(data.device.desktop.ndi) : null,
+          qoqChange: data.device.desktop.qoqChange !== null && data.device.desktop.qoqChange !== undefined ? roundHalfUp(data.device.desktop.qoqChange) : null,
+          prevQuarterValue: data.device.desktop.prevQuarterValue !== null && data.device.desktop.prevQuarterValue !== undefined ? roundHalfUp(data.device.desktop.prevQuarterValue) : null,
         },
-        delta: data.device.delta !== null ? Math.round(data.device.delta * 10) / 10 : null,
+        delta: data.device.delta !== null ? roundHalfUp(data.device.delta) : null,
       },
       os: {
         ...data.os,
         android: {
           ...data.os.android,
-          ndi: data.os.android.ndi !== null ? Math.round(data.os.android.ndi * 10) / 10 : null,
-          qoqChange: data.os.android.qoqChange !== null && data.os.android.qoqChange !== undefined ? Math.round(data.os.android.qoqChange * 10) / 10 : null,
-          prevQuarterValue: data.os.android.prevQuarterValue !== null && data.os.android.prevQuarterValue !== undefined ? Math.round(data.os.android.prevQuarterValue * 10) / 10 : null,
+          ndi: data.os.android.ndi !== null ? roundHalfUp(data.os.android.ndi) : null,
+          qoqChange: data.os.android.qoqChange !== null && data.os.android.qoqChange !== undefined ? roundHalfUp(data.os.android.qoqChange) : null,
+          prevQuarterValue: data.os.android.prevQuarterValue !== null && data.os.android.prevQuarterValue !== undefined ? roundHalfUp(data.os.android.prevQuarterValue) : null,
         },
         ios: {
           ...data.os.ios,
-          ndi: data.os.ios.ndi !== null ? Math.round(data.os.ios.ndi * 10) / 10 : null,
-          qoqChange: data.os.ios.qoqChange !== null && data.os.ios.qoqChange !== undefined ? Math.round(data.os.ios.qoqChange * 10) / 10 : null,
-          prevQuarterValue: data.os.ios.prevQuarterValue !== null && data.os.ios.prevQuarterValue !== undefined ? Math.round(data.os.ios.prevQuarterValue * 10) / 10 : null,
+          ndi: data.os.ios.ndi !== null ? roundHalfUp(data.os.ios.ndi) : null,
+          qoqChange: data.os.ios.qoqChange !== null && data.os.ios.qoqChange !== undefined ? roundHalfUp(data.os.ios.qoqChange) : null,
+          prevQuarterValue: data.os.ios.prevQuarterValue !== null && data.os.ios.prevQuarterValue !== undefined ? roundHalfUp(data.os.ios.prevQuarterValue) : null,
         },
-        delta: data.os.delta !== null ? Math.round(data.os.delta * 10) / 10 : null,
+        delta: data.os.delta !== null ? roundHalfUp(data.os.delta) : null,
       },
       browser: {
         chrome: {
           ...data.browser.chrome,
-          ndi: data.browser.chrome.ndi !== null ? Math.round(data.browser.chrome.ndi * 10) / 10 : null,
-          qoqChange: data.browser.chrome.qoqChange !== null && data.browser.chrome.qoqChange !== undefined ? Math.round(data.browser.chrome.qoqChange * 10) / 10 : null,
-          prevQuarterValue: data.browser.chrome.prevQuarterValue !== null && data.browser.chrome.prevQuarterValue !== undefined ? Math.round(data.browser.chrome.prevQuarterValue * 10) / 10 : null,
+          ndi: data.browser.chrome.ndi !== null ? roundHalfUp(data.browser.chrome.ndi) : null,
+          qoqChange: data.browser.chrome.qoqChange !== null && data.browser.chrome.qoqChange !== undefined ? roundHalfUp(data.browser.chrome.qoqChange) : null,
+          prevQuarterValue: data.browser.chrome.prevQuarterValue !== null && data.browser.chrome.prevQuarterValue !== undefined ? roundHalfUp(data.browser.chrome.prevQuarterValue) : null,
         },
         safari: {
           ...data.browser.safari,
-          ndi: data.browser.safari.ndi !== null ? Math.round(data.browser.safari.ndi * 10) / 10 : null,
-          qoqChange: data.browser.safari.qoqChange !== null && data.browser.safari.qoqChange !== undefined ? Math.round(data.browser.safari.qoqChange * 10) / 10 : null,
-          prevQuarterValue: data.browser.safari.prevQuarterValue !== null && data.browser.safari.prevQuarterValue !== undefined ? Math.round(data.browser.safari.prevQuarterValue * 10) / 10 : null,
+          ndi: data.browser.safari.ndi !== null ? roundHalfUp(data.browser.safari.ndi) : null,
+          qoqChange: data.browser.safari.qoqChange !== null && data.browser.safari.qoqChange !== undefined ? roundHalfUp(data.browser.safari.qoqChange) : null,
+          prevQuarterValue: data.browser.safari.prevQuarterValue !== null && data.browser.safari.prevQuarterValue !== undefined ? roundHalfUp(data.browser.safari.prevQuarterValue) : null,
         },
         edge: {
           ...data.browser.edge,
-          ndi: data.browser.edge.ndi !== null ? Math.round(data.browser.edge.ndi * 10) / 10 : null,
-          qoqChange: data.browser.edge.qoqChange !== null && data.browser.edge.qoqChange !== undefined ? Math.round(data.browser.edge.qoqChange * 10) / 10 : null,
-          prevQuarterValue: data.browser.edge.prevQuarterValue !== null && data.browser.edge.prevQuarterValue !== undefined ? Math.round(data.browser.edge.prevQuarterValue * 10) / 10 : null,
+          ndi: data.browser.edge.ndi !== null ? roundHalfUp(data.browser.edge.ndi) : null,
+          qoqChange: data.browser.edge.qoqChange !== null && data.browser.edge.qoqChange !== undefined ? roundHalfUp(data.browser.edge.qoqChange) : null,
+          prevQuarterValue: data.browser.edge.prevQuarterValue !== null && data.browser.edge.prevQuarterValue !== undefined ? roundHalfUp(data.browser.edge.prevQuarterValue) : null,
         },
       },
       riksbyggenBuilt: {
         ...data.riksbyggenBuilt,
         yes: {
           ...data.riksbyggenBuilt.yes,
-          ndi: data.riksbyggenBuilt.yes.ndi !== null ? Math.round(data.riksbyggenBuilt.yes.ndi * 10) / 10 : null,
+          ndi: data.riksbyggenBuilt.yes.ndi !== null ? roundHalfUp(data.riksbyggenBuilt.yes.ndi) : null,
         },
         no: {
           ...data.riksbyggenBuilt.no,
-          ndi: data.riksbyggenBuilt.no.ndi !== null ? Math.round(data.riksbyggenBuilt.no.ndi * 10) / 10 : null,
+          ndi: data.riksbyggenBuilt.no.ndi !== null ? roundHalfUp(data.riksbyggenBuilt.no.ndi) : null,
         },
-        delta: data.riksbyggenBuilt.delta !== null ? Math.round(data.riksbyggenBuilt.delta * 10) / 10 : null,
+        delta: data.riksbyggenBuilt.delta !== null ? roundHalfUp(data.riksbyggenBuilt.delta) : null,
       },
       riksbyggenManaged: {
         ...data.riksbyggenManaged,
         yes: {
           ...data.riksbyggenManaged.yes,
-          ndi: data.riksbyggenManaged.yes.ndi !== null ? Math.round(data.riksbyggenManaged.yes.ndi * 10) / 10 : null,
+          ndi: data.riksbyggenManaged.yes.ndi !== null ? roundHalfUp(data.riksbyggenManaged.yes.ndi) : null,
         },
         no: {
           ...data.riksbyggenManaged.no,
-          ndi: data.riksbyggenManaged.no.ndi !== null ? Math.round(data.riksbyggenManaged.no.ndi * 10) / 10 : null,
+          ndi: data.riksbyggenManaged.no.ndi !== null ? roundHalfUp(data.riksbyggenManaged.no.ndi) : null,
         },
-        delta: data.riksbyggenManaged.delta !== null ? Math.round(data.riksbyggenManaged.delta * 10) / 10 : null,
+        delta: data.riksbyggenManaged.delta !== null ? roundHalfUp(data.riksbyggenManaged.delta) : null,
       },
       informationFound: {
         yes: {
           ...data.informationFound.yes,
-          ndi: data.informationFound.yes.ndi !== null ? Math.round(data.informationFound.yes.ndi * 10) / 10 : null,
+          ndi: data.informationFound.yes.ndi !== null ? roundHalfUp(data.informationFound.yes.ndi) : null,
         },
         partially: {
           ...data.informationFound.partially,
-          ndi: data.informationFound.partially.ndi !== null ? Math.round(data.informationFound.partially.ndi * 10) / 10 : null,
+          ndi: data.informationFound.partially.ndi !== null ? roundHalfUp(data.informationFound.partially.ndi) : null,
         },
         no: {
           ...data.informationFound.no,
-          ndi: data.informationFound.no.ndi !== null ? Math.round(data.informationFound.no.ndi * 10) / 10 : null,
+          ndi: data.informationFound.no.ndi !== null ? roundHalfUp(data.informationFound.no.ndi) : null,
         },
       },
     };

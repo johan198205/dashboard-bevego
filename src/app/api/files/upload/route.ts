@@ -7,6 +7,25 @@ import { FileKind } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
 export async function POST(request: NextRequest) {
+  // Set timeout for the entire request
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Request timeout')), 45000); // 45 seconds
+  });
+
+  try {
+    const requestPromise = handleUpload(request);
+    const result = await Promise.race([requestPromise, timeoutPromise]);
+    return result;
+  } catch (error) {
+    console.error('File upload error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to upload file' },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleUpload(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -53,51 +72,95 @@ export async function POST(request: NextRequest) {
     });
 
     // Parse the Excel file from buffer
+    console.log(`Starting to parse file: ${file.name}, size: ${buffer.length} bytes`);
     const parsedData = parseExcelFileFromBuffer(buffer, fileUpload.id, kind);
+    console.log(`Parsing completed. Found ${parsedData.metricPoints.length} metric points`);
 
     // Store metric points in database
     if (parsedData.metricPoints.length > 0) {
       const batchId = randomUUID();
       const periodIds = [...new Set(parsedData.metricPoints.map(p => p.periodId))];
       
-      // Use upsert for each metric point to handle unique constraints
+      // Clear existing Index data for these periods to avoid duplicates
+      console.log(`Clearing existing Index data for periods: ${periodIds.join(', ')}`);
+      for (const periodId of periodIds) {
+        const deleted = await prisma.metricPoint.deleteMany({
+          where: {
+            periodId: periodId,
+            groupA: 'Index',
+            source: kind
+          }
+        });
+        console.log(`Deleted ${deleted.count} existing Index records for period ${periodId}`);
+      }
+      
+      // For Index rows, we need to save all rows separately to calculate averages
+      // For other metrics, use upsert to avoid duplicates
       for (const point of parsedData.metricPoints) {
         try {
-              await prisma.metricPoint.upsert({
-                where: {
-                  unique_metric_period: {
-                    periodId: point.periodId,
-                    metric: point.metric,
-                    source: kind,
-                    groupA: point.groupA || '',
-                    groupB: point.groupB || '',
-                    groupC: point.groupC || ''
-                  }
-                },
-            update: {
-              value: point.value,
-              weight: point.weight,
-              ingestionBatchId: batchId,
-              superseded: false
-            },
-            create: {
-              id: randomUUID(),
-              period: point.period,
-              periodId: point.periodId,
-              periodStart: point.periodStart,
-              periodEnd: point.periodEnd,
-              metric: point.metric,
-              value: point.value,
-              weight: point.weight,
-              source: kind,
-              groupA: point.groupA,
-              groupB: point.groupB,
-              groupC: point.groupC,
-              ingestionBatchId: batchId,
-              superseded: false,
-              createdAt: new Date(),
-            }
-          });
+          if (point.groupA === 'Index') {
+            // For Index rows, we need to make them unique by adding a sequence number
+            // to avoid unique constraint violations when there are multiple Index rows
+            const sequenceId = randomUUID().substring(0, 8); // Short unique ID
+            const uniqueGroupA = `${point.groupA}_${sequenceId}`;
+            console.log(`Creating Index record: ${point.groupB}/${point.groupC} = ${point.value} (seq: ${sequenceId})`);
+            await prisma.metricPoint.create({
+              data: {
+                id: randomUUID(),
+                period: point.period,
+                periodId: point.periodId,
+                periodStart: point.periodStart,
+                periodEnd: point.periodEnd,
+                metric: point.metric,
+                value: point.value,
+                weight: point.weight,
+                source: kind,
+                groupA: uniqueGroupA, // Make it unique by adding sequence
+                groupB: point.groupB,
+                groupC: point.groupC,
+                ingestionBatchId: batchId,
+                superseded: false,
+                createdAt: new Date(),
+              }
+            });
+          } else {
+            // For non-Index rows, use upsert to avoid duplicates
+            await prisma.metricPoint.upsert({
+              where: {
+                unique_metric_period: {
+                  periodId: point.periodId,
+                  metric: point.metric,
+                  source: kind,
+                  groupA: point.groupA || '',
+                  groupB: point.groupB || '',
+                  groupC: point.groupC || ''
+                }
+              },
+              update: {
+                value: point.value,
+                weight: point.weight,
+                ingestionBatchId: batchId,
+                superseded: false
+              },
+              create: {
+                id: randomUUID(),
+                period: point.period,
+                periodId: point.periodId,
+                periodStart: point.periodStart,
+                periodEnd: point.periodEnd,
+                metric: point.metric,
+                value: point.value,
+                weight: point.weight,
+                source: kind,
+                groupA: point.groupA,
+                groupB: point.groupB,
+                groupC: point.groupC,
+                ingestionBatchId: batchId,
+                superseded: false,
+                createdAt: new Date(),
+              }
+            });
+          }
         } catch (error) {
           console.error('Error upserting metric point:', error);
           // Continue with other points even if one fails
@@ -113,6 +176,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    console.log(`Upload completed successfully. File ID: ${fileUpload.id}`);
     return NextResponse.json({
       ok: true,
       periodsDetected: parsedData.validationReport.detectedPeriods,
@@ -125,7 +189,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('File upload error:', error);
     return NextResponse.json(
-      { error: 'Failed to upload file' },
+      { error: error instanceof Error ? error.message : 'Failed to upload file' },
       { status: 500 }
     );
   }

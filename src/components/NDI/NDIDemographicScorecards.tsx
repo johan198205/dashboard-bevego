@@ -14,7 +14,7 @@ interface ScorecardChipProps {
 }
 
 function ScorecardChip({ label, segment, showCount = false }: ScorecardChipProps) {
-  const displayValue = segment.ndi !== null ? segment.ndi.toFixed(1) : 'N/A';
+  const displayValue = segment.ndi !== null ? segment.ndi.toFixed(2) : 'N/A';
 
   return (
     <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -37,10 +37,10 @@ function ScorecardChip({ label, segment, showCount = false }: ScorecardChipProps
                 ? 'text-red-600 dark:text-red-400' 
                 : 'text-gray-600 dark:text-gray-400'
           }`}>
-            {segment.qoqChange > 0 ? '+' : ''}{segment.qoqChange.toFixed(1)}%
+            {segment.qoqChange > 0 ? '+' : ''}{segment.qoqChange.toFixed(2)}%
             {segment.prevQuarterValue !== null && segment.prevQuarterValue !== undefined && (
               <span className="text-gray-500 dark:text-gray-400 ml-1">
-                ({segment.prevQuarterValue.toFixed(1)})
+                ({segment.prevQuarterValue.toFixed(2)})
               </span>
             )}
           </div>
@@ -75,7 +75,7 @@ function DeltaChip({ label, delta }: DeltaChipProps) {
       <span className="text-sm font-medium text-dark dark:text-white">{label}</span>
       <div className="flex items-center space-x-1">
         <span className={`text-sm font-bold ${deltaColor}`}>
-          {isDeltaPositive ? '+' : ''}{delta.toFixed(1)} p.p.
+          {isDeltaPositive ? '+' : ''}{delta.toFixed(2)} p.p.
         </span>
       </div>
     </div>
