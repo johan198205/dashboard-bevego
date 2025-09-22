@@ -1,6 +1,7 @@
 "use client";
 
 import { DemographicBreakdown, DemographicSegment } from '@/types/ndi';
+import { TrendingUpIcon, ArrowDownIcon, UserIcon, GlobeIcon, CallIcon } from "@/assets/icons";
 
 interface NDIDemographicScorecardsProps {
   data: DemographicBreakdown | null;
@@ -17,7 +18,7 @@ function ScorecardChip({ label, segment, showCount = false }: ScorecardChipProps
   const displayValue = segment.ndi !== null ? segment.ndi.toFixed(2) : 'N/A';
 
   return (
-    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-600 hover:shadow-sm">
       <span className="text-sm font-medium text-dark dark:text-white">{label}</span>
       <div className="text-right">
         <span className="text-lg font-semibold text-dark dark:text-white">
@@ -85,12 +86,18 @@ function DeltaChip({ label, delta }: DeltaChipProps) {
 interface ScorecardProps {
   title: string;
   children: React.ReactNode;
+  icon: React.ComponentType<any>;
 }
 
-function Scorecard({ title, children }: ScorecardProps) {
+function Scorecard({ title, children, icon: Icon }: ScorecardProps) {
   return (
-    <div className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-2xl p-6">
-      <h3 className="text-sm font-semibold text-dark dark:text-white mb-4">{title}</h3>
+    <div className="relative overflow-hidden rounded-2xl bg-white shadow-sm border border-stroke dark:bg-gray-dark dark:border-dark-3 p-6 transition-transform transition-shadow duration-200 ease-out will-change-transform motion-reduce:transition-none motion-reduce:transform-none hover:shadow-md hover:border-primary/30 motion-reduce:hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:scale-[1.01] focus-visible:scale-[1.01] motion-reduce:hover:scale-100 motion-reduce:focus-visible:scale-100">
+      {/* Icon */}
+      <div className="absolute top-6 right-6 bg-red/10 rounded-lg p-2 mb-8">
+        <Icon className="h-5 w-5 text-red" />
+      </div>
+      
+      <h3 className="text-sm font-semibold text-dark dark:text-white mb-6 pr-16">{title}</h3>
       <div className="space-y-2">
         {children}
       </div>
@@ -155,16 +162,15 @@ export function NDIDemographicScorecards({ data, loading }: NDIDemographicScorec
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
       {/* Gender Scorecard */}
-      <Scorecard title="Kön">
+      <Scorecard title="Kön" icon={UserIcon}>
         <ScorecardChip label="Män" segment={data.gender.male} showCount />
         <ScorecardChip label="Kvinnor" segment={data.gender.female} showCount />
-        <DeltaChip label="Diff (K-M)" delta={data.gender.delta} />
       </Scorecard>
 
       {/* Age Groups Scorecard */}
-      <Scorecard title="Åldersgrupper">
+      <Scorecard title="Åldersgrupper" icon={TrendingUpIcon}>
         {Object.entries(data.ageGroups)
           .sort(([a], [b]) => {
             // Sort by age order
@@ -182,21 +188,19 @@ export function NDIDemographicScorecards({ data, loading }: NDIDemographicScorec
       </Scorecard>
 
       {/* Device Scorecard */}
-      <Scorecard title="Enhet">
+      <Scorecard title="Enhet" icon={CallIcon}>
         <ScorecardChip label="Mobile" segment={data.device.mobile} showCount />
         <ScorecardChip label="Desktop" segment={data.device.desktop} showCount />
-        <DeltaChip label="Diff (M-D)" delta={data.device.delta} />
       </Scorecard>
 
       {/* OS Scorecard */}
-      <Scorecard title="Operativsystem">
+      <Scorecard title="Operativsystem" icon={ArrowDownIcon}>
         <ScorecardChip label="Android" segment={data.os.android} showCount />
         <ScorecardChip label="iOS" segment={data.os.ios} showCount />
-        <DeltaChip label="Diff (iOS-Android)" delta={data.os.delta} />
       </Scorecard>
 
       {/* Browser Scorecard */}
-      <Scorecard title="Webbläsare">
+      <Scorecard title="Webbläsare" icon={GlobeIcon}>
         <ScorecardChip label="Chrome" segment={data.browser.chrome} showCount />
         <ScorecardChip label="Safari" segment={data.browser.safari} showCount />
         <ScorecardChip label="Edge" segment={data.browser.edge} showCount />

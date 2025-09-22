@@ -1,7 +1,7 @@
 import "@/css/satoshi.css";
 import "@/css/style.css";
 
-import { Sidebar } from "@/components/Layouts/sidebar";
+import { ConditionalSidebar } from "@/components/Layouts/ConditionalSidebar";
 
 import "flatpickr/dist/flatpickr.min.css";
 import "jsvectormap/dist/jsvectormap.css";
@@ -32,9 +32,9 @@ export default function RootLayout({ children }: PropsWithChildren) {
           <NextTopLoader color="#E01E26" showSpinner={false} />
 
           <div className="flex min-h-screen">
-            <Sidebar />
+            <ConditionalSidebar />
 
-            <div className="w-full bg-white dark:bg-[#0F1419]">
+            <div className="w-full bg-[#fafafa] dark:bg-[#0F1419]">
               <Header />
 
               <FiltersProvider>

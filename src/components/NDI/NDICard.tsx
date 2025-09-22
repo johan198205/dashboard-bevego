@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { ScoreCard } from "@/components/ui/scorecard";
 import { NDISummary, Period } from "@/types/ndi";
 import { TrendingUpIcon, ArrowDownIcon } from "@/assets/icons";
-import { NDICalculationSidebar } from "./NDICalculationSidebar";
 
 interface NDICardProps {
   data: NDISummary;
@@ -12,7 +10,6 @@ interface NDICardProps {
 }
 
 export function NDICard({ data, className }: NDICardProps) {
-  const [showCalculation, setShowCalculation] = useState(false);
 
   const formatValue = (value: number | null | undefined) => {
     if (value === null || value === undefined) return 'N/A';
@@ -29,8 +26,7 @@ export function NDICard({ data, className }: NDICardProps) {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Main NDI Score with QoQ and YoY */}
       <div 
-        className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-2xl p-6 relative overflow-hidden hover:border-red hover:shadow-lg transition-all cursor-pointer"
-        onClick={() => setShowCalculation(true)}
+        className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-2xl p-6 relative overflow-hidden hover:border-red hover:shadow-lg transition-all"
       >
         
         {/* Icon */}
@@ -119,12 +115,6 @@ export function NDICard({ data, className }: NDICardProps) {
       />
     </div>
 
-    {/* Calculation Sidebar */}
-    <NDICalculationSidebar
-      isOpen={showCalculation}
-      onClose={() => setShowCalculation(false)}
-      period={data.period}
-    />
     </>
   );
 }
