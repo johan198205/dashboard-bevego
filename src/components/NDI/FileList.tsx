@@ -58,13 +58,20 @@ export function FileList({ onDelete, className }: FileListProps) {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('sv-SE', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    
+    return `${day} ${getMonthName(month)} ${year} ${hours}:${minutes}`;
+  };
+
+  const getMonthName = (month: number) => {
+    const months = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 
+                   'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+    return months[month - 1];
   };
 
   const getKindLabel = (kind: string) => {
@@ -108,7 +115,7 @@ export function FileList({ onDelete, className }: FileListProps) {
         <h3 className="text-lg font-semibold text-dark dark:text-white mb-2">
           Inga filer uppladdade
         </h3>
-        <p className="text-dark-6 dark:text-dark-4">
+        <p className="text-gray-700 dark:text-gray-300">
           Ladda upp Excel-filer för att komma igång
         </p>
       </div>
@@ -121,7 +128,7 @@ export function FileList({ onDelete, className }: FileListProps) {
         <h3 className="text-lg font-semibold text-dark dark:text-white">
           Uppladdade filer
         </h3>
-        <span className="text-sm text-dark-6 dark:text-dark-4">
+        <span className="text-sm text-gray-700 dark:text-gray-300">
           {files.length} fil{files.length !== 1 ? 'er' : ''}
         </span>
       </div>
@@ -137,7 +144,7 @@ export function FileList({ onDelete, className }: FileListProps) {
                 )}>
                   {getKindLabel(file.kind)}
                 </span>
-                <span className="text-sm text-dark-6 dark:text-dark-4">
+                <span className="text-sm text-gray-700 dark:text-gray-300">
                   {formatDate(file.uploadedAt)}
                 </span>
               </div>
@@ -147,7 +154,7 @@ export function FileList({ onDelete, className }: FileListProps) {
               </h4>
               
               {file.period && (
-                <p className="text-sm text-dark-6 dark:text-dark-4 mt-1">
+                <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
                   Perioder: {file.period}
                 </p>
               )}

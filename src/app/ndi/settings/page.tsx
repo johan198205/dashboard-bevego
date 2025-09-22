@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FileUploader } from "@/components/NDI/FileUploader";
 import { FileList } from "@/components/NDI/FileList";
+import { ClientOnly } from "@/components/ClientOnly";
 import { ImportResult } from "@/types/ndi";
 
 export default function NDISettingsPage() {
@@ -24,7 +25,7 @@ export default function NDISettingsPage() {
         <h1 className="text-2xl font-bold text-dark dark:text-white">
           NDI Inställningar
         </h1>
-        <p className="text-dark-6 dark:text-dark-4 mt-1">
+        <p className="text-gray-700 dark:text-gray-300 mt-1">
           Ladda upp och hantera Excel-filer för NDI-data
         </p>
       </div>
@@ -36,7 +37,7 @@ export default function NDISettingsPage() {
           <h2 className="text-lg font-semibold text-dark dark:text-white mb-4">
             Aggregerad fil
           </h2>
-          <p className="text-sm text-dark-6 dark:text-dark-4 mb-4">
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
             Ladda upp Excel-fil med aggregerade NDI-värden per kvartal. 
             Filen ska innehålla en rad med &quot;NDI&quot; och kolumner med kvartalsformat (t.ex. 2024Q1, 2024Q2).
           </p>
@@ -51,7 +52,7 @@ export default function NDISettingsPage() {
           <h2 className="text-lg font-semibold text-dark dark:text-white mb-4">
             Nedbrytningar
           </h2>
-          <p className="text-sm text-dark-6 dark:text-dark-4 mb-4">
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
             Ladda upp Excel-fil med nedbrytningar per kategori. 
             Filen ska innehålla kolumner för Period, NDI-värden och kategorier.
           </p>
@@ -67,9 +68,9 @@ export default function NDISettingsPage() {
         <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-3">
           Filformat och krav
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-blue-700 dark:text-blue-300">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-800 dark:text-gray-200">
           <div>
-            <h4 className="font-semibold mb-2">Aggregerad fil:</h4>
+            <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Aggregerad fil:</h4>
             <ul className="space-y-1 list-disc list-inside">
               <li>En rad med &quot;NDI&quot; som identifierar måttet</li>
               <li>Kvartalskolumner i format YYYYQ1, YYYYQ2, etc.</li>
@@ -78,7 +79,7 @@ export default function NDISettingsPage() {
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold mb-2">Nedbrytningar:</h4>
+            <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Nedbrytningar:</h4>
             <ul className="space-y-1 list-disc list-inside">
               <li>Kolumn &quot;Period&quot; eller liknande för tidsperiod</li>
               <li>Kolumn med NDI-värden (kan heta &quot;NDI&quot;, &quot;Index&quot;, etc.)</li>
@@ -128,12 +129,12 @@ export default function NDISettingsPage() {
                     </h4>
                     
                     {result.success ? (
-                      <div className="mt-1 text-sm text-green-700 dark:text-green-300">
+                      <div className="mt-1 text-sm text-gray-800 dark:text-gray-200">
                         <p>Perioder: {result.validationReport.detectedPeriods.join(', ')}</p>
                         <p>Antal rader: {result.validationReport.rowCount}</p>
                       </div>
                     ) : (
-                      <div className="mt-1 text-sm text-red-700 dark:text-red-300">
+                      <div className="mt-1 text-sm text-gray-800 dark:text-gray-200">
                         <p>{result.error}</p>
                       </div>
                     )}
@@ -147,7 +148,9 @@ export default function NDISettingsPage() {
 
       {/* File List */}
       <div className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-lg p-6">
-        <FileList onDelete={handleFileDelete} />
+        <ClientOnly fallback={<div className="animate-pulse h-32 bg-gray-200 dark:bg-gray-700 rounded"></div>}>
+          <FileList onDelete={handleFileDelete} />
+        </ClientOnly>
       </div>
     </div>
   );

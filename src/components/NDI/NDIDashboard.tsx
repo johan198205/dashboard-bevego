@@ -175,7 +175,7 @@ export function NDIDashboard() {
       </div>
 
       {/* Quarter Selector */}
-      <div className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-lg p-4">
+      <div>
         <NDIQuarterSelector
           selectedQuarter={selectedQuarter}
           onQuarterChange={setSelectedQuarter}
@@ -185,8 +185,16 @@ export function NDIDashboard() {
       {/* Scorecards */}
       {summary && <NDICard data={summary} />}
 
-      {/* Demographic Breakdown Scorecards */}
+      {/* Chart */}
       <div className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-lg p-6">
+        <h2 className="text-lg font-semibold text-dark dark:text-white mb-4">
+          NDI över tid
+        </h2>
+        <NDIChart data={series} />
+      </div>
+
+      {/* Demographic Breakdown Scorecards */}
+      <div>
         <h2 className="text-lg font-semibold text-dark dark:text-white mb-4">
           Demografisk uppdelning
         </h2>
@@ -202,7 +210,7 @@ export function NDIDashboard() {
       </div>
 
       {/* Excel-based Breakdown Scorecards */}
-      <div className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-lg p-6">
+      <div>
         <h2 className="text-lg font-semibold text-dark dark:text-white mb-4">
           Övriga detaljer
         </h2>
@@ -215,14 +223,6 @@ export function NDIDashboard() {
             <p className="text-sm text-red-600 dark:text-red-400">{demographicError}</p>
           </div>
         )}
-      </div>
-
-      {/* Chart */}
-      <div className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-lg p-6">
-        <h2 className="text-lg font-semibold text-dark dark:text-white mb-4">
-          NDI över tid
-        </h2>
-        <NDIChart data={series} />
       </div>
 
       {/* Summary Table */}

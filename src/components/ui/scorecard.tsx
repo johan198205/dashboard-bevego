@@ -135,7 +135,7 @@ export function ScoreCard({
     return (
       <div
         className={cn(
-          "relative overflow-hidden rounded-2xl bg-white shadow-sm border border-stroke dark:bg-gray-dark dark:border-dark-3",
+          "relative overflow-hidden rounded-[5px] bg-white shadow-sm border border-stroke dark:bg-gray-dark dark:border-dark-3",
           "transition-transform transition-shadow duration-200 ease-out will-change-transform motion-reduce:transition-none motion-reduce:transform-none",
           "hover:shadow-md hover:border-primary/30 motion-reduce:hover:shadow-sm",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",

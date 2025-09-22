@@ -26,7 +26,7 @@ export function NDICard({ data, className }: NDICardProps) {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Main NDI Score with QoQ and YoY */}
       <div 
-        className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-2xl p-6 relative overflow-hidden hover:border-red hover:shadow-lg transition-all"
+        className="bg-white dark:bg-gray-dark border border-stroke dark:border-dark-3 rounded-[5px] p-6 relative overflow-hidden hover:border-red hover:shadow-lg transition-all"
       >
         
         {/* Icon */}

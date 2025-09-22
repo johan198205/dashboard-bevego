@@ -54,95 +54,97 @@ export function NDIChart({ data, className }: NDIChartProps) {
   };
 
   return (
-    <div className={cn("w-full h-80", className)}>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis 
-            dataKey="period" 
-            tickFormatter={formatPeriod}
-            stroke="#374151"
-            fontSize={12}
-            tick={{ fill: '#374151' }}
-          />
-          <YAxis 
-            stroke="#374151"
-            fontSize={12}
-            domain={[55, 65]}
-            tick={{ fill: '#374151' }}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          {showQuarterly && (
-            <Line 
-              type="monotone" 
-              dataKey="value" 
-              stroke="#dc2626" 
-              strokeWidth={3}
-              dot={{ fill: '#dc2626', strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6, stroke: '#dc2626', strokeWidth: 2 }}
-              connectNulls={false}
+    <div className={cn("w-full", className)}>
+      <div className="h-80">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis 
+              dataKey="period" 
+              tickFormatter={formatPeriod}
+              stroke="#374151"
+              fontSize={12}
+              tick={{ fill: '#374151' }}
             />
-          )}
-          {showRolling4Q && (
-            <Line 
-              type="monotone" 
-              dataKey="r4" 
-              stroke="#059669" 
-              strokeWidth={2}
-              strokeDasharray="5 5"
-              dot={{ fill: '#059669', strokeWidth: 2, r: 3 }}
-              activeDot={{ r: 5, stroke: '#059669', strokeWidth: 2 }}
-              connectNulls={false}
+            <YAxis 
+              stroke="#374151"
+              fontSize={12}
+              domain={[55, 65]}
+              tick={{ fill: '#374151' }}
             />
-          )}
-          {showYoY && (
-            <Line 
-              type="monotone" 
-              dataKey="yoy" 
-              stroke="#3b82f6" 
-              strokeWidth={2}
-              strokeDasharray="8 8"
-              dot={{ fill: '#3b82f6', strokeWidth: 2, r: 3 }}
-              activeDot={{ r: 5, stroke: '#3b82f6', strokeWidth: 2 }}
-              connectNulls={false}
-            />
-          )}
-        </LineChart>
-      </ResponsiveContainer>
+            <Tooltip content={<CustomTooltip />} />
+            {showQuarterly && (
+              <Line 
+                type="monotone" 
+                dataKey="value" 
+                stroke="#dc2626" 
+                strokeWidth={3}
+                dot={{ fill: '#dc2626', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, stroke: '#dc2626', strokeWidth: 2 }}
+                connectNulls={false}
+              />
+            )}
+            {showRolling4Q && (
+              <Line 
+                type="monotone" 
+                dataKey="r4" 
+                stroke="#059669" 
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={{ fill: '#059669', strokeWidth: 2, r: 3 }}
+                activeDot={{ r: 5, stroke: '#059669', strokeWidth: 2 }}
+                connectNulls={false}
+              />
+            )}
+            {showYoY && (
+              <Line 
+                type="monotone" 
+                dataKey="yoy" 
+                stroke="#3b82f6" 
+                strokeWidth={2}
+                strokeDasharray="8 8"
+                dot={{ fill: '#3b82f6', strokeWidth: 2, r: 3 }}
+                activeDot={{ r: 5, stroke: '#3b82f6', strokeWidth: 2 }}
+                connectNulls={false}
+              />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
       
       {/* Checkboxes for toggling lines */}
-      <div className="flex items-center justify-center gap-6 mt-4 text-sm">
-        <label className="flex items-center gap-2 cursor-pointer">
+      <div className="flex items-center justify-center gap-8 mt-6 text-base">
+        <label className="flex items-center gap-3 cursor-pointer group">
           <input
             type="checkbox"
             checked={showQuarterly}
             onChange={(e) => setShowQuarterly(e.target.checked)}
-            className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500"
+            className="w-5 h-5 text-red-600 bg-white border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 accent-red-600"
           />
-          <div className="w-4 h-0.5 bg-red-600"></div>
-          <span className="text-gray-700 dark:text-gray-300">NDI per kvartal</span>
+          <div className="w-6 h-1 bg-red-600 rounded-sm"></div>
+          <span className="text-gray-700 dark:text-gray-300 font-medium group-hover:text-red-600 transition-colors duration-200">NDI per kvartal</span>
         </label>
         
-        <label className="flex items-center gap-2 cursor-pointer">
+        <label className="flex items-center gap-3 cursor-pointer group">
           <input
             type="checkbox"
             checked={showRolling4Q}
             onChange={(e) => setShowRolling4Q(e.target.checked)}
-            className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500"
+            className="w-5 h-5 text-red-600 bg-white border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 accent-red-600"
           />
-          <div className="w-4 h-0.5 bg-green-600 border-dashed border-t-2 border-green-600"></div>
-          <span className="text-gray-700 dark:text-gray-300">Rullande 4Q</span>
+          <div className="w-6 h-1 bg-green-600 rounded-sm border-dashed border-t-2 border-green-600"></div>
+          <span className="text-gray-700 dark:text-gray-300 font-medium group-hover:text-red-600 transition-colors duration-200">Rullande 4Q</span>
         </label>
         
-        <label className="flex items-center gap-2 cursor-pointer">
+        <label className="flex items-center gap-3 cursor-pointer group">
           <input
             type="checkbox"
             checked={showYoY}
             onChange={(e) => setShowYoY(e.target.checked)}
-            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+            className="w-5 h-5 text-red-600 bg-white border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 accent-red-600"
           />
-          <div className="w-4 h-0.5 bg-blue-600 border-dashed border-t-2 border-blue-600"></div>
-          <span className="text-gray-700 dark:text-gray-300">Samma kvartal året innan</span>
+          <div className="w-6 h-1 bg-blue-600 rounded-sm border-dashed border-t-2 border-blue-600"></div>
+          <span className="text-gray-700 dark:text-gray-300 font-medium group-hover:text-red-600 transition-colors duration-200">Samma kvartal året innan</span>
         </label>
       </div>
     </div>

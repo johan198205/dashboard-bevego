@@ -1,4 +1,4 @@
-"use client";S
+"use client";
 
 import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -170,7 +170,7 @@ export function FileUploader({ kind, onUploadComplete, className }: FileUploader
             <h3 className="text-lg font-semibold text-dark dark:text-white">
               {getKindLabel()}
             </h3>
-            <p className="text-dark-6 dark:text-dark-4 mt-1">
+            <p className="text-gray-700 dark:text-gray-300 mt-1">
               {getKindDescription()}
             </p>
           </div>
@@ -188,7 +188,7 @@ export function FileUploader({ kind, onUploadComplete, className }: FileUploader
                 disabled={isUploading}
               />
             </label>
-            <p className="text-sm text-dark-5 dark:text-dark-6 mt-2">
+            <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
               eller dra och släpp filen här
             </p>
           </div>

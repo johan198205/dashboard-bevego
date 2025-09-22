@@ -18,7 +18,7 @@ function ScorecardChip({ label, segment, showCount = false }: ScorecardChipProps
   const displayValue = segment.ndi !== null ? segment.ndi.toFixed(2) : 'N/A';
 
   return (
-    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-600 hover:shadow-sm">
+    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-[5px] transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-600 hover:shadow-sm">
       <span className="text-sm font-medium text-dark dark:text-white">{label}</span>
       <div className="text-right">
         <span className="text-lg font-semibold text-dark dark:text-white">
@@ -91,7 +91,7 @@ interface ScorecardProps {
 
 function Scorecard({ title, children, icon: Icon }: ScorecardProps) {
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-white shadow-sm border border-stroke dark:bg-gray-dark dark:border-dark-3 p-6 transition-transform transition-shadow duration-200 ease-out will-change-transform motion-reduce:transition-none motion-reduce:transform-none hover:shadow-md hover:border-primary/30 motion-reduce:hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:scale-[1.01] focus-visible:scale-[1.01] motion-reduce:hover:scale-100 motion-reduce:focus-visible:scale-100">
+    <div className="relative overflow-hidden rounded-[5px] bg-white shadow-sm border border-stroke dark:bg-gray-dark dark:border-dark-3 p-6 transition-transform transition-shadow duration-200 ease-out will-change-transform motion-reduce:transition-none motion-reduce:transform-none hover:shadow-md hover:border-primary/30 motion-reduce:hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 hover:scale-[1.01] focus-visible:scale-[1.01] motion-reduce:hover:scale-100 motion-reduce:focus-visible:scale-100">
       {/* Icon */}
       <div className="absolute top-6 right-6 bg-red/10 rounded-lg p-2 mb-8">
         <Icon className="h-5 w-5 text-red" />
