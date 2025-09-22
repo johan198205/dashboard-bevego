@@ -53,24 +53,16 @@ export async function GET(request: NextRequest) {
         return { ndi: null, count: 0 };
       }
 
-      const hasWeights = rows.some(row => row.weight && row.weight > 0);
+      // Always use simple average (not weighted) for Index rows
+      // This matches the Excel calculation where we average all Index rows
+      const avgNDI = rows.reduce((sum, row) => sum + row.value, 0) / rows.length;
+      const totalCount = rows.reduce((sum, row) => sum + (row.weight || 0), 0);
       
-      if (hasWeights) {
-        const totalWeight = rows.reduce((sum, row) => sum + (row.weight || 0), 0);
-        const weightedSum = rows.reduce((sum, row) => sum + (row.value * (row.weight || 0)), 0);
-        const avgNDI = totalWeight > 0 ? weightedSum / totalWeight : null;
-        
-        if (avgNDI !== null) {
-          // Round NDI value to 2 decimals
-          return { ndi: roundToTwoDecimals(avgNDI), count: Math.round(totalWeight) };
-        }
-        
-        return { ndi: null, count: Math.round(totalWeight) };
-      } else {
-        const avgNDI = rows.reduce((sum, row) => sum + row.value, 0) / rows.length;
-        // Round NDI value to 2 decimals
-        return { ndi: roundToTwoDecimals(avgNDI), count: rows.length };
-      }
+      // Round NDI value to 2 decimals
+      return { 
+        ndi: roundToTwoDecimals(avgNDI), 
+        count: Math.round(totalCount) 
+      };
     };
 
     // Helper function to calculate delta between two segments
