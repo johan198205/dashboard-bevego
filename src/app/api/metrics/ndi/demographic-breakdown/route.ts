@@ -56,7 +56,8 @@ export async function GET(request: NextRequest) {
       // Always use simple average (not weighted) for Index rows
       // This matches the Excel calculation where we average all Index rows
       const avgNDI = rows.reduce((sum, row) => sum + row.value, 0) / rows.length;
-      const totalCount = rows.reduce((sum, row) => sum + (row.weight || 0), 0);
+      // Use weight from first row (all rows should have same weight for same segment)
+      const totalCount = rows.length > 0 ? (rows[0].weight || 0) : 0;
       
       // Round NDI value to 2 decimals
       return { 
