@@ -8,6 +8,8 @@ import { ScoreCard } from "@/components/ui/scorecard";
 import { UserIcon, GlobeIcon } from "@/assets/icons";
 import InfoTooltip from "@/components/InfoTooltip";
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
+import { useKpi } from "@/hooks/useKpi";
+import { cn } from "@/lib/utils";
 
 // TODO replace with UI settings
 const KPI_PROGRESS_ENABLED_METRICS = ['mau', 'pageviews', 'clarity_score'];
@@ -59,6 +61,7 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
   const [data, setData] = useState<KpiResponse | null>(null);
   const { state } = useFilters();
   const [open, setOpen] = useState(false);
+  const { data: kpiSummary, loading, source } = useKpi({ metric });
   
   const fetchKpi = async (args: { metric: Props["metric"]; start: string; end: string; grain: any; comparisonMode?: any; filters?: any }): Promise<KpiResponse> => {
     const qs = new URLSearchParams({
@@ -138,9 +141,14 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
 
   return (
     <div className="relative">
+      {loading && (
+        <div className="absolute inset-0 animate-pulse z-10">
+          <div className="h-full w-full rounded-[5px] bg-neutral-100 dark:bg-neutral-800" />
+        </div>
+      )}
       <ScoreCard
         label={title}
-        value={(summary && data)
+        value={kpiSummary ? formatNumber(typeof kpiSummary.value === 'number' ? kpiSummary.value : parseFloat(String(kpiSummary.value))) : (summary && data)
           ? (metric === "ndi"
               ? (() => {
                   const targetDate = getQuarterEndDate(range.end);
@@ -151,10 +159,10 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
               : formatNumber(summary.current)
             )
           : "–"}
-        growthRate={summary ? summary.yoyPct : undefined}
+        growthRate={kpiSummary ? kpiSummary.growthRate : summary ? summary.yoyPct : undefined}
         Icon={Icon}
         variant={variant}
-        source={data?.notes?.find?.(n => n.startsWith("Källa:"))?.replace("Källa:", "").trim() || "Mock"}
+        source={source || data?.notes?.find?.(n => n.startsWith("Källa:"))?.replace("Källa:", "").trim() || "Mock"}
         className="min-h-[208px]"
         showProgress={showProgress}
         progressGoal={progressGoal}

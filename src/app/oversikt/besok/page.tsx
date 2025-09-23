@@ -5,6 +5,8 @@ import { useFilters } from "@/components/GlobalFilters";
 import { ScoreCard } from "@/components/ui/scorecard";
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
 import * as overviewIcons from "@/app/(home)/_components/overview-cards/icons";
+import { useKpi } from "@/hooks/useKpi";
+import { cn } from "@/lib/utils";
 
 export default function Page() {
   const { state } = useFilters();
@@ -37,8 +39,7 @@ export default function Page() {
     }
   };
 
-  // NOTE: For minimal diff, compute values via async IIFE pattern in components
-  // Keeping UI responsive with placeholders
+  // NOTE: Using useKpi for caching and loading states
 
   const cards = [
     { id: "sessions", title: "Sessions", Icon: overviewIcons.Views, format: (v: number) => v.toLocaleString("sv-SE") },
@@ -50,13 +51,12 @@ export default function Page() {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
       {cards.map((c, idx) => (
-        <AsyncCard
+        <KpiCard
           key={idx}
           title={c.title}
           metricId={c.id}
           Icon={c.Icon}
           open={() => setDrawer({ metricId: c.id, title: c.title })}
-          getSeries={undefined}
           format={c.format}
           comparisonLabel={getComparisonLabel()}
         />
@@ -76,50 +76,34 @@ export default function Page() {
     </div>
   );
 }
-
-function AsyncCard({ title, metricId, Icon, open, getSeries, format, comparisonLabel }: any) {
-  const { state } = useFilters();
-  const range = state.range as any;
-  const [data, setData] = useState<{ value: number | string; growthRate: number } | null>(null);
-
-  if (!data) {
-    // Use API endpoint for GA4 metrics
-    const params = new URLSearchParams({
-      metric: metricId,
-      start: range.start,
-      end: range.end,
-      grain: range.grain || 'day',
-      comparisonMode: range.comparisonMode || 'yoy'
-    });
-    
-    fetch(`${window.location.origin}/api/kpi?${params}`).then(async (res) => {
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const raw = data.summary.current;
-      const formatted = typeof raw === "number" ? (format ? format(raw) : raw.toLocaleString("sv-SE")) : raw;
-      setData({ value: formatted, growthRate: data.summary.yoyPct ?? 0 });
-    }).catch((error) => {
-      console.error(`Error loading ${metricId}:`, error);
-      // Show NoData when API fails
-      setData({ value: "NoData", growthRate: 0 });
-    });
-  }
+function KpiCard({ title, metricId, Icon, open, format, comparisonLabel }: any) {
+  const { data, loading } = useKpi({ metric: metricId });
+  const displayValue = (() => {
+    const raw = data?.value;
+    if (raw === undefined || raw === null) return null;
+    if (typeof raw === "number") return format ? format(raw) : raw.toLocaleString("sv-SE");
+    return raw;
+  })();
 
   return (
-    <ScoreCard
-      label={title}
-      value={data ? data.value : "NoData"}
-      growthRate={data ? data.growthRate : 0}
-      Icon={Icon}
-      variant="default"
-      size="compact"
-      appearance="analytics"
-      source="GA4"
-      onClick={open}
-      getSeries={undefined}
-      comparisonLabel={comparisonLabel}
-    />
+    <div className={cn("relative")}>      
+      {loading && (
+        <div className="absolute inset-0 animate-pulse">
+          <div className="h-full w-full rounded-[5px] bg-neutral-100 dark:bg-neutral-800" />
+        </div>
+      )}
+      <ScoreCard
+        label={title}
+        value={displayValue ?? "—"}
+        growthRate={data?.growthRate ?? 0}
+        Icon={Icon}
+        variant="default"
+        size="compact"
+        appearance="analytics"
+        source="GA4"
+        onClick={open}
+        comparisonLabel={comparisonLabel}
+      />
+    </div>
   );
 }
-
-
