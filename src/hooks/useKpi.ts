@@ -16,12 +16,15 @@ export function useKpi({ metric, ttlMs = 5 * 60 * 1000 }: UseKpiOptions) {
   const { range, audience, device, channel } = state as any;
 
   const params = useMemo(() => {
+    // NDI should always compare against previous quarter on the KPI card,
+    // regardless of global comparison setting. Force 'prev' for NDI.
+    const effectiveComparison = metric === "ndi" ? "prev" : (range.comparisonMode || "yoy");
     return {
       metric,
       start: range.start,
       end: range.end,
       grain: range.grain || "day",
-      comparisonMode: range.comparisonMode || "yoy",
+      comparisonMode: effectiveComparison,
       audience,
       device,
       channel,
