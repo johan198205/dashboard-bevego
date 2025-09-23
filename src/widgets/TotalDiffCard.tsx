@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { getKpi } from "@/lib/resolver";
+// Do not import resolver on client; we call server API instead to avoid bundling GA4 SDK
 import { Params, KpiResponse } from "@/lib/types";
 import { useFilters } from "@/components/GlobalFilters";
 import { formatNumber, formatPercent } from "@/lib/format";
@@ -60,6 +60,19 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
   const { state } = useFilters();
   const [open, setOpen] = useState(false);
   
+  const fetchKpi = async (args: { metric: Props["metric"]; start: string; end: string; grain: any; comparisonMode?: any; filters?: any }): Promise<KpiResponse> => {
+    const qs = new URLSearchParams({
+      metric: String(args.metric),
+      start: args.start,
+      end: args.end,
+      grain: args.grain || "day",
+      comparisonMode: args.comparisonMode || "none",
+    }).toString();
+    const resp = await fetch(`/api/kpi?${qs}`);
+    if (!resp.ok) throw new Error(`KPI API error ${resp.status}`);
+    return resp.json();
+  };
+  
   // Helpers to derive target NDI quarter end-date string
   const getQuarterFromDate = (dateStr: string) => Math.floor(new Date(dateStr).getMonth() / 3) + 1;
   const getQuarterEndDate = (dateStr: string) => {
@@ -87,7 +100,9 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
   };
   
   useEffect(() => {
-    getKpi({ metric, range, filters: { audience: state.audience, device: state.device, channel: state.channel } }).then(setData);
+    fetchKpi({ metric, start: range.start, end: range.end, grain: range.grain, comparisonMode: state.range.comparisonMode, filters: { audience: state.audience, device: state.device, channel: state.channel } })
+      .then(setData)
+      .catch(() => setData(null));
   }, [metric, range.start, range.end, range.compareYoy, range.grain, state.audience.join(","), state.device.join(","), state.channel.join(",")]);
 
   const summary = data?.summary;
@@ -110,12 +125,12 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
     }
   };
   const getSeries = useMemo(() => async ({ start, end, grain, filters }: any) => {
-    const res = await getKpi({ metric, range: { start, end, grain, comparisonMode: state.range.comparisonMode }, filters });
+    const res = await fetchKpi({ metric, start, end, grain, comparisonMode: state.range.comparisonMode, filters });
     return (res.timeseries || []).map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
   }, [metric, state.range.comparisonMode]);
 
   const getCompareSeries = useMemo(() => async ({ start, end, grain, filters }: any) => {
-    const res = await getKpi({ metric, range: { start, end, grain, comparisonMode: state.range.comparisonMode }, filters });
+    const res = await fetchKpi({ metric, start, end, grain, comparisonMode: state.range.comparisonMode, filters });
     const points = res.compareTimeseries || [];
     const cur = (res.timeseries || []).map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
     return points.map((p, i) => ({ x: cur[i]?.x ?? new Date(p.date).getTime(), y: p.value }));
@@ -139,7 +154,7 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
         growthRate={summary ? summary.yoyPct : undefined}
         Icon={Icon}
         variant={variant}
-        source="Mock"
+        source={data?.notes?.find?.(n => n.startsWith("Källa:"))?.replace("Källa:", "").trim() || "Mock"}
         className="min-h-[208px]"
         showProgress={showProgress}
         progressGoal={progressGoal}

@@ -20,9 +20,10 @@ type PropsType = {
   appearance?: "default" | "analytics";
   comparisonLabel?: string;
   metricId?: string;
+  source?: string;
 };
 
-export function OverviewCard({ label, data, Icon, variant = "default", appearance = "analytics", comparisonLabel, metricId, ...rest }: PropsType & { onClick?: () => void; getSeries?: any }) {
+export function OverviewCard({ label, data, Icon, variant = "default", appearance = "analytics", comparisonLabel, metricId, source, ...rest }: PropsType & { onClick?: () => void; getSeries?: any }) {
   // Force analytics appearance for all overview cards
   const finalAppearance = "analytics";
   
@@ -53,7 +54,7 @@ export function OverviewCard({ label, data, Icon, variant = "default", appearanc
       variant={variant}
       appearance={finalAppearance}
       comparisonLabel={comparisonLabel}
-      source="Mock"
+      source={source || "Mock"}
       getSeries={rest.getSeries}
       showProgress={showProgress}
       progressGoal={progressGoal}

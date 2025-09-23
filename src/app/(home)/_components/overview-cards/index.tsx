@@ -38,6 +38,8 @@ export function OverviewCardsGroup() {
   const [drawer, setDrawer] = useState<{ metricId: string; title: string } | null>(null);
   const [tasksRateData, setTasksRateData] = useState<{ value: number; growthRate: number } | null>(null);
   const [featuresRateData, setFeaturesRateData] = useState<{ value: number; growthRate: number } | null>(null);
+  const [mauSummary, setMauSummary] = useState<{ value: number; growthRate: number; source: string } | null>(null);
+  const [pageviewsSummary, setPageviewsSummary] = useState<{ value: number; growthRate: number; source: string } | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -77,6 +79,47 @@ export function OverviewCardsGroup() {
     };
     
     loadRateData();
+  }, [state.range.start, state.range.end, state.range.grain, state.range.comparisonMode]);
+
+  // Load MAU & Pageviews summary from resolver (GA4/BQ/Mock)
+  useEffect(() => {
+    const loadSummaries = async () => {
+      try {
+        const qs = (m: string) => new URLSearchParams({
+          metric: m,
+          start: state.range.start,
+          end: state.range.end,
+          grain: state.range.grain || 'day',
+          comparisonMode: state.range.comparisonMode || 'none'
+        }).toString();
+        const mauResp = await fetch(`/api/kpi?${qs('mau')}`);
+        let mauRes: any = null;
+        if (mauResp.ok) {
+          mauRes = await mauResp.json();
+        } else {
+          mauRes = null; // treat as no data
+        }
+        const pvRes = await fetch(`/api/kpi?${qs('pageviews')}`).then(r => r.json());
+        const extractSource = (notes?: string[]) => {
+          const n = (notes || []).find((s) => s.startsWith("Källa:"));
+          return n ? n.replace("Källa:", "").trim() : "Mock";
+        };
+        if (mauRes) {
+          const mauSource = extractSource(mauRes.notes);
+          if (mauSource.toLowerCase().includes("ga4")) {
+            setMauSummary({ value: mauRes.summary.current, growthRate: mauRes.summary.yoyPct, source: mauSource });
+          } else {
+            setMauSummary(null);
+          }
+        } else {
+          setMauSummary(null);
+        }
+        setPageviewsSummary({ value: pvRes.summary.current, growthRate: pvRes.summary.yoyPct, source: extractSource(pvRes.notes) });
+      } catch (error) {
+        console.error("Failed to load summaries:", error);
+      }
+    };
+    loadSummaries();
   }, [state.range.start, state.range.end, state.range.grain, state.range.comparisonMode]);
 
   // Minimal providers mapping → returns series aligned with TimeSeries widget style
@@ -193,8 +236,8 @@ export function OverviewCardsGroup() {
       <OverviewCard
         label="Total Views"
         data={{
-          ...views,
-          value: compactFormat(views.value),
+          value: compactFormat(pageviewsSummary?.value ?? views.value),
+          growthRate: pageviewsSummary?.growthRate ?? views.growthRate,
         }}
         Icon={icons.Views}
         variant="success"
@@ -205,6 +248,7 @@ export function OverviewCardsGroup() {
         onClick={() => setDrawer({ metricId: "pageviews", title: "Sidvisningar" })}
         // Provide sparkline data
         getSeries={providers.pageviews}
+        source={pageviewsSummary?.source}
       />
 
       <OverviewCard
@@ -238,8 +282,8 @@ export function OverviewCardsGroup() {
       <OverviewCard
         label="Total Users"
         data={{
-          ...users,
-          value: compactFormat(users.value),
+          value: mauSummary ? compactFormat(mauSummary.value) : "No Data",
+          growthRate: mauSummary ? mauSummary.growthRate : undefined,
         }}
         Icon={icons.Users}
         variant="primary"
@@ -248,6 +292,7 @@ export function OverviewCardsGroup() {
         metricId="mau"
         onClick={() => setDrawer({ metricId: "mau", title: "Användare (MAU)" })}
         getSeries={providers.mau}
+        source={mauSummary?.source}
       />
 
       {drawer && (

@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { getKpi } from "@/lib/resolver";
 import { Params, KpiResponse } from "@/lib/types";
 import { useFilters } from "@/components/GlobalFilters";
 import { Gauge } from "@/components/ui/gauge";
@@ -35,6 +34,20 @@ export default function GaugeCard({ title, metric, range, baseValue = 100, compa
   const { state } = useFilters();
   const [open, setOpen] = useState(false);
   
+  // Call server API to avoid bundling GA4 SDK in client build
+  const fetchKpi = async (args: { metric: Props["metric"]; start: string; end: string; grain: any; comparisonMode?: any; filters?: any }): Promise<KpiResponse> => {
+    const qs = new URLSearchParams({
+      metric: String(args.metric),
+      start: args.start,
+      end: args.end,
+      grain: args.grain || "day",
+      comparisonMode: args.comparisonMode || "none",
+    }).toString();
+    const resp = await fetch(`/api/kpi?${qs}`);
+    if (!resp.ok) throw new Error(`KPI API error ${resp.status}`);
+    return resp.json();
+  };
+  
   // Get comparison label based on current comparison mode
   const getComparisonLabel = () => {
     // NDI always shows quarter comparison regardless of global comparison mode
@@ -51,19 +64,21 @@ export default function GaugeCard({ title, metric, range, baseValue = 100, compa
   };
   
   useEffect(() => {
-    getKpi({ metric, range, filters: { audience: state.audience, device: state.device, channel: state.channel } }).then(setData);
+    fetchKpi({ metric, start: range.start, end: range.end, grain: range.grain, comparisonMode: state.range.comparisonMode, filters: { audience: state.audience, device: state.device, channel: state.channel } })
+      .then(setData)
+      .catch(() => setData(null));
   }, [metric, range.start, range.end, range.compareYoy, range.grain, state.audience.join(","), state.device.join(","), state.channel.join(",")]);
 
   const summary = data?.summary;
   const Icon = getMetricIcon(metric);
   
   const getSeries = useMemo(() => async ({ start, end, grain, filters }: any) => {
-    const res = await getKpi({ metric, range: { start, end, grain, comparisonMode: state.range.comparisonMode }, filters });
+    const res = await fetchKpi({ metric, start, end, grain, comparisonMode: state.range.comparisonMode, filters });
     return (res.timeseries || []).map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
   }, [metric, state.range.comparisonMode]);
 
   const getCompareSeries = useMemo(() => async ({ start, end, grain, filters }: any) => {
-    const res = await getKpi({ metric, range: { start, end, grain, comparisonMode: state.range.comparisonMode }, filters });
+    const res = await fetchKpi({ metric, start, end, grain, comparisonMode: state.range.comparisonMode, filters });
     const points = res.compareTimeseries || [];
     const cur = (res.timeseries || []).map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
     return points.map((p, i) => ({ x: cur[i]?.x ?? new Date(p.date).getTime(), y: p.value }));
@@ -91,7 +106,7 @@ export default function GaugeCard({ title, metric, range, baseValue = 100, compa
             </h4>
             <p className={`font-medium text-body-color dark:text-dark-5 ${
               compact ? 'text-xs' : 'text-sm'
-            }`}>Mock</p>
+            }`}>{data?.notes?.find?.(n => n.startsWith("Källa:"))?.replace("Källa:", "").trim() || "Mock"}</p>
           </div>
           <div className={`flex items-center justify-center rounded-lg bg-red/10 dark:bg-red-900/30 ${
             compact ? 'h-8 w-8' : 'h-11.5 w-11.5'
@@ -134,7 +149,7 @@ export default function GaugeCard({ title, metric, range, baseValue = 100, compa
         onClose={() => setOpen(false)}
         metricId={metric}
         title={title}
-        sourceLabel="Mock"
+        sourceLabel={data?.notes?.find?.(n => n.startsWith("Källa:"))?.replace("Källa:", "").trim() || "Mock"}
         getSeries={getSeries}
         getCompareSeries={getCompareSeries}
       />

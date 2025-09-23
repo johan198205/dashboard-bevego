@@ -71,6 +71,51 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
   // Note: All data is mock. CONNECT GA4 HERE LATER by swapping implementation per metric.
   const scale = computeScale(filters);
   if (metric === "mau") {
+    // Try GA4 first if configured, otherwise fall back to mock
+    const propertyId = process.env.GA4_PROPERTY_ID;
+
+    async function queryGa4(rangeInput: { start: string; end: string }) {
+      // Prevent client bundling of GA4 SDK; only import on server at runtime
+      const isServer = typeof window === "undefined";
+      if (!isServer) throw new Error("GA4 client can only run on server");
+      // Use an indirect require so the client bundle does not try to resolve
+      // the GA4 SDK which depends on Node built-ins like 'fs'. This code path
+      // only runs on the server.
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { BetaAnalyticsDataClient } = (eval('require'))("@google-analytics/data");
+      const client = new BetaAnalyticsDataClient();
+      const [resp] = await client.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
+        dimensions: [{ name: "date" }],
+        metrics: [{ name: "totalUsers" }],
+        orderBys: [{ dimension: { dimensionName: "date" } }],
+      });
+      const rows = resp.rows || [];
+      const series = rows.map((r: any) => ({
+        date: `${r.dimensionValues?.[0]?.value?.slice(0,4)}-${r.dimensionValues?.[0]?.value?.slice(4,6)}-${r.dimensionValues?.[0]?.value?.slice(6,8)}`,
+        value: Number(r.metricValues?.[0]?.value || 0),
+      }));
+      return series as { date: string; value: number }[];
+    }
+
+    try {
+      const isServer = typeof window === "undefined";
+      if (propertyId && isServer) {
+        const currentDaySeries = await queryGa4({ start: range.start, end: range.end });
+        const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+        const previousDaySeries = prevRange ? await queryGa4(prevRange) : undefined;
+        const series = aggregate(currentDaySeries, grain);
+        const prevAgg = previousDaySeries ? aggregate(previousDaySeries, grain) : undefined;
+        return buildKpiResponse("mau", series, prevAgg, [], ["Källa: GA4 API"]);
+      }
+    } catch (err) {
+      // Fall back to mock if GA4 fails for any reason
+      // eslint-disable-next-line no-console
+      console.error("GA4 MAU query failed, falling back to mock:", err);
+    }
+
+    // Mock fallback
     const currentRaw = generateTimeseries({ start: range.start, end: range.end, grain }, { base: 1200, noise: 0.1, seedKey: "mau" });
     const current = scaleSeries(currentRaw, scale);
     const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
