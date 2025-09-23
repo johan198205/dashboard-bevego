@@ -148,17 +148,28 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
       )}
       <ScoreCard
         label={title}
-        value={kpiSummary ? formatNumber(typeof kpiSummary.value === 'number' ? kpiSummary.value : parseFloat(String(kpiSummary.value))) : (summary && data)
-          ? (metric === "ndi"
-              ? (() => {
-                  const targetDate = getQuarterEndDate(range.end);
-                  const hasTarget = (data.timeseries || []).some(p => p.date === targetDate);
-                  if (!hasTarget) return "N/A";
-                  return summary.current.toFixed(1);
-                })()
-              : formatNumber(summary.current)
-            )
-          : "–"}
+        value={kpiSummary
+          ? (() => {
+              if (metric === "ndi") {
+                const raw = typeof kpiSummary.value === 'number' ? kpiSummary.value : parseFloat(String(kpiSummary.value));
+                if (!isFinite(raw)) return "N/A";
+                const clamped = Math.max(0, Math.min(100, raw));
+                return clamped.toFixed(1);
+              }
+              const num = typeof kpiSummary.value === 'number' ? kpiSummary.value : parseFloat(String(kpiSummary.value));
+              return formatNumber(num);
+            })()
+          : (summary && data)
+            ? (metric === "ndi"
+                ? (() => {
+                    const targetDate = getQuarterEndDate(range.end);
+                    const hasTarget = (data.timeseries || []).some(p => p.date === targetDate);
+                    if (!hasTarget) return "N/A";
+                    return Math.max(0, Math.min(100, summary.current)).toFixed(1);
+                  })()
+                : formatNumber(summary.current)
+              )
+            : "–"}
         growthRate={kpiSummary ? kpiSummary.growthRate : summary ? summary.yoyPct : undefined}
         Icon={Icon}
         variant={variant}
