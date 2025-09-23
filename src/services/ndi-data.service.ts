@@ -1,5 +1,17 @@
 import { KpiPoint } from '@/lib/types';
 
+// Resolve base URL for server-side fetches
+function getBaseUrl() {
+  if (typeof window !== 'undefined') return '';
+  const fromEnv = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || process.env.VERCEL_URL;
+  if (fromEnv) {
+    // Ensure protocol
+    return fromEnv.startsWith('http') ? fromEnv : `https://${fromEnv}`;
+  }
+  const port = process.env.PORT || '3000';
+  return `http://localhost:${port}`;
+}
+
 /**
  * Get NDI timeseries data from API
  */
@@ -14,7 +26,7 @@ export async function getNdiTimeseries(
       end: range.end,
     });
 
-    const response = await fetch(`/api/ndi/data?${params}`);
+    const response = await fetch(`${getBaseUrl()}/api/ndi/data?${params}`);
     if (!response.ok) {
       throw new Error('Failed to fetch NDI timeseries');
     }
@@ -40,7 +52,7 @@ export async function getNdiCurrent(
       end: range.end,
     });
 
-    const response = await fetch(`/api/ndi/data?${params}`);
+    const response = await fetch(`${getBaseUrl()}/api/ndi/data?${params}`);
     if (!response.ok) {
       throw new Error('Failed to fetch NDI current value');
     }
@@ -75,7 +87,7 @@ export async function getNdiBreakdown(
  */
 export async function hasNdiData(): Promise<boolean> {
   try {
-    const response = await fetch('/api/ndi/data?type=hasData');
+    const response = await fetch(`${getBaseUrl()}/api/ndi/data?type=hasData`);
     if (!response.ok) {
       return false;
     }
@@ -93,7 +105,7 @@ export async function hasNdiData(): Promise<boolean> {
  */
 export async function getNdiDataSourceLabel(): Promise<string> {
   try {
-    const response = await fetch('/api/ndi/data?type=sourceLabel');
+    const response = await fetch(`${getBaseUrl()}/api/ndi/data?type=sourceLabel`);
     if (!response.ok) {
       return 'Mockdata';
     }
