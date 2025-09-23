@@ -179,7 +179,8 @@ async function getNdiDataFromDB(): Promise<{ aggregated: Array<{ period: Period;
         
         aggregated.push({
           period: periodId as Period,
-          value: avgValue,
+          // Clamp to 0-100 to avoid invalid NDI values from DB imports
+          value: Math.max(0, Math.min(100, avgValue)),
           weight: avgWeight
         });
       }
