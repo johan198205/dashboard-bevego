@@ -63,32 +63,6 @@ export default function NDISettingsPage() {
         </div>
       </div>
 
-      {/* File Format Information */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-3">
-          Filformat och krav
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-800 dark:text-gray-200">
-          <div>
-            <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Aggregerad fil:</h4>
-            <ul className="space-y-1 list-disc list-inside">
-              <li>En rad med &quot;NDI&quot; som identifierar måttet</li>
-              <li>Kvartalskolumner i format YYYYQ1, YYYYQ2, etc.</li>
-              <li>Numeriska värden i kvartalskolumnerna</li>
-              <li>Stöds format: .xlsx, .xls</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Nedbrytningar:</h4>
-            <ul className="space-y-1 list-disc list-inside">
-              <li>Kolumn &quot;Period&quot; eller liknande för tidsperiod</li>
-              <li>Kolumn med NDI-värden (kan heta &quot;NDI&quot;, &quot;Index&quot;, etc.)</li>
-              <li>Kategorikolumner (mappas till Grupp A, B, C)</li>
-              <li>Valfri kolumn &quot;Antal svar&quot; för viktning</li>
-            </ul>
-          </div>
-        </div>
-      </div>
 
       {/* Upload Results */}
       {uploadResults.length > 0 && (

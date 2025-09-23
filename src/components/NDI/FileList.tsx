@@ -37,21 +37,29 @@ export function FileList({ onDelete, className }: FileListProps) {
 
     setDeleting(fileId);
     try {
+      console.log('Attempting to delete file with ID:', fileId);
       const response = await fetch(`/api/files/${fileId}`, {
         method: 'DELETE',
       });
 
+      console.log('Delete response status:', response.status);
+      console.log('Delete response ok:', response.ok);
+
       if (response.ok) {
+        const result = await response.json();
+        console.log('Delete successful:', result);
         setFiles(files.filter(f => f.id !== fileId));
         if (onDelete) {
           onDelete(fileId);
         }
       } else {
-        alert('Ett fel uppstod vid borttagning av filen');
+        const errorData = await response.json();
+        console.error('Delete failed:', errorData);
+        alert(`Ett fel uppstod vid borttagning av filen: ${errorData.error || 'Okänt fel'}`);
       }
     } catch (error) {
       console.error('Error deleting file:', error);
-      alert('Ett fel uppstod vid borttagning av filen');
+      alert(`Ett fel uppstod vid borttagning av filen: ${error instanceof Error ? error.message : 'Okänt fel'}`);
     } finally {
       setDeleting(null);
     }

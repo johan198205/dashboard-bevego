@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,47 +7,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum FileKind {
-  AGGREGATED
-  BREAKDOWN
-}
-
 model FileUpload {
   id           String   @id @default(cuid())
   kind         FileKind
   originalName String
   storedPath   String
   uploadedAt   DateTime @default(now())
-  period       String?  // t.ex. "2024Q2" om säkerställt vid import
+  period       String?
   active       Boolean  @default(true)
-  
+
   @@map("file_uploads")
 }
 
 model MetricPoint {
-  id         String   @id @default(cuid())
-  period     String   // "YYYYQn" (primary dimension)
-  metric     String   // "NDI" (kan utökas)
-  value      Float
-  weight     Float?   // antal svar om tillgängligt
-  source     FileKind
-  createdAt  DateTime @default(now())
-  // För breakdowns – generiska kolumner för vad som än finns:
-  groupA     String?  // t.ex. "Fråga" / "Kategori"
-  groupB     String?  // valfritt
-  groupC     String?  // valfritt
-  // Quarterly history support
-  periodId   String   // "2024Q4" - normalized period identifier
-  periodStart DateTime? // Start of quarter for metadata
-  periodEnd   DateTime? // End of quarter for metadata
-  ingestionBatchId String? // For tracking upload batches
-  superseded Boolean @default(false) // For idempotent uploads
-  
+  id               String    @id @default(cuid())
+  period           String
+  metric           String
+  value            Float
+  weight           Float?
+  source           FileKind
+  createdAt        DateTime  @default(now())
+  groupA           String?
+  groupB           String?
+  groupC           String?
+  periodId         String
+  periodStart      DateTime?
+  periodEnd        DateTime?
+  ingestionBatchId String?
+  superseded       Boolean   @default(false)
+
+  @@unique([periodId, metric, source, groupA, groupB, groupC], name: "unique_metric_period")
   @@index([period, metric])
   @@index([metric, period])
   @@index([groupA, groupB, groupC])
   @@index([periodId, metric, source])
   @@index([periodId, superseded])
-  @@unique([periodId, metric, source, groupA, groupB, groupC], name: "unique_metric_period")
   @@map("metric_points")
+}
+
+enum FileKind {
+  AGGREGATED
+  BREAKDOWN
 }
