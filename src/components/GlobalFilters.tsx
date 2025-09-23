@@ -101,12 +101,8 @@ export default function GlobalFilters() {
           onChange={(e) => setState((p) => ({ ...p, range: { ...p.range, end: e.target.value } }))}
           className="rounded border px-2 py-1"
         />
-      </div>
-
-      <div className="card filter-box">
-        <span className="title">Snabbval</span>
         <select
-          className="rounded border px-2 py-1"
+          className="ml-2 rounded border px-2 py-1"
           onChange={(e) => {
             const val = e.target.value;
             if (!val) return;
@@ -122,7 +118,6 @@ export default function GlobalFilters() {
             if (r) {
               setState((p) => ({ ...p, range: { ...p.range, start: r!.start, end: r!.end } }));
             }
-            // reset selection back to placeholder so user sees current choice via dates
             e.currentTarget.selectedIndex = 0;
           }}
         >
