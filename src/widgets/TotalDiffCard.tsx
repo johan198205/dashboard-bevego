@@ -32,6 +32,8 @@ const getMetricIcon = (metric: string) => {
     case "pageviews":
     case "sessions":
       return GlobeIcon;
+    case "ndi":
+      return UserIcon; // NDI uses UserIcon like MAU
     default:
       return UserIcon;
   }
@@ -46,6 +48,8 @@ const getMetricVariant = (metric: string) => {
     case "pageviews":
     case "sessions":
       return "success" as const;
+    case "ndi":
+      return "primary" as const; // NDI uses primary variant like MAU
     default:
       return "default" as const;
   }
@@ -95,7 +99,7 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
     <div className="relative">
       <ScoreCard
         label={title}
-        value={summary ? formatNumber(summary.current) : "–"}
+        value={summary ? (metric === "ndi" ? summary.current.toFixed(1) : formatNumber(summary.current)) : "–"}
         growthRate={summary ? summary.yoyPct : undefined}
         Icon={Icon}
         variant={variant}
@@ -106,14 +110,14 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
         onClick={() => setOpen(true)}
       />
       <div className="absolute top-2 right-2">
-        <InfoTooltip text={`Metrik: ${metric}. Mockdata och definitioner för demo.`} />
+        <InfoTooltip text={metric === "ndi" ? "NDI kvartalsvärden. Mockdata och definitioner för demo." : `Metrik: ${metric}. Mockdata och definitioner för demo.`} />
       </div>
       <ScorecardDetailsDrawer
         open={open}
         onClose={() => setOpen(false)}
         metricId={metric}
         title={title}
-        sourceLabel="Mock"
+        sourceLabel={metric === "ndi" ? "Uppladdad data" : "Mock"}
         getSeries={getSeries}
         getCompareSeries={getCompareSeries}
       />

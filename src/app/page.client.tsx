@@ -8,7 +8,6 @@ import GaugeCard from "@/widgets/GaugeCard";
 // Tables moved to Användning page only
 // import TasksTable from "@/widgets/TasksTable";
 // import FeaturesTable from "@/widgets/FeaturesTable";
-import NdiCard from "@/widgets/NdiCard";
 // TODO: Re-enable these cards if needed
 // import PerfCard from "@/widgets/PerfCard";
 // import WcagCard from "@/widgets/WcagCard";
@@ -25,17 +24,17 @@ export default function ClientHome() {
   const [drawer, setDrawer] = useState<{ metricId: string; title: string } | null>(null);
   return (
     <div className="space-y-6">
-      {/* Gauge Cards Section - 4 compact cards in top row */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <NdiCard range={range} compact={true} />
+      {/* Gauge Cards Section - 3 compact cards in top row */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <GaugeCard title="Tasks" metric="tasks_rate" range={range} compact={true} />
         <GaugeCard title="Funktioner" metric="features_rate" range={range} compact={true} />
         <GaugeCard title="CWV total status" metric="cwv_total" range={range} compact={true} />
       </div>
 
-      {/* Other KPI Cards Section - 3 larger cards in bottom row */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Other KPI Cards Section - 4 larger cards in bottom row */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <TotalDiffCard title="Användare (MAU)" metric="mau" range={range} />
+        <TotalDiffCard title="NDI - Senaste kvartal" metric="ndi" range={range} />
         <TotalDiffCard title="Användning — Sidvisningar" metric="pageviews" range={range} />
         {clarityScore && (
           <ClarityScoreCard
