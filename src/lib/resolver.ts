@@ -89,6 +89,15 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
         dimensions: [{ name: "date" }],
         metrics: [{ name: "totalUsers" }],
+        dimensionFilter: {
+          filter: {
+            fieldName: "hostName",
+            stringFilter: {
+              matchType: "EXACT",
+              value: "mitt.riksbyggen.se"
+            }
+          }
+        },
         orderBys: [{ dimension: { dimensionName: "date" } }],
       });
       const rows = resp.rows || [];
@@ -107,7 +116,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         const previousDaySeries = prevRange ? await queryGa4(prevRange) : undefined;
         const series = aggregate(currentDaySeries, grain);
         const prevAgg = previousDaySeries ? aggregate(previousDaySeries, grain) : undefined;
-        return buildKpiResponse("mau", series, prevAgg, [], ["Källa: GA4 API"]);
+        return buildKpiResponse("mau", series, prevAgg, [], ["Källa: GA4 API"], "ga4");
       }
     } catch (err) {
       // Fall back to mock if GA4 fails for any reason
@@ -316,86 +325,215 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
   }
 
   if (metric === "sessions") {
-    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 45678, noise: 0.12, seedKey: "sessions" }), scale);
-    const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
-    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 40000, noise: 0.12, seedKey: "sessions_prev" }), scale) : undefined;
-    const series = aggregate(current, grain);
-    const prevAgg = previous ? aggregate(previous, grain) : undefined;
-    const breakdown = [
-      "Direkt",
-      "Organiskt", 
-      "Kampanj",
-      "E-post",
-      "Referral",
-      "Social",
-      "Betald sök",
-      "Display",
-      "Video",
-      "Övrigt",
-    ];
-    const dims = filters?.channel && filters.channel.length > 0 ? breakdown.filter((c) => filters.channel?.includes(c)) : breakdown;
-    return buildKpiResponse("sessions", series, prevAgg, dims, ["Källa: Mockdata (Sessions)"]);
+    const propertyId = process.env.GA4_PROPERTY_ID;
+    
+    async function queryGa4Sessions(rangeInput: { start: string; end: string }) {
+      const isServer = typeof window === "undefined";
+      if (!isServer) throw new Error("GA4 client can only run on server");
+      
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { BetaAnalyticsDataClient } = (eval('require'))("@google-analytics/data");
+      const client = new BetaAnalyticsDataClient();
+      const [resp] = await client.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
+        dimensions: [{ name: "date" }],
+        metrics: [{ name: "sessions" }],
+        dimensionFilter: {
+          filter: {
+            fieldName: "hostName",
+            stringFilter: {
+              matchType: "EXACT",
+              value: "mitt.riksbyggen.se"
+            }
+          }
+        },
+        orderBys: [{ dimension: { dimensionName: "date" } }],
+      });
+      const rows = resp.rows || [];
+      const series = rows.map((r: any) => ({
+        date: `${r.dimensionValues?.[0]?.value?.slice(0,4)}-${r.dimensionValues?.[0]?.value?.slice(4,6)}-${r.dimensionValues?.[0]?.value?.slice(6,8)}`,
+        value: Number(r.metricValues?.[0]?.value || 0),
+      }));
+      return series as { date: string; value: number }[];
+    }
+
+    try {
+      const isServer = typeof window === "undefined";
+      if (propertyId && isServer) {
+        const currentDaySeries = await queryGa4Sessions({ start: range.start, end: range.end });
+        const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+        const previousDaySeries = prevRange ? await queryGa4Sessions(prevRange) : undefined;
+        const series = aggregate(currentDaySeries, grain);
+        const prevAgg = previousDaySeries ? aggregate(previousDaySeries, grain) : undefined;
+        return buildKpiResponse("sessions", series, prevAgg, [], ["Källa: GA4 API"], "ga4");
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("GA4 Sessions query failed:", err);
+      throw new Error("GA4 Sessions API error");
+    }
+
+    throw new Error("GA4 Sessions not configured");
   }
 
   if (metric === "engagedSessions") {
-    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 28456, noise: 0.10, seedKey: "engagedSessions" }), scale);
-    const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
-    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 25000, noise: 0.10, seedKey: "engagedSessions_prev" }), scale) : undefined;
-    const series = aggregate(current, grain);
-    const prevAgg = previous ? aggregate(previous, grain) : undefined;
-    const breakdown = [
-      "Direkt",
-      "Organiskt",
-      "Kampanj", 
-      "E-post",
-      "Referral",
-      "Social",
-      "Betald sök",
-      "Display",
-      "Video",
-      "Övrigt",
-    ];
-    const dims = filters?.channel && filters.channel.length > 0 ? breakdown.filter((c) => filters.channel?.includes(c)) : breakdown;
-    return buildKpiResponse("engagedSessions", series, prevAgg, dims, ["Källa: Mockdata (Engaged Sessions)"]);
+    const propertyId = process.env.GA4_PROPERTY_ID;
+    
+    async function queryGa4EngagedSessions(rangeInput: { start: string; end: string }) {
+      const isServer = typeof window === "undefined";
+      if (!isServer) throw new Error("GA4 client can only run on server");
+      
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { BetaAnalyticsDataClient } = (eval('require'))("@google-analytics/data");
+      const client = new BetaAnalyticsDataClient();
+      const [resp] = await client.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
+        dimensions: [{ name: "date" }],
+        metrics: [{ name: "engagedSessions" }],
+        dimensionFilter: {
+          filter: {
+            fieldName: "hostName",
+            stringFilter: {
+              matchType: "EXACT",
+              value: "mitt.riksbyggen.se"
+            }
+          }
+        },
+        orderBys: [{ dimension: { dimensionName: "date" } }],
+      });
+      const rows = resp.rows || [];
+      const series = rows.map((r: any) => ({
+        date: `${r.dimensionValues?.[0]?.value?.slice(0,4)}-${r.dimensionValues?.[0]?.value?.slice(4,6)}-${r.dimensionValues?.[0]?.value?.slice(6,8)}`,
+        value: Number(r.metricValues?.[0]?.value || 0),
+      }));
+      return series as { date: string; value: number }[];
+    }
+
+    try {
+      const isServer = typeof window === "undefined";
+      if (propertyId && isServer) {
+        const currentDaySeries = await queryGa4EngagedSessions({ start: range.start, end: range.end });
+        const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+        const previousDaySeries = prevRange ? await queryGa4EngagedSessions(prevRange) : undefined;
+        const series = aggregate(currentDaySeries, grain);
+        const prevAgg = previousDaySeries ? aggregate(previousDaySeries, grain) : undefined;
+        return buildKpiResponse("engagedSessions", series, prevAgg, [], ["Källa: GA4 API"], "ga4");
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("GA4 Engaged Sessions query failed:", err);
+      throw new Error("GA4 Engaged Sessions API error");
+    }
+
+    throw new Error("GA4 Engaged Sessions not configured");
   }
 
   if (metric === "engagementRate") {
-    // Generate engagement rate as percentage (0-100)
-    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 75.2, noise: 0.08, seedKey: "engagementRate" }), scale);
-    const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
-    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 70.0, noise: 0.08, seedKey: "engagementRate_prev" }), scale) : undefined;
-    const series = aggregate(current, grain);
-    const prevAgg = previous ? aggregate(previous, grain) : undefined;
+    const propertyId = process.env.GA4_PROPERTY_ID;
     
-    // Clamp to realistic range 60-90%
-    const clampedSeries = series.map(p => ({ ...p, value: Math.max(60, Math.min(90, p.value)) }));
-    const clampedPrevAgg = prevAgg ? prevAgg.map(p => ({ ...p, value: Math.max(60, Math.min(90, p.value)) })) : undefined;
-    
-    return buildKpiResponse("engagementRate", clampedSeries, clampedPrevAgg, [
-      "Styrelse",
-      "Medlem", 
-      "Förvaltare",
-      "Leverantör",
-    ], ["Engagement rate 60-90%", "Källa: Mockdata (Engagement Rate)"]);
+    async function queryGa4EngagementRate(rangeInput: { start: string; end: string }) {
+      const isServer = typeof window === "undefined";
+      if (!isServer) throw new Error("GA4 client can only run on server");
+      
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { BetaAnalyticsDataClient } = (eval('require'))("@google-analytics/data");
+      const client = new BetaAnalyticsDataClient();
+      const [resp] = await client.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
+        dimensions: [{ name: "date" }],
+        metrics: [{ name: "engagementRate" }],
+        dimensionFilter: {
+          filter: {
+            fieldName: "hostName",
+            stringFilter: {
+              matchType: "EXACT",
+              value: "mitt.riksbyggen.se"
+            }
+          }
+        },
+        orderBys: [{ dimension: { dimensionName: "date" } }],
+      });
+      const rows = resp.rows || [];
+      const series = rows.map((r: any) => ({
+        date: `${r.dimensionValues?.[0]?.value?.slice(0,4)}-${r.dimensionValues?.[0]?.value?.slice(4,6)}-${r.dimensionValues?.[0]?.value?.slice(6,8)}`,
+        value: Number(r.metricValues?.[0]?.value || 0),
+      }));
+      return series as { date: string; value: number }[];
+    }
+
+    try {
+      const isServer = typeof window === "undefined";
+      if (propertyId && isServer) {
+        const currentDaySeries = await queryGa4EngagementRate({ start: range.start, end: range.end });
+        const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+        const previousDaySeries = prevRange ? await queryGa4EngagementRate(prevRange) : undefined;
+        const series = aggregate(currentDaySeries, grain);
+        const prevAgg = previousDaySeries ? aggregate(previousDaySeries, grain) : undefined;
+        return buildKpiResponse("engagementRate", series, prevAgg, [], ["Källa: GA4 API"], "ga4");
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("GA4 Engagement Rate query failed:", err);
+      throw new Error("GA4 Engagement Rate API error");
+    }
+
+    throw new Error("GA4 Engagement Rate not configured");
   }
 
   if (metric === "avgEngagementTime") {
-    // Generate average engagement time in seconds
-    const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 245, noise: 0.15, seedKey: "avgEngagementTime" }), scale);
-    const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
-    const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 250, noise: 0.15, seedKey: "avgEngagementTime_prev" }), scale) : undefined;
-    const series = aggregate(current, grain);
-    const prevAgg = previous ? aggregate(previous, grain) : undefined;
+    const propertyId = process.env.GA4_PROPERTY_ID;
     
-    // Clamp to realistic range 120-600 seconds (2-10 minutes)
-    const clampedSeries = series.map(p => ({ ...p, value: Math.max(120, Math.min(600, p.value)) }));
-    const clampedPrevAgg = prevAgg ? prevAgg.map(p => ({ ...p, value: Math.max(120, Math.min(600, p.value)) })) : undefined;
-    
-    return buildKpiResponse("avgEngagementTime", clampedSeries, clampedPrevAgg, [
-      "Desktop",
-      "Mobil",
-      "Surfplatta",
-    ], ["Avg engagement time 2-10 min", "Källa: Mockdata (Avg Engagement Time)"]);
+    async function queryGa4AvgEngagementTime(rangeInput: { start: string; end: string }) {
+      const isServer = typeof window === "undefined";
+      if (!isServer) throw new Error("GA4 client can only run on server");
+      
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { BetaAnalyticsDataClient } = (eval('require'))("@google-analytics/data");
+      const client = new BetaAnalyticsDataClient();
+      const [resp] = await client.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
+        dimensions: [{ name: "date" }],
+        metrics: [{ name: "averageSessionDuration" }],
+        dimensionFilter: {
+          filter: {
+            fieldName: "hostName",
+            stringFilter: {
+              matchType: "EXACT",
+              value: "mitt.riksbyggen.se"
+            }
+          }
+        },
+        orderBys: [{ dimension: { dimensionName: "date" } }],
+      });
+      const rows = resp.rows || [];
+      const series = rows.map((r: any) => ({
+        date: `${r.dimensionValues?.[0]?.value?.slice(0,4)}-${r.dimensionValues?.[0]?.value?.slice(4,6)}-${r.dimensionValues?.[0]?.value?.slice(6,8)}`,
+        value: Number(r.metricValues?.[0]?.value || 0),
+      }));
+      return series as { date: string; value: number }[];
+    }
+
+    try {
+      const isServer = typeof window === "undefined";
+      if (propertyId && isServer) {
+        const currentDaySeries = await queryGa4AvgEngagementTime({ start: range.start, end: range.end });
+        const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+        const previousDaySeries = prevRange ? await queryGa4AvgEngagementTime(prevRange) : undefined;
+        const series = aggregate(currentDaySeries, grain);
+        const prevAgg = previousDaySeries ? aggregate(previousDaySeries, grain) : undefined;
+        return buildKpiResponse("avgEngagementTime", series, prevAgg, [], ["Källa: GA4 API"], "ga4");
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("GA4 Average Engagement Time query failed:", err);
+      throw new Error("GA4 Average Engagement Time API error");
+    }
+
+    throw new Error("GA4 Average Engagement Time not configured");
   }
 
   if (metric === "perf") {

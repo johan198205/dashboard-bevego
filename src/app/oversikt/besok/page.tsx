@@ -5,7 +5,6 @@ import { useFilters } from "@/components/GlobalFilters";
 import { ScoreCard } from "@/components/ui/scorecard";
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
 import * as overviewIcons from "@/app/(home)/_components/overview-cards/icons";
-import { getKpi } from "@/lib/resolver";
 
 export default function Page() {
   const { state } = useFilters();
@@ -14,16 +13,20 @@ export default function Page() {
 
   // Helper to fetch series for sparkline and drawer
   const getSeries = (metricId: string) => async ({ start, end, grain, filters }: any) => {
-    const res = await getKpi({ metric: metricId as any, range: { start, end, grain }, filters });
-    return res.timeseries.map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
+    const params = new URLSearchParams({
+      metric: metricId,
+      start,
+      end,
+      grain: grain || 'day',
+      comparisonMode: range.comparisonMode || 'yoy'
+    });
+    
+    const res = await fetch(`${window.location.origin}/api/kpi?${params}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return data.timeseries.map((p: any) => ({ x: new Date(p.date).getTime(), y: p.value }));
   };
 
-  // Values come from summary of current state
-  // If metric isn't implemented in resolver, show 0 and leave TODO
-  const useValue = async (metricId: string) => {
-    const res = await getKpi({ metric: metricId as any, range, filters: state });
-    return { value: res.summary.current, growthRate: res.summary.yoyPct ?? 0 };
-  };
 
   // Get comparison label based on current comparison mode
   const getComparisonLabel = () => {
@@ -65,7 +68,7 @@ export default function Page() {
           onClose={() => setDrawer(null)}
           metricId={drawer.metricId}
           title={drawer.title}
-          sourceLabel="Mock"
+          sourceLabel="GA4"
           getSeries={getSeries(drawer.metricId)}
           getCompareSeries={async () => []}
         />
@@ -80,28 +83,38 @@ function AsyncCard({ title, metricId, Icon, open, getSeries, format, comparisonL
   const [data, setData] = useState<{ value: number | string; growthRate: number } | null>(null);
 
   if (!data) {
-    // Use resolver for all metrics
-    getKpi({ metric: metricId as any, range, filters: state }).then((res) => {
-      const raw = res.summary.current;
+    // Use API endpoint for GA4 metrics
+    const params = new URLSearchParams({
+      metric: metricId,
+      start: range.start,
+      end: range.end,
+      grain: range.grain || 'day',
+      comparisonMode: range.comparisonMode || 'yoy'
+    });
+    
+    fetch(`${window.location.origin}/api/kpi?${params}`).then(async (res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const raw = data.summary.current;
       const formatted = typeof raw === "number" ? (format ? format(raw) : raw.toLocaleString("sv-SE")) : raw;
-      setData({ value: formatted, growthRate: res.summary.yoyPct ?? 0 });
+      setData({ value: formatted, growthRate: data.summary.yoyPct ?? 0 });
     }).catch((error) => {
       console.error(`Error loading ${metricId}:`, error);
-      // Fallback to placeholder
-      setData({ value: "—", growthRate: 0 });
+      // Show NoData when API fails
+      setData({ value: "NoData", growthRate: 0 });
     });
   }
 
   return (
     <ScoreCard
       label={title}
-      value={data ? data.value : "—"}
+      value={data ? data.value : "NoData"}
       growthRate={data ? data.growthRate : 0}
       Icon={Icon}
       variant="default"
       size="compact"
       appearance="analytics"
-      source="Mock"
+      source="GA4"
       onClick={open}
       getSeries={undefined}
       comparisonLabel={comparisonLabel}

@@ -110,7 +110,7 @@ export function buildBreakdown(keys: string[], total: number): BreakdownRow[] {
   return sorted;
 }
 
-export function buildKpiResponse(metric: string, series: KpiPoint[], previous?: KpiPoint[], breakdownKeys?: string[], notes?: string[]): KpiResponse {
+export function buildKpiResponse(metric: string, series: KpiPoint[], previous?: KpiPoint[], breakdownKeys?: string[], notes?: string[], source: string = 'mock'): KpiResponse {
   const currentAgg = sumSeries(series);
   let summary: Diff = { current: currentAgg, prev: 0, yoyPct: 0 };
   if (previous) {
@@ -119,7 +119,7 @@ export function buildKpiResponse(metric: string, series: KpiPoint[], previous?: 
   }
   const breakdown = breakdownKeys ? buildBreakdown(breakdownKeys, currentAgg) : undefined;
   return {
-    meta: { source: 'mock', metric, dims: [] },
+    meta: { source, metric, dims: [] },
     summary,
     timeseries: series,
     compareTimeseries: previous,
