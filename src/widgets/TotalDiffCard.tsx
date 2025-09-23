@@ -60,6 +60,17 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
   const { state } = useFilters();
   const [open, setOpen] = useState(false);
   
+  // Helpers to derive target NDI quarter end-date string
+  const getQuarterFromDate = (dateStr: string) => Math.floor(new Date(dateStr).getMonth() / 3) + 1;
+  const getQuarterEndDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const year = d.getFullYear();
+    const q = getQuarterFromDate(dateStr);
+    const month = q * 3; // 3,6,9,12
+    const day = [31, 30, 30, 31][q - 1];
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
+  
   // Get comparison label based on current comparison mode
   const getComparisonLabel = () => {
     // NDI always shows quarter comparison regardless of global comparison mode
@@ -114,11 +125,22 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
     <div className="relative">
       <ScoreCard
         label={title}
-        value={summary ? (metric === "ndi" ? summary.current.toFixed(1) : formatNumber(summary.current)) : "–"}
+        value={(summary && data)
+          ? (metric === "ndi"
+              ? (() => {
+                  const targetDate = getQuarterEndDate(range.end);
+                  const hasTarget = (data.timeseries || []).some(p => p.date === targetDate);
+                  if (!hasTarget) return "N/A";
+                  return summary.current.toFixed(1);
+                })()
+              : formatNumber(summary.current)
+            )
+          : "–"}
         growthRate={summary ? summary.yoyPct : undefined}
         Icon={Icon}
         variant={variant}
         source="Mock"
+        className="min-h-[208px]"
         showProgress={showProgress}
         progressGoal={progressGoal}
         progressUnit={getProgressUnit()}

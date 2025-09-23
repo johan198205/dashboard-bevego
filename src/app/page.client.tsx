@@ -23,9 +23,10 @@ export default function ClientHome() {
   const { clarityScore } = useClarityData();
   const [drawer, setDrawer] = useState<{ metricId: string; title: string } | null>(null);
   const getCurrentQuarterLabel = () => {
-    const now = new Date();
-    const quarter = Math.floor(now.getMonth() / 3) + 1;
-    const year = now.getFullYear();
+    // Compute quarter from the selected end date in the global filters
+    const end = range?.end ? new Date(range.end) : new Date();
+    const quarter = Math.floor(end.getMonth() / 3) + 1; // Jan=0 => Q1
+    const year = end.getFullYear();
     return `NDI - Q${quarter} ${year}`;
   };
   return (

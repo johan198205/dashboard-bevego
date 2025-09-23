@@ -239,6 +239,17 @@ function periodToDate(period: Period): string {
   return `${yearNum}-${month.toString().padStart(2, '0')}-${day}`;
 }
 
+/**
+ * Convert a date string (YYYY-MM-DD) to a Period (YYYYQn)
+ * Uses the month of the provided date to determine quarter.
+ */
+function dateToPeriod(dateStr: string): Period {
+  const d = new Date(dateStr);
+  const year = d.getFullYear();
+  const quarter = Math.floor(d.getMonth() / 3) + 1; // Jan=0 -> Q1
+  return `${year}Q${quarter}` as Period;
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -250,30 +261,37 @@ export async function GET(request: Request) {
     const { aggregated, breakdown } = await getNdiDataFromDB();
 
     if (type === 'timeseries' && start && end) {
-      // Return timeseries data
+      // Return timeseries data and ensure the target quarter (from end date) is present
+      const targetPeriod = dateToPeriod(end);
+      const targetDate = periodToDate(targetPeriod);
       const timeseries = aggregated
         .map(item => ({
           date: periodToDate(item.period),
           value: item.value,
         }))
-        .filter(item => item.date >= start && item.date <= end)
+        .filter(item => (item.date >= start && item.date <= end) || item.date === targetDate)
         .sort((a, b) => a.date.localeCompare(b.date));
 
       return NextResponse.json(timeseries);
     }
 
     if (type === 'current' && start && end) {
-      // Return current value for range
+      // Return value for the quarter that the end date belongs to
+      const targetPeriod = dateToPeriod(end);
+      const match = aggregated.find(item => item.period === targetPeriod);
+      if (match) {
+        return NextResponse.json({ current: match.value, exact: true, period: targetPeriod });
+      }
+      // Fallback: pick the latest value before end date if exact quarter not found
       const timeseries = aggregated
         .map(item => ({
           date: periodToDate(item.period),
           value: item.value,
         }))
-        .filter(item => item.date >= start && item.date <= end)
+        .filter(item => item.date <= end)
         .sort((a, b) => a.date.localeCompare(b.date));
-
-      const current = timeseries.length > 0 ? timeseries[timeseries.length - 1].value : 0;
-      return NextResponse.json({ current });
+      // Not found: return explicit flag so UI can show N/A
+      return NextResponse.json({ current: 0, exact: false, period: targetPeriod });
     }
 
     if (type === 'hasData') {
