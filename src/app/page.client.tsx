@@ -22,6 +22,12 @@ export default function ClientHome() {
   const range = state.range;
   const { clarityScore } = useClarityData();
   const [drawer, setDrawer] = useState<{ metricId: string; title: string } | null>(null);
+  const getCurrentQuarterLabel = () => {
+    const now = new Date();
+    const quarter = Math.floor(now.getMonth() / 3) + 1;
+    const year = now.getFullYear();
+    return `NDI - Q${quarter} ${year}`;
+  };
   return (
     <div className="space-y-6">
       {/* Gauge Cards Section - 3 compact cards in top row */}
@@ -34,7 +40,7 @@ export default function ClientHome() {
       {/* Other KPI Cards Section - 4 larger cards in bottom row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <TotalDiffCard title="Användare (MAU)" metric="mau" range={range} />
-        <TotalDiffCard title="NDI - Senaste kvartal" metric="ndi" range={range} />
+        <TotalDiffCard title={getCurrentQuarterLabel()} metric="ndi" range={range} />
         <TotalDiffCard title="Användning — Sidvisningar" metric="pageviews" range={range} />
         {clarityScore && (
           <ClarityScoreCard
@@ -45,6 +51,14 @@ export default function ClientHome() {
               grade: clarityScore.grade,
             }}
             Icon={overviewIcons.ClarityScore}
+            comparisonLabel={(() => {
+              switch (state.range.comparisonMode) {
+                case 'yoy': return 'vs. föregående år';
+                case 'prev': return 'vs. föregående period';
+                case 'none': return null;
+                default: return 'vs. föregående period';
+              }
+            })()}
             onClick={() => setDrawer({ metricId: "clarity", title: "Clarity Score" })}
           />
         )}

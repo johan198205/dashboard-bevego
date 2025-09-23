@@ -139,11 +139,17 @@ export function OverviewCardsGroup() {
   const { views, profit, products, users } = overviewData || { views: { value: 0, growthRate: 0 }, profit: { value: 0, growthRate: 0 }, products: { value: 0, growthRate: 0 }, users: { value: 0, growthRate: 0 } };
 
   // Get comparison label based on current comparison mode
-  const getComparisonLabel = () => {
+  const getComparisonLabel = (metricId?: string) => {
+    // NDI always shows quarter comparison regardless of global comparison mode
+    if (metricId === 'ndi') {
+      return 'vs. föregående kvartal';
+    }
+    
     switch (state.range.comparisonMode) {
-      case 'yoy': return 'vs. previous year';
-      case 'prev': return 'vs. previous period';
-      default: return 'vs. previous period';
+      case 'yoy': return 'vs. föregående år';
+      case 'prev': return 'vs. föregående period';
+      case 'none': return null; // No comparison label when none is selected
+      default: return 'vs. föregående period';
     }
   };
 
@@ -159,7 +165,7 @@ export function OverviewCardsGroup() {
             grade: clarityScore.grade
           }}
           Icon={icons.ClarityScore}
-          comparisonLabel={getComparisonLabel()}
+          comparisonLabel={getComparisonLabel("clarity")}
           // open drawer
           onClick={() => setDrawer({ metricId: "clarity", title: "Clarity Score" })}
           // no sparkline on this card
@@ -178,7 +184,7 @@ export function OverviewCardsGroup() {
             description: "Klarar alla tre"
           }}
           Icon={icons.CwvTotalStatus}
-          comparisonLabel={getComparisonLabel()}
+          comparisonLabel={getComparisonLabel("cwv_total")}
           onClick={() => setDrawer({ metricId: "cwv_total", title: "CWV total status" })}
           // no sparkline on this card
         />
@@ -193,7 +199,7 @@ export function OverviewCardsGroup() {
         Icon={icons.Views}
         variant="success"
         appearance="analytics"
-        comparisonLabel={getComparisonLabel()}
+        comparisonLabel={getComparisonLabel("pageviews")}
         metricId="pageviews"
         // Pageviews metric
         onClick={() => setDrawer({ metricId: "pageviews", title: "Sidvisningar" })}
@@ -210,7 +216,7 @@ export function OverviewCardsGroup() {
         Icon={icons.Profit}
         variant="warning"
         appearance="analytics"
-        comparisonLabel={getComparisonLabel()}
+        comparisonLabel={getComparisonLabel("tasks_rate")}
         onClick={() => setDrawer({ metricId: "tasks_rate", title: "Tasks" })}
         getSeries={providers.tasks_rate}
       />
@@ -224,7 +230,7 @@ export function OverviewCardsGroup() {
         Icon={icons.Product}
         variant="info"
         appearance="analytics"
-        comparisonLabel={getComparisonLabel()}
+        comparisonLabel={getComparisonLabel("features_rate")}
         onClick={() => setDrawer({ metricId: "features_rate", title: "Funktioner" })}
         getSeries={providers.features_rate}
       />
@@ -238,7 +244,7 @@ export function OverviewCardsGroup() {
         Icon={icons.Users}
         variant="primary"
         appearance="analytics"
-        comparisonLabel={getComparisonLabel()}
+        comparisonLabel={getComparisonLabel("mau")}
         metricId="mau"
         onClick={() => setDrawer({ metricId: "mau", title: "Användare (MAU)" })}
         getSeries={providers.mau}

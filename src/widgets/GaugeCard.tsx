@@ -35,6 +35,21 @@ export default function GaugeCard({ title, metric, range, baseValue = 100, compa
   const { state } = useFilters();
   const [open, setOpen] = useState(false);
   
+  // Get comparison label based on current comparison mode
+  const getComparisonLabel = () => {
+    // NDI always shows quarter comparison regardless of global comparison mode
+    if (metric === 'ndi') {
+      return 'vs. föregående kvartal';
+    }
+    
+    switch (state.range.comparisonMode) {
+      case 'yoy': return 'vs. föregående år';
+      case 'prev': return 'vs. föregående period';
+      case 'none': return null; // No comparison label when none is selected
+      default: return 'vs. föregående period';
+    }
+  };
+  
   useEffect(() => {
     getKpi({ metric, range, filters: { audience: state.audience, device: state.device, channel: state.channel } }).then(setData);
   }, [metric, range.start, range.end, range.compareYoy, range.grain, state.audience.join(","), state.device.join(","), state.channel.join(",")]);
@@ -100,7 +115,7 @@ export default function GaugeCard({ title, metric, range, baseValue = 100, compa
         </div>
         
         {/* Growth indicator - match other scorecards */}
-        {summary && summary.yoyPct !== undefined && (
+        {summary && summary.yoyPct !== undefined && getComparisonLabel() && (
           <div className={`flex justify-center ${compact ? 'mt-2' : 'mt-4'}`}>
             <div className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
               summary.yoyPct >= 0 
@@ -108,7 +123,7 @@ export default function GaugeCard({ title, metric, range, baseValue = 100, compa
                 : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 dark:border dark:border-red-800'
             }`}>
               <span>{summary.yoyPct >= 0 ? '↗' : '↘'}</span>
-              <span>{Math.abs(summary.yoyPct).toFixed(1)}% vs. previous period</span>
+              <span>{Math.abs(summary.yoyPct).toFixed(1)}% {getComparisonLabel()}</span>
             </div>
           </div>
         )}

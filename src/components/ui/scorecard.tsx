@@ -19,7 +19,7 @@ type ScoreCardProps = {
   getSeries?: (args: { start: string; end: string; grain: any; filters: any }) => Promise<{ x: number; y: number }[]>;
   size?: "default" | "compact";
   appearance?: "default" | "analytics"; // New appearance variant for analytics cards
-  comparisonLabel?: string; // For delta chip text like "vs. previous month"
+  comparisonLabel?: string | null; // For delta chip text like "vs. previous month"
   // Progress bar props
   showProgress?: boolean;
   progressGoal?: number;
@@ -170,7 +170,7 @@ export function ScoreCard({
             </div>
             
             {/* Delta chip */}
-            {growthRate !== undefined && (
+            {growthRate !== undefined && comparisonLabel && (
               <div className={cn(
                 "inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium",
                 isDecreasing 

@@ -20,6 +20,15 @@ export function NDICard({ data, className }: NDICardProps) {
     if (change === null || change === undefined) return 'N/A';
     return `${change > 0 ? '+' : ''}${change.toFixed(1)}`;
   };
+  const formatQuarterLabel = (period: Period) => {
+    const match = period.match(/^(\d{4})Q([1-4])$/);
+    if (match) {
+      const year = match[1];
+      const quarter = match[2];
+      return `NDI - Q${quarter} ${year}`;
+    }
+    return 'NDI';
+  };
 
   return (
     <>
@@ -37,7 +46,7 @@ export function NDICard({ data, className }: NDICardProps) {
         {/* Content */}
         <div className="pr-16">
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            NDI - Senaste kvartal
+            {formatQuarterLabel(data.period)}
           </h3>
           
           <div className="text-4xl font-semibold text-neutral-900 dark:text-white leading-none mb-2">

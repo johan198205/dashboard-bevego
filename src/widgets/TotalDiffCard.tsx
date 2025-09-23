@@ -60,6 +60,21 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
   const { state } = useFilters();
   const [open, setOpen] = useState(false);
   
+  // Get comparison label based on current comparison mode
+  const getComparisonLabel = () => {
+    // NDI always shows quarter comparison regardless of global comparison mode
+    if (metric === 'ndi') {
+      return 'vs. föregående kvartal';
+    }
+    
+    switch (state.range.comparisonMode) {
+      case 'yoy': return 'vs. föregående år';
+      case 'prev': return 'vs. föregående period';
+      case 'none': return null; // No comparison label when none is selected
+      default: return 'vs. föregående period';
+    }
+  };
+  
   useEffect(() => {
     getKpi({ metric, range, filters: { audience: state.audience, device: state.device, channel: state.channel } }).then(setData);
   }, [metric, range.start, range.end, range.compareYoy, range.grain, state.audience.join(","), state.device.join(","), state.channel.join(",")]);
@@ -107,6 +122,7 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
         showProgress={showProgress}
         progressGoal={progressGoal}
         progressUnit={getProgressUnit()}
+        comparisonLabel={getComparisonLabel()}
         onClick={() => setOpen(true)}
       />
       <div className="absolute top-2 right-2">
