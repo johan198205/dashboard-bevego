@@ -4,7 +4,6 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 function getClient() {
-  // Indirect require to avoid bundling into client
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { BetaAnalyticsDataClient } = (eval('require'))('@google-analytics/data');
   const clientOptions: any = {};
@@ -32,12 +31,12 @@ export async function GET(req: NextRequest) {
   try {
     const client = getClient();
 
-    // Timeseries (per day)
+    // Timeseries per dag
     const [seriesResp] = await client.runReport({
       property: `properties/${propertyId}`,
       dateRanges: [{ startDate: start, endDate: end }],
       dimensions: [{ name: 'date' }],
-      metrics: [{ name: 'activeUsers' }],
+      metrics: [{ name: 'totalUsers' }],
       dimensionFilter: {
         filter: {
           fieldName: 'hostName',
@@ -51,11 +50,11 @@ export async function GET(req: NextRequest) {
       value: Number(r.metricValues?.[0]?.value || 0),
     }));
 
-    // Total for the whole range (no dimensions)
+    // Total för spannet
     const [totalResp] = await client.runReport({
       property: `properties/${propertyId}`,
       dateRanges: [{ startDate: start, endDate: end }],
-      metrics: [{ name: 'activeUsers' }],
+      metrics: [{ name: 'totalUsers' }],
       dimensionFilter: {
         filter: {
           fieldName: 'hostName',
@@ -66,16 +65,16 @@ export async function GET(req: NextRequest) {
     const total = Number(totalResp?.rows?.[0]?.metricValues?.[0]?.value || 0);
 
     return Response.json({
-      metric: 'activeUsers',
+      metric: 'totalUsers',
       start,
       end,
       total,
       timeseries,
-      notes: ['Källa: GA4 API – activeUsers'],
+      notes: ['Källa: GA4 API – totalUsers']
     });
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error('GA4 activeUsers error:', err);
+    console.error('GA4 totalUsers error:', err);
     return new Response(JSON.stringify({ error: String(err) }), { status: 502, headers: { 'content-type': 'application/json' } });
   }
 }

@@ -1,3 +1,9 @@
+## GA4 API – host‑filter
+
+- Alla anrop till GA4 Data API ska filtreras på `hostName = mitt.riksbyggen.se`.
+- Gäller både totalsiffror och tidsserier.
+- Syfte: isolera trafik för Mitt Riksbyggen och undvika att andra hosts påverkar KPI:er.
+
 Touch only: filer listade i varje uppgift/prompt.
 
 Unified diffs only; inga hela filers ersättning om inte nyskap.

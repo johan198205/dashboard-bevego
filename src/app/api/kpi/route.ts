@@ -48,6 +48,12 @@ export async function GET(req: NextRequest) {
           dateRanges: [{ startDate: range.start, endDate: range.end }],
           dimensions: [{ name: 'date' }],
           metrics: [{ name: 'totalUsers' }],
+          dimensionFilter: {
+            filter: {
+              fieldName: 'hostName',
+              stringFilter: { matchType: 'EXACT', value: 'mitt.riksbyggen.se' }
+            }
+          },
           orderBys: [{ dimension: { dimensionName: 'date' } }],
         });
         const rows = resp.rows || [];
