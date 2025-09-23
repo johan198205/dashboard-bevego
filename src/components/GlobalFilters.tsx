@@ -40,6 +40,50 @@ export function FiltersProvider({ children }: { children: React.ReactNode }) {
 
 export default function GlobalFilters() {
   const { state, setState } = useFilters();
+  const toIso = (d: Date) => d.toISOString().slice(0, 10);
+  const addDays = (d: Date, days: number) => {
+    const nd = new Date(d);
+    nd.setDate(nd.getDate() + days);
+    return nd;
+  };
+  const lastNDays = (n: number) => {
+    const end = new Date();
+    const start = addDays(end, -(n - 1));
+    return { start: toIso(start), end: toIso(end) };
+  };
+  const yesterday = () => {
+    const end = addDays(new Date(), -1);
+    return { start: toIso(end), end: toIso(end) };
+  };
+  const today = () => {
+    const d = new Date();
+    return { start: toIso(d), end: toIso(d) };
+  };
+  const lastTwelveMonths = () => {
+    const end = new Date();
+    const start = new Date(end);
+    // Start from the next day after the same date 12 months ago (GA4-like rolling window)
+    start.setFullYear(start.getFullYear() - 1);
+    const startPlusOne = addDays(start, 1);
+    return { start: toIso(startPlusOne), end: toIso(end) };
+  };
+  const lastQuarter = () => {
+    const now = new Date();
+    const currentQuarter = Math.floor(now.getMonth() / 3) + 1;
+    let year = now.getFullYear();
+    let prevQuarter = currentQuarter - 1;
+    if (prevQuarter === 0) {
+      prevQuarter = 4;
+      year -= 1;
+    }
+    const quarterStartMonth = (prevQuarter - 1) * 3; // 0,3,6,9
+    const start = new Date(year, quarterStartMonth, 1);
+    // End is last day of quarter: first day of next quarter minus 1 day
+    const nextQuarterStart =
+      prevQuarter === 4 ? new Date(year + 1, 0, 1) : new Date(year, quarterStartMonth + 3, 1);
+    const end = addDays(nextQuarterStart, -1);
+    return { start: toIso(start), end: toIso(end) };
+  };
   return (
     <div className="mb-4 flex flex-wrap items-center gap-3" suppressHydrationWarning>
       <div className="card filter-box">
@@ -57,6 +101,41 @@ export default function GlobalFilters() {
           onChange={(e) => setState((p) => ({ ...p, range: { ...p.range, end: e.target.value } }))}
           className="rounded border px-2 py-1"
         />
+      </div>
+
+      <div className="card filter-box">
+        <span className="title">Snabbval</span>
+        <select
+          className="rounded border px-2 py-1"
+          onChange={(e) => {
+            const val = e.target.value;
+            if (!val) return;
+            let r: { start: string; end: string } | null = null;
+            if (val === "today") r = today();
+            else if (val === "yesterday") r = yesterday();
+            else if (val === "last7") r = lastNDays(7);
+            else if (val === "last28") r = lastNDays(28);
+            else if (val === "last30") r = lastNDays(30);
+            else if (val === "last90") r = lastNDays(90);
+            else if (val === "last12m") r = lastTwelveMonths();
+            else if (val === "lastQ") r = lastQuarter();
+            if (r) {
+              setState((p) => ({ ...p, range: { ...p.range, start: r!.start, end: r!.end } }));
+            }
+            // reset selection back to placeholder so user sees current choice via dates
+            e.currentTarget.selectedIndex = 0;
+          }}
+        >
+          <option value="">Välj...</option>
+          <option value="today">Idag</option>
+          <option value="yesterday">Igår</option>
+          <option value="last7">Senaste 7 dagarna</option>
+          <option value="last28">Senaste 28 dagarna</option>
+          <option value="last30">Senaste 30 dagarna</option>
+          <option value="last90">Senaste 90 dagarna</option>
+          <option value="last12m">Senaste 12 månaderna</option>
+          <option value="lastQ">Senaste kvartalet</option>
+        </select>
       </div>
 
       <div className="card filter-box">
