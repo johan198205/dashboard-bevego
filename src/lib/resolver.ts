@@ -489,13 +489,48 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("GA4 Engagement Rate query failed:", err);
-      // Fall back to mock data instead of throwing
-      const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 65, noise: 0.05, seedKey: "engagementRate" }), scale);
-      const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
-      const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 60, noise: 0.05, seedKey: "engagementRate_prev" }), scale) : undefined;
-      const series = aggregate(current, grain);
-      const prevAgg = previous ? aggregate(previous, grain) : undefined;
-      return buildKpiResponse("engagementRate", series, prevAgg, [], ["Källa: Mockdata (Engagement Rate - GA4 fel)"]);
+      // Calculate engagement rate from sessions and engagedSessions instead of using GA4 API
+      try {
+        const sessionsData = await queryGa4Sessions({ start: range.start, end: range.end });
+        const engagedSessionsData = await queryGa4EngagedSessions({ start: range.start, end: range.end });
+        
+        // Calculate engagement rate manually: engagedSessions / sessions * 100
+        const engagementRateData = sessionsData.map((sessionPoint, index) => {
+          const engagedPoint = engagedSessionsData[index];
+          const rate = sessionPoint.value > 0 ? (engagedPoint.value / sessionPoint.value) * 100 : 0;
+          return {
+            date: sessionPoint.date,
+            value: rate
+          };
+        });
+        
+        const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+        let prevEngagementRateData;
+        if (prevRange) {
+          const prevSessionsData = await queryGa4Sessions(prevRange);
+          const prevEngagedSessionsData = await queryGa4EngagedSessions(prevRange);
+          prevEngagementRateData = prevSessionsData.map((sessionPoint, index) => {
+            const engagedPoint = prevEngagedSessionsData[index];
+            const rate = sessionPoint.value > 0 ? (engagedPoint.value / sessionPoint.value) * 100 : 0;
+            return {
+              date: sessionPoint.date,
+              value: rate
+            };
+          });
+        }
+        
+        const series = aggregate(engagementRateData, grain);
+        const prevAgg = prevEngagementRateData ? aggregate(prevEngagementRateData, grain) : undefined;
+        return buildKpiResponse("engagementRate", series, prevAgg, [], ["Källa: GA4 API (beräknat från sessions/engagedSessions)"], "ga4");
+      } catch (calcErr) {
+        // Final fallback to mock data
+        const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 65, noise: 0.05, seedKey: "engagementRate" }), scale);
+        const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+        const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 60, noise: 0.05, seedKey: "engagementRate_prev" }), scale) : undefined;
+        const series = aggregate(current, grain);
+        const prevAgg = previous ? aggregate(previous, grain) : undefined;
+        return buildKpiResponse("engagementRate", series, prevAgg, [], ["Källa: Mockdata (Engagement Rate - GA4 fel)"]);
+      }
     }
 
     throw new Error("GA4 Engagement Rate not configured");
