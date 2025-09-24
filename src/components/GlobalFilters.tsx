@@ -40,6 +40,7 @@ export function FiltersProvider({ children }: { children: React.ReactNode }) {
 
 export default function GlobalFilters() {
   const { state, setState } = useFilters();
+  const [preset, setPreset] = useState<string>("");
   const toIso = (d: Date) => d.toISOString().slice(0, 10);
   const addDays = (d: Date, days: number) => {
     const nd = new Date(d);
@@ -91,18 +92,25 @@ export default function GlobalFilters() {
         <input
           type="date"
           value={state.range.start}
-          onChange={(e) => setState((p) => ({ ...p, range: { ...p.range, start: e.target.value } }))}
+          onChange={(e) => {
+            setPreset("");
+            setState((p) => ({ ...p, range: { ...p.range, start: e.target.value } }));
+          }}
           className="rounded border px-2 py-1"
         />
         <span className="text-gray-400">—</span>
         <input
           type="date"
           value={state.range.end}
-          onChange={(e) => setState((p) => ({ ...p, range: { ...p.range, end: e.target.value } }))}
+          onChange={(e) => {
+            setPreset("");
+            setState((p) => ({ ...p, range: { ...p.range, end: e.target.value } }));
+          }}
           className="rounded border px-2 py-1"
         />
         <select
           className="ml-2 rounded border px-2 py-1"
+          value={preset}
           onChange={(e) => {
             const val = e.target.value;
             if (!val) return;
@@ -118,7 +126,7 @@ export default function GlobalFilters() {
             if (r) {
               setState((p) => ({ ...p, range: { ...p.range, start: r!.start, end: r!.end } }));
             }
-            e.currentTarget.selectedIndex = 0;
+            setPreset(val);
           }}
         >
           <option value="">Välj...</option>
