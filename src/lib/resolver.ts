@@ -371,7 +371,13 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("GA4 Sessions query failed:", err);
-      throw new Error("GA4 Sessions API error");
+      // Fall back to mock data instead of throwing
+      const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 1200, noise: 0.1, seedKey: "sessions" }), scale);
+      const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+      const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 1050, noise: 0.1, seedKey: "sessions_prev" }), scale) : undefined;
+      const series = aggregate(current, grain);
+      const prevAgg = previous ? aggregate(previous, grain) : undefined;
+      return buildKpiResponse("sessions", series, prevAgg, [], ["Källa: Mockdata (Sessions - GA4 fel)"]);
     }
 
     throw new Error("GA4 Sessions not configured");
@@ -424,7 +430,13 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("GA4 Engaged Sessions query failed:", err);
-      throw new Error("GA4 Engaged Sessions API error");
+      // Fall back to mock data instead of throwing
+      const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 800, noise: 0.1, seedKey: "engagedSessions" }), scale);
+      const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+      const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 750, noise: 0.1, seedKey: "engagedSessions_prev" }), scale) : undefined;
+      const series = aggregate(current, grain);
+      const prevAgg = previous ? aggregate(previous, grain) : undefined;
+      return buildKpiResponse("engagedSessions", series, prevAgg, [], ["Källa: Mockdata (Engaged Sessions - GA4 fel)"]);
     }
 
     throw new Error("GA4 Engaged Sessions not configured");
@@ -477,7 +489,13 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("GA4 Engagement Rate query failed:", err);
-      throw new Error("GA4 Engagement Rate API error");
+      // Fall back to mock data instead of throwing
+      const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 65, noise: 0.05, seedKey: "engagementRate" }), scale);
+      const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+      const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 60, noise: 0.05, seedKey: "engagementRate_prev" }), scale) : undefined;
+      const series = aggregate(current, grain);
+      const prevAgg = previous ? aggregate(previous, grain) : undefined;
+      return buildKpiResponse("engagementRate", series, prevAgg, [], ["Källa: Mockdata (Engagement Rate - GA4 fel)"]);
     }
 
     throw new Error("GA4 Engagement Rate not configured");
@@ -530,7 +548,13 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("GA4 Average Engagement Time query failed:", err);
-      throw new Error("GA4 Average Engagement Time API error");
+      // Fall back to mock data instead of throwing
+      const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 180, noise: 0.1, seedKey: "avgEngagementTime" }), scale);
+      const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+      const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 160, noise: 0.1, seedKey: "avgEngagementTime_prev" }), scale) : undefined;
+      const series = aggregate(current, grain);
+      const prevAgg = previous ? aggregate(previous, grain) : undefined;
+      return buildKpiResponse("avgEngagementTime", series, prevAgg, [], ["Källa: Mockdata (Avg Engagement Time - GA4 fel)"]);
     }
 
     throw new Error("GA4 Average Engagement Time not configured");
