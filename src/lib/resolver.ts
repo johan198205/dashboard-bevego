@@ -114,9 +114,9 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         const currentDaySeries = await queryGa4({ start: range.start, end: range.end });
         const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
         const previousDaySeries = prevRange ? await queryGa4(prevRange) : undefined;
-        const series = aggregate(currentDaySeries, grain);
-        const prevAgg = previousDaySeries ? aggregate(previousDaySeries, grain) : undefined;
-        return buildKpiResponse("mau", series, prevAgg, [], ["Källa: GA4 API"], "ga4");
+        const series = aggregateAverage(currentDaySeries, grain);
+        const prevAgg = previousDaySeries ? aggregateAverage(previousDaySeries, grain) : undefined;
+        return buildAverageKpiResponse("mau", series, prevAgg, [], ["Källa: GA4 API (medel per period)"], "ga4");
       }
     } catch (err) {
       // Fall back to mock if GA4 fails for any reason
@@ -129,8 +129,8 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
     const current = scaleSeries(currentRaw, scale);
     const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
     const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 1050, noise: 0.1, seedKey: "mau_prev" }), scale) : undefined;
-    const series = aggregate(current, grain);
-    const prevAgg = previous ? aggregate(previous, grain) : undefined;
+    const series = aggregateAverage(current, grain);
+    const prevAgg = previous ? aggregateAverage(previous, grain) : undefined;
     const breakdown = [
       "Direkt",
       "Organiskt",
@@ -144,7 +144,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       "Övrigt",
     ];
     const dims = filters?.channel && filters.channel.length > 0 ? breakdown.filter((c) => filters.channel?.includes(c)) : breakdown;
-    return buildKpiResponse("mau", series, prevAgg, dims, ["Källa: Mockdata (MAU)"]);
+    return buildAverageKpiResponse("mau", series, prevAgg, dims, ["Källa: Mockdata (MAU, medel per period)"]); 
   }
 
   if (metric === "pageviews") {

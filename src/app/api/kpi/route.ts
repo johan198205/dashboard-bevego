@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getKpi } from "@/lib/resolver";
+import { aggregateAverage } from "@/lib/mockData/generators";
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -63,18 +64,27 @@ export async function GET(req: NextRequest) {
         }));
       };
 
-      const series = await run({ start, end });
-      const compare = prevRange ? await run(prevRange) : undefined;
-      const sum = (arr: {value:number}[]) => arr.reduce((a,b)=>a+b.value,0);
-      const current = sum(series);
-      const prev = compare ? sum(compare) : 0;
+      // Fetch daily series
+      const daySeries = await run({ start, end });
+      const dayCompare = prevRange ? await run(prevRange) : undefined;
+
+      // Respect requested grain by aggregating with average semantics
+      const series = aggregateAverage(daySeries as any, (grain as any) || 'day');
+      const compare = dayCompare ? aggregateAverage(dayCompare as any, (grain as any) || 'day') : undefined;
+
+      // Average value over the (possibly aggregated) series for summary
+      const avg = (arr: {value:number}[] | undefined) => (arr && arr.length)
+        ? arr.reduce((s,p)=>s+p.value,0) / arr.length
+        : 0;
+      const current = avg(series as any);
+      const prev = avg(compare as any);
       const yoyPct = prev ? ((current - prev) / Math.abs(prev)) * 100 : 0;
       return Response.json({
         meta: { source: 'ga4', metric: 'mau', dims: [] },
         summary: { current, prev, yoyPct },
         timeseries: series,
         compareTimeseries: compare,
-        notes: ["Källa: GA4 API"],
+        notes: ["Källa: GA4 API (medel per period)"],
       });
     } catch (err) {
       console.error('GA4 MAU API error (no fallback):', err);
