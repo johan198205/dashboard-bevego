@@ -490,7 +490,20 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         const previousDaySeries = prevRange ? await queryGa4EngagementRate(prevRange) : undefined;
         const series = aggregate(currentDaySeries, grain);
         const prevAgg = previousDaySeries ? aggregate(previousDaySeries, grain) : undefined;
-        return buildKpiResponse("engagementRate", series, prevAgg, [], ["Källa: GA4 API"], "ga4");
+        const avg = (arr: { value: number }[] | undefined) => {
+          if (!arr || arr.length === 0) return 0;
+          const sum = arr.reduce((s, p) => s + p.value, 0);
+          return sum / arr.length;
+        };
+        const currentAvg = avg(series);
+        const prevAvg = avg(prevAgg);
+        return {
+          meta: { source: "ga4", metric: "engagementRate", dims: [] },
+          summary: { current: currentAvg, prev: prevAvg, yoyPct: prevAvg ? ((currentAvg - prevAvg) / prevAvg) * 100 : 0 },
+          timeseries: series,
+          compareTimeseries: prevAgg,
+          notes: ["Källa: GA4 API"],
+        } as any;
       }
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -527,7 +540,20 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         
         const series = aggregate(engagementRateData, grain);
         const prevAgg = prevEngagementRateData ? aggregate(prevEngagementRateData, grain) : undefined;
-        return buildKpiResponse("engagementRate", series, prevAgg, [], ["Källa: GA4 API (beräknat från sessions/engagedSessions)"], "ga4");
+        const avg = (arr: { value: number }[] | undefined) => {
+          if (!arr || arr.length === 0) return 0;
+          const sum = arr.reduce((s, p) => s + p.value, 0);
+          return sum / arr.length;
+        };
+        const currentAvg = avg(series);
+        const prevAvg = avg(prevAgg);
+        return {
+          meta: { source: "ga4", metric: "engagementRate", dims: [] },
+          summary: { current: currentAvg, prev: prevAvg, yoyPct: prevAvg ? ((currentAvg - prevAvg) / prevAvg) * 100 : 0 },
+          timeseries: series,
+          compareTimeseries: prevAgg,
+          notes: ["Källa: GA4 API (beräknat från sessions/engagedSessions)"],
+        } as any;
       } catch (calcErr) {
         // Final fallback to mock data
         const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 65, noise: 0.05, seedKey: "engagementRate" }), scale);
@@ -535,7 +561,20 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 60, noise: 0.05, seedKey: "engagementRate_prev" }), scale) : undefined;
         const series = aggregate(current, grain);
         const prevAgg = previous ? aggregate(previous, grain) : undefined;
-        return buildKpiResponse("engagementRate", series, prevAgg, [], ["Källa: Mockdata (Engagement Rate - GA4 fel)"]);
+        const avg = (arr: { value: number }[] | undefined) => {
+          if (!arr || arr.length === 0) return 0;
+          const sum = arr.reduce((s, p) => s + p.value, 0);
+          return sum / arr.length;
+        };
+        const currentAvg = avg(series);
+        const prevAvg = avg(prevAgg);
+        return {
+          meta: { source: "mock", metric: "engagementRate", dims: [] },
+          summary: { current: currentAvg, prev: prevAvg, yoyPct: prevAvg ? ((currentAvg - prevAvg) / prevAvg) * 100 : 0 },
+          timeseries: series,
+          compareTimeseries: prevAgg,
+          notes: ["Källa: Mockdata (Engagement Rate - GA4 fel)"],
+        } as any;
       }
     }
 
