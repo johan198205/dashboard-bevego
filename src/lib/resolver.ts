@@ -471,7 +471,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       const rows = resp.rows || [];
       const series = rows.map((r: any) => ({
         date: `${r.dimensionValues?.[0]?.value?.slice(0,4)}-${r.dimensionValues?.[0]?.value?.slice(4,6)}-${r.dimensionValues?.[0]?.value?.slice(6,8)}`,
-        value: Number(r.metricValues?.[0]?.value || 0),
+        value: Number(r.metricValues?.[0]?.value || 0) * 100, // GA4 returns engagementRate as decimal (0.7355), convert to percentage
       }));
       return series as { date: string; value: number }[];
     }
