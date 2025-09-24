@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState, useEffect } from "react";
 import { Grain } from "@/lib/types";
 import FilterDropdown from "./FilterDropdown";
 
@@ -23,17 +23,50 @@ export function useFilters() {
   return ctx;
 }
 
+const STORAGE_KEY = 'dashboard-filters';
+
 export function FiltersProvider({ children }: { children: React.ReactNode }) {
   const today = new Date();
   const start = new Date(today);
   start.setMonth(start.getMonth() - 1);
-  const initial: FilterState = {
+  const defaultState: FilterState = {
     range: { start: start.toISOString().slice(0, 10), end: today.toISOString().slice(0, 10), compareYoy: true, comparisonMode: 'yoy', grain: "day" },
     audience: [],
     device: [],
     channel: [],
   };
-  const [state, setStateRaw] = useState<FilterState>(initial);
+
+  const [state, setStateRaw] = useState<FilterState>(defaultState);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Load saved state from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsedState = JSON.parse(saved) as FilterState;
+        // Basic validation to ensure the saved state has the expected structure
+        if (parsedState.range && parsedState.audience && parsedState.device && parsedState.channel) {
+          setStateRaw(parsedState);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load saved filters:', error);
+    }
+    setIsHydrated(true);
+  }, []);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (isHydrated) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (error) {
+        console.warn('Failed to save filters:', error);
+      }
+    }
+  }, [state, isHydrated]);
+
   const value = useMemo(() => ({ state, setState: (fn: (prev: FilterState) => FilterState) => setStateRaw((p) => fn(p)) }), [state]);
   return <FiltersContext.Provider value={value}>{children}</FiltersContext.Provider>;
 }
