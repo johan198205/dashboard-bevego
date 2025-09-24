@@ -151,7 +151,13 @@ export function ClarityOverview() {
 
       <ScoreCard
         label="Genomsnittlig engagemangstid"
-        value={`${Math.round(data.avgEngagementTime)}s`}
+        value={(() => {
+          // GA4 averageSessionDuration returns seconds, format as minutes and seconds
+          const totalSeconds = Math.round(data.avgEngagementTime);
+          const minutes = Math.floor(totalSeconds / 60);
+          const seconds = totalSeconds % 60;
+          return `${minutes}m ${seconds}s`;
+        })()}
         Icon={icons.Engagement}
         variant="info"
         source={data.source}

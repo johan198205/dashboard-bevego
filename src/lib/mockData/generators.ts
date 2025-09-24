@@ -63,6 +63,33 @@ export function aggregate(series: KpiPoint[], grain: Grain): KpiPoint[] {
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
 
+// Special aggregation function for average metrics (like avgEngagementTime)
+export function aggregateAverage(series: KpiPoint[], grain: Grain): KpiPoint[] {
+  if (grain === "day") {
+    // Ensure sorted ascending by date
+    return [...series].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  }
+  const buckets = new Map<string, { sum: number; count: number }>();
+  for (const p of series) {
+    const dt = new Date(p.date);
+    let key = p.date;
+    if (grain === "week") {
+      // Bucket to Monday of the week (week starts on Monday)
+      const monday = startOfWeekMonday(dt);
+      key = monday.toISOString().slice(0, 10);
+    } else if (grain === "month") {
+      // First day of the month
+      const first = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), 1));
+      key = first.toISOString().slice(0, 10);
+    }
+    const existing = buckets.get(key) || { sum: 0, count: 0 };
+    buckets.set(key, { sum: existing.sum + p.value, count: existing.count + 1 });
+  }
+  return Array.from(buckets.entries())
+    .map(([date, data]) => ({ date, value: data.sum / data.count }))
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+}
+
 function startOfWeekMonday(date: Date): Date {
   // Create a UTC date at 00:00 and move back to Monday
   const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
@@ -118,6 +145,25 @@ export function buildKpiResponse(metric: string, series: KpiPoint[], previous?: 
     summary = computeDiff(currentAgg, prevAgg);
   }
   const breakdown = breakdownKeys ? buildBreakdown(breakdownKeys, currentAgg) : undefined;
+  return {
+    meta: { source, metric, dims: [] },
+    summary,
+    timeseries: series,
+    compareTimeseries: previous,
+    breakdown,
+    notes,
+  };
+}
+
+// Special build function for average metrics (like avgEngagementTime)
+export function buildAverageKpiResponse(metric: string, series: KpiPoint[], previous?: KpiPoint[], breakdownKeys?: string[], notes?: string[], source: string = 'mock'): KpiResponse {
+  const currentAvg = series.length > 0 ? series.reduce((sum, p) => sum + p.value, 0) / series.length : 0;
+  let summary: Diff = { current: currentAvg, prev: 0, yoyPct: 0 };
+  if (previous && previous.length > 0) {
+    const prevAvg = previous.reduce((sum, p) => sum + p.value, 0) / previous.length;
+    summary = computeDiff(currentAvg, prevAvg);
+  }
+  const breakdown = breakdownKeys ? buildBreakdown(breakdownKeys, currentAvg) : undefined;
   return {
     meta: { source, metric, dims: [] },
     summary,

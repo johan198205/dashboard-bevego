@@ -177,7 +177,13 @@ export function ClarityTable() {
                 </TableCell>
 
                 <TableCell className="text-center">
-                  {Math.round(row.engagementTime)}s
+                  {(() => {
+                    // GA4 averageSessionDuration returns seconds, format as minutes and seconds
+                    const totalSeconds = Math.round(row.engagementTime);
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = totalSeconds % 60;
+                    return `${minutes}m ${seconds}s`;
+                  })()}
                 </TableCell>
 
                 <TableCell className="text-center">

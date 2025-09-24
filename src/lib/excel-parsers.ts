@@ -227,7 +227,7 @@ function parseJsonLikeBreakdown(
 
           // Determine demographic dimension and segment
           let dimension = 'Unknown';
-          let segment = columnName;
+          const segment = columnName;
           
           if (columnName.includes('Mobile') || columnName.includes('Desktop')) {
             dimension = 'Enhet';

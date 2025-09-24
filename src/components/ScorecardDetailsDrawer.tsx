@@ -193,7 +193,13 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
       labels: { 
         style: { colors: "#6B7280" },
         formatter: isRateMetric ? (value: number) => `${value.toFixed(1)}%` : 
-                   metricId === "avgEngagementTime" ? (value: number) => `${Math.floor(value / 60)}m ${Math.round(value % 60)}s` :
+                   metricId === "avgEngagementTime" ? (value: number) => {
+                     // GA4 averageSessionDuration returns seconds, format as minutes and seconds
+                     const totalSeconds = Math.round(value);
+                     const minutes = Math.floor(totalSeconds / 60);
+                     const seconds = totalSeconds % 60;
+                     return `${minutes}m ${seconds}s`;
+                   } :
                    undefined
       } 
     },

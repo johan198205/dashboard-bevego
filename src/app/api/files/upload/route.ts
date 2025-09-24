@@ -6,7 +6,7 @@ import { parseExcelFileFromBuffer } from '@/lib/excel-parsers';
 import { FileKind } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   // Set timeout for the entire request
   const timeoutPromise = new Promise((_, reject) => {
     setTimeout(() => reject(new Error('Request timeout')), 45000); // 45 seconds

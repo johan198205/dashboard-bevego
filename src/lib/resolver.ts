@@ -1,5 +1,5 @@
 import { type KpiResponse, type Params, type Grain, type Filters, type KpiPoint } from "./types";
-import { buildKpiResponse, generateTimeseries, aggregate } from "./mockData/generators";
+import { buildKpiResponse, buildAverageKpiResponse, generateTimeseries, aggregate, aggregateAverage } from "./mockData/generators";
 import { getNdiTimeseries, getNdiCurrent, getNdiBreakdown, hasNdiData, getNdiDataSourceLabel } from "../services/ndi-data.service";
 
 function addYears(dateStr: string, years: number): string {
@@ -621,9 +621,9 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         const currentDaySeries = await queryGa4AvgEngagementTime({ start: range.start, end: range.end });
         const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
         const previousDaySeries = prevRange ? await queryGa4AvgEngagementTime(prevRange) : undefined;
-        const series = aggregate(currentDaySeries, grain);
-        const prevAgg = previousDaySeries ? aggregate(previousDaySeries, grain) : undefined;
-        return buildKpiResponse("avgEngagementTime", series, prevAgg, [], ["Källa: GA4 API"], "ga4");
+        const series = aggregateAverage(currentDaySeries, grain);
+        const prevAgg = previousDaySeries ? aggregateAverage(previousDaySeries, grain) : undefined;
+        return buildAverageKpiResponse("avgEngagementTime", series, prevAgg, [], ["Källa: GA4 API"], "ga4");
       }
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -632,9 +632,9 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 180, noise: 0.1, seedKey: "avgEngagementTime" }), scale);
       const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
       const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 160, noise: 0.1, seedKey: "avgEngagementTime_prev" }), scale) : undefined;
-      const series = aggregate(current, grain);
-      const prevAgg = previous ? aggregate(previous, grain) : undefined;
-      return buildKpiResponse("avgEngagementTime", series, prevAgg, [], ["Källa: Mockdata (Avg Engagement Time - GA4 fel)"]);
+      const series = aggregateAverage(current, grain);
+      const prevAgg = previous ? aggregateAverage(previous, grain) : undefined;
+      return buildAverageKpiResponse("avgEngagementTime", series, prevAgg, [], ["Källa: Mockdata (Avg Engagement Time - GA4 fel)"]);
     }
 
     throw new Error("GA4 Average Engagement Time not configured");

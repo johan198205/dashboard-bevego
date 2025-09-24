@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       })();
 
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { BetaAnalyticsDataClient } = require('@google-analytics/data');
+      const { BetaAnalyticsDataClient } = (eval('require'))('@google-analytics/data');
       const clientOptions: any = {};
       if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
         try { clientOptions.credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON as string); } catch {}
