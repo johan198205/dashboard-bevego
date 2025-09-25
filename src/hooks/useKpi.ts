@@ -56,6 +56,16 @@ export function useKpi({ metric, ttlMs = 5 * 60 * 1000 }: UseKpiOptions) {
       grain: params.grain,
       comparisonMode: params.comparisonMode,
     });
+    // Pass multi-select filters as comma-separated lists
+    if ((params.audience as string[] | undefined)?.length) {
+      search.set('audience', (params.audience as string[]).join(','));
+    }
+    if ((params.device as string[] | undefined)?.length) {
+      search.set('device', (params.device as string[]).join(','));
+    }
+    if ((params.channel as string[] | undefined)?.length) {
+      search.set('channel', (params.channel as string[]).join(','));
+    }
 
     fetch(`${window.location.origin}/api/kpi?${search.toString()}`)
       .then(async (res) => {

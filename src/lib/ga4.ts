@@ -83,7 +83,10 @@ export class GA4Client {
         { name: 'sessions' },
         { name: 'engagedSessions' },
         { name: 'engagementRate' },
-        { name: 'averageSessionDuration' }
+        { name: 'averageSessionDuration' },
+        { name: 'totalUsers' },
+        { name: 'newUsers' },
+        { name: 'screenPageViews' }
       ],
       dimensionFilter: this.buildDimensionFilter(filters),
     };
@@ -97,6 +100,9 @@ export class GA4Client {
         engagedSessions: 0,
         engagementRatePct: 0,
         avgEngagementTimeSec: 0,
+        totalUsers: 0,
+        returningUsers: 0,
+        pageviews: 0,
         sampled: response.sampled || false
       };
     }
@@ -105,12 +111,19 @@ export class GA4Client {
     const engagedSessions = Number(row.metricValues?.[1]?.value || 0);
     const engagementRate = Number(row.metricValues?.[2]?.value || 0);
     const avgEngagementTime = Number(row.metricValues?.[3]?.value || 0);
+    const totalUsers = Number(row.metricValues?.[4]?.value || 0);
+    const newUsers = Number(row.metricValues?.[5]?.value || 0);
+    const pageviews = Number(row.metricValues?.[6]?.value || 0);
+    const returningUsers = Math.max(0, totalUsers - newUsers);
 
     return {
       sessions,
       engagedSessions,
       engagementRatePct: engagementRate <= 1 ? engagementRate * 100 : engagementRate,
       avgEngagementTimeSec: avgEngagementTime,
+      totalUsers,
+      returningUsers,
+      pageviews,
       sampled: response.sampled || false
     };
   }

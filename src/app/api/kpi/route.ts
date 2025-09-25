@@ -12,6 +12,14 @@ export async function GET(req: NextRequest) {
   const end = searchParams.get("end") as string;
   const grain = (searchParams.get("grain") as any) || "day";
   const comparisonMode = (searchParams.get("comparisonMode") as any) || "none";
+  const parseList = (key: string): string[] | undefined => {
+    const v = searchParams.get(key);
+    if (!v) return undefined;
+    return v.split(",").map(s => s.trim()).filter(Boolean);
+  };
+  const audience = parseList('audience');
+  const device = parseList('device');
+  const channel = parseList('channel');
 
   // Special server-side GA4 handling for MAU to avoid bundling GA4 SDK in client code
   if (metric === 'mau' && process.env.GA4_PROPERTY_ID) {
@@ -95,7 +103,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const res = await getKpi({ metric, range: { start, end, grain, comparisonMode } as any });
+  const res = await getKpi({ metric, range: { start, end, grain, comparisonMode } as any, filters: { audience, device, channel } as any });
   return Response.json(res);
 }
 

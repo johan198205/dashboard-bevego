@@ -11,11 +11,19 @@ export type Summary = {
   engagedSessions: number;
   engagementRatePct: number;
   avgEngagementTimeSec: number;
+  // New KPIs
+  totalUsers?: number;
+  returningUsers?: number;
+  pageviews?: number;
   deltasYoY?: {
     sessions: number;
     engagedSessions: number;
     engagementRatePct: number;
     avgEngagementTimePct: number;
+    // Deltas for new KPIs (optional)
+    totalUsers?: number;
+    returningUsers?: number;
+    pageviews?: number;
   };
   sampled: boolean;
 };
@@ -66,12 +74,18 @@ function calculateDeltas(current: any, previous: any) {
   const engagedSessionsDelta = previous.engagedSessions > 0 ? ((current.engagedSessions - previous.engagedSessions) / previous.engagedSessions) * 100 : 0;
   const engagementRateDelta = previous.engagementRatePct > 0 ? ((current.engagementRatePct - previous.engagementRatePct) / previous.engagementRatePct) * 100 : 0;
   const avgEngagementTimeDelta = previous.avgEngagementTimeSec > 0 ? ((current.avgEngagementTimeSec - previous.avgEngagementTimeSec) / previous.avgEngagementTimeSec) * 100 : 0;
+  const totalUsersDelta = previous.totalUsers > 0 ? ((current.totalUsers - previous.totalUsers) / previous.totalUsers) * 100 : 0;
+  const returningUsersDelta = previous.returningUsers > 0 ? ((current.returningUsers - previous.returningUsers) / previous.returningUsers) * 100 : 0;
+  const pageviewsDelta = previous.pageviews > 0 ? ((current.pageviews - previous.pageviews) / previous.pageviews) * 100 : 0;
 
   return {
     sessions: sessionsDelta,
     engagedSessions: engagedSessionsDelta,
     engagementRatePct: engagementRateDelta,
-    avgEngagementTimePct: avgEngagementTimeDelta
+    avgEngagementTimePct: avgEngagementTimeDelta,
+    totalUsers: totalUsersDelta,
+    returningUsers: returningUsersDelta,
+    pageviews: pageviewsDelta
   };
 }
 

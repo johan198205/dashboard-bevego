@@ -67,12 +67,67 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
   const { metric, range, filters } = params;
   const grain = ensureGrain(range.grain);
   const comparisonMode: 'none' | 'yoy' | 'prev' = (range.comparisonMode as any) || (range.compareYoy ? 'yoy' : 'none');
+  const debugGa4 = process.env.DEBUG_GA4 === '1';
 
   // Note: All data is mock. CONNECT GA4 HERE LATER by swapping implementation per metric.
   const scale = computeScale(filters);
   if (metric === "mau") {
     // Try GA4 first if configured, otherwise fall back to mock
     const propertyId = process.env.GA4_PROPERTY_ID;
+
+    function buildGa4FilterExpression(host: string, f?: Filters): any {
+      const andExpressions: any[] = [
+        {
+          filter: {
+            fieldName: "hostName",
+            stringFilter: { matchType: "EXACT", value: host },
+          },
+        },
+      ];
+      if (f?.device && f.device.length > 0) {
+        const deviceMap: Record<string, string> = { Desktop: "desktop", Mobil: "mobile", Surfplatta: "tablet" };
+        const deviceExpr = {
+          orGroup: {
+            expressions: f.device
+              .map((d) => deviceMap[d] || d)
+              .map((val) => ({
+                filter: {
+                  fieldName: "deviceCategory",
+                  stringFilter: { matchType: "EXACT", value: val },
+                },
+              })),
+          },
+        };
+        andExpressions.push(deviceExpr);
+      }
+      if (f?.channel && f.channel.length > 0) {
+        const channelMap: Record<string, string> = {
+          "Direkt": "Direct",
+          "Organiskt": "Organic Search",
+          "Kampanj": "Paid Search",
+          "E-post": "Email",
+        };
+        const channelExpr = {
+          orGroup: {
+            expressions: f.channel
+              .map((c) => channelMap[c] || c)
+              .map((val) => ({
+                filter: {
+                  fieldName: "sessionDefaultChannelGroup",
+                  stringFilter: { matchType: "EXACT", value: val },
+                },
+              })),
+          },
+        };
+        andExpressions.push(channelExpr);
+      }
+      const expr = { andGroup: { expressions: andExpressions } } as any;
+      if (debugGa4) {
+        // eslint-disable-next-line no-console
+        console.debug('[GA4] filter', JSON.stringify(expr));
+      }
+      return expr;
+    }
 
     async function queryGa4(rangeInput: { start: string; end: string }) {
       // Prevent client bundling of GA4 SDK; only import on server at runtime
@@ -84,22 +139,21 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { BetaAnalyticsDataClient } = (eval('require'))("@google-analytics/data");
       const client = new BetaAnalyticsDataClient();
+      const extraDims: any[] = [];
+      if (filters?.device?.length) extraDims.push({ name: "deviceCategory" });
+      if (filters?.channel?.length) extraDims.push({ name: "sessionDefaultChannelGroup" });
       const [resp] = await client.runReport({
         property: `properties/${propertyId}`,
         dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
-        dimensions: [{ name: "date" }],
+        dimensions: [{ name: "date" }, ...extraDims],
         metrics: [{ name: "totalUsers" }],
-        dimensionFilter: {
-          filter: {
-            fieldName: "hostName",
-            stringFilter: {
-              matchType: "EXACT",
-              value: "mitt.riksbyggen.se"
-            }
-          }
-        },
+        dimensionFilter: buildGa4FilterExpression("mitt.riksbyggen.se", filters),
         orderBys: [{ dimension: { dimensionName: "date" } }],
       });
+      if (debugGa4) {
+        // eslint-disable-next-line no-console
+        console.debug('[GA4] MAU rows', resp.rows?.length || 0);
+      }
       const rows = resp.rows || [];
       const series = rows.map((r: any) => ({
         date: `${r.dimensionValues?.[0]?.value?.slice(0,4)}-${r.dimensionValues?.[0]?.value?.slice(4,6)}-${r.dimensionValues?.[0]?.value?.slice(6,8)}`,
@@ -334,22 +388,21 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { BetaAnalyticsDataClient } = (eval('require'))("@google-analytics/data");
       const client = new BetaAnalyticsDataClient();
+      const extraDims: any[] = [];
+      if (filters?.device?.length) extraDims.push({ name: "deviceCategory" });
+      if (filters?.channel?.length) extraDims.push({ name: "sessionDefaultChannelGroup" });
       const [resp] = await client.runReport({
         property: `properties/${propertyId}`,
         dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
-        dimensions: [{ name: "date" }],
+        dimensions: [{ name: "date" }, ...extraDims],
         metrics: [{ name: "sessions" }],
-        dimensionFilter: {
-          filter: {
-            fieldName: "hostName",
-            stringFilter: {
-              matchType: "EXACT",
-              value: "mitt.riksbyggen.se"
-            }
-          }
-        },
+        dimensionFilter: buildGa4FilterExpression("mitt.riksbyggen.se", filters),
         orderBys: [{ dimension: { dimensionName: "date" } }],
       });
+      if (debugGa4) {
+        // eslint-disable-next-line no-console
+        console.debug('[GA4] Sessions rows', resp.rows?.length || 0);
+      }
       const rows = resp.rows || [];
       const series = rows.map((r: any) => ({
         date: `${r.dimensionValues?.[0]?.value?.slice(0,4)}-${r.dimensionValues?.[0]?.value?.slice(4,6)}-${r.dimensionValues?.[0]?.value?.slice(6,8)}`,
@@ -393,22 +446,21 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { BetaAnalyticsDataClient } = (eval('require'))("@google-analytics/data");
       const client = new BetaAnalyticsDataClient();
+      const extraDims: any[] = [];
+      if (filters?.device?.length) extraDims.push({ name: "deviceCategory" });
+      if (filters?.channel?.length) extraDims.push({ name: "sessionDefaultChannelGroup" });
       const [resp] = await client.runReport({
         property: `properties/${propertyId}`,
         dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
-        dimensions: [{ name: "date" }],
+        dimensions: [{ name: "date" }, ...extraDims],
         metrics: [{ name: "engagedSessions" }],
-        dimensionFilter: {
-          filter: {
-            fieldName: "hostName",
-            stringFilter: {
-              matchType: "EXACT",
-              value: "mitt.riksbyggen.se"
-            }
-          }
-        },
+        dimensionFilter: buildGa4FilterExpression("mitt.riksbyggen.se", filters),
         orderBys: [{ dimension: { dimensionName: "date" } }],
       });
+      if (debugGa4) {
+        // eslint-disable-next-line no-console
+        console.debug('[GA4] Engaged rows', resp.rows?.length || 0);
+      }
       const rows = resp.rows || [];
       const series = rows.map((r: any) => ({
         date: `${r.dimensionValues?.[0]?.value?.slice(0,4)}-${r.dimensionValues?.[0]?.value?.slice(4,6)}-${r.dimensionValues?.[0]?.value?.slice(6,8)}`,
@@ -646,22 +698,21 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { BetaAnalyticsDataClient } = (eval('require'))("@google-analytics/data");
       const client = new BetaAnalyticsDataClient();
+      const extraDims: any[] = [];
+      if (filters?.device?.length) extraDims.push({ name: "deviceCategory" });
+      if (filters?.channel?.length) extraDims.push({ name: "sessionDefaultChannelGroup" });
       const [resp] = await client.runReport({
         property: `properties/${propertyId}`,
         dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
-        dimensions: [{ name: "date" }],
+        dimensions: [{ name: "date" }, ...extraDims],
         metrics: [{ name: "averageSessionDuration" }],
-        dimensionFilter: {
-          filter: {
-            fieldName: "hostName",
-            stringFilter: {
-              matchType: "EXACT",
-              value: "mitt.riksbyggen.se"
-            }
-          }
-        },
+        dimensionFilter: buildGa4FilterExpression("mitt.riksbyggen.se", filters),
         orderBys: [{ dimension: { dimensionName: "date" } }],
       });
+      if (debugGa4) {
+        // eslint-disable-next-line no-console
+        console.debug('[GA4] AvgEngagementTime rows', resp.rows?.length || 0);
+      }
       const rows = resp.rows || [];
       const series = rows.map((r: any) => ({
         date: `${r.dimensionValues?.[0]?.value?.slice(0,4)}-${r.dimensionValues?.[0]?.value?.slice(4,6)}-${r.dimensionValues?.[0]?.value?.slice(6,8)}`,

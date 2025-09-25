@@ -78,8 +78,9 @@ export default function GlobalFilters() {
   const pathname = usePathname();
   const currentSearch = useSearchParams();
   const { state, setState } = useFilters();
-  // Preselect "Senaste 28 dagarna" in dropdown on initial load
-  const [preset, setPreset] = useState<string>("last28");
+  const [isApplying, setIsApplying] = useState(false);
+  // Preset reflects the actual selected date range; derive from state
+  const [preset, setPreset] = useState<string>("");
   const toIso = (d: Date) => d.toISOString().slice(0, 10);
   const addDays = (d: Date, days: number) => {
     const nd = new Date(d);
@@ -132,34 +133,63 @@ export default function GlobalFilters() {
       // Map comparison mode directly to query param
       const mode = state.range.comparisonMode || "yoy";
       params.set("compare", mode);
-      // Map device filter to API query: only single selection supported now
-      // Priority order: Mobil > Desktop > Surfplatta; om flera valda tas första
-      const device = state.device[0];
-      if (device) {
-        const map: Record<string,string> = { Desktop: 'desktop', Mobil: 'mobile', Surfplatta: 'tablet' };
-        params.set('device', map[device] || device);
+      // Include multi-select filters as comma-separated lists
+      if (state.device.length > 0) {
+        params.set('device', state.device.join(','));
       } else {
         params.delete('device');
       }
-
-      // Map channel filter to GA4 default channel group names
-      const channel = state.channel[0];
-      if (channel) {
-        const chMap: Record<string, string> = {
-          'Direkt': 'Direct',
-          'Organiskt': 'Organic Search',
-          'Kampanj': 'Paid Search',
-          'E-post': 'Email',
-        };
-        params.set('channel', chMap[channel] || channel);
+      if (state.channel.length > 0) {
+        params.set('channel', state.channel.join(','));
       } else {
         params.delete('channel');
       }
+      if (state.audience.length > 0) {
+        params.set('audience', state.audience.join(','));
+      } else {
+        params.delete('audience');
+      }
+      setIsApplying(true);
       router.push(`${pathname}?${params.toString()}`);
     } catch (e) {
       // no-op
     }
   };
+
+  // Keep preset label in sync with the chosen date range
+  useEffect(() => {
+    try {
+      const startStr = state.range.start;
+      const endStr = state.range.end;
+      if (!startStr || !endStr) return setPreset("");
+      const start = new Date(startStr + "T00:00:00");
+      const end = new Date(endStr + "T00:00:00");
+      const todayStr = toIso(new Date());
+      const daysInclusive = Math.max(1, Math.round((end.getTime() - start.getTime()) / (24 * 3600 * 1000)) + 1);
+
+      if (startStr === todayStr && endStr === todayStr) return setPreset("today");
+      const y = addDays(new Date(), -1);
+      const yStr = toIso(y);
+      if (startStr === yStr && endStr === yStr) return setPreset("yesterday");
+
+      if (endStr === todayStr) {
+        if (daysInclusive === 7) return setPreset("last7");
+        if (daysInclusive === 28) return setPreset("last28");
+        if (daysInclusive === 30) return setPreset("last30");
+        if (daysInclusive === 90) return setPreset("last90");
+      }
+
+      // Leave others (12m, last quarter) unmatched for now; default to none
+      setPreset("");
+    } catch {
+      setPreset("");
+    }
+  }, [state.range.start, state.range.end]);
+
+  // Reset applying state when search params update (navigation finished)
+  useEffect(() => {
+    if (isApplying) setIsApplying(false);
+  }, [currentSearch, isApplying]);
   return (
     <div className="mb-4 flex flex-wrap items-center gap-3" suppressHydrationWarning>
       <div className="card filter-box">
@@ -271,11 +301,57 @@ export default function GlobalFilters() {
 
       {/* Apply button should come after channel section to include all filters */}
       <button
-        className="rounded bg-primary px-3 py-1 text-white"
+        className={`rounded bg-primary px-3 py-1 text-white ${isApplying ? 'opacity-70 cursor-not-allowed' : ''}`}
         onClick={applyToUrl}
+        disabled={isApplying}
+        aria-busy={isApplying}
       >
-        Uppdatera
+        {isApplying ? 'Uppdaterar…' : 'Uppdatera'}
       </button>
+
+      {/* Selected filter chips */}
+      {(state.audience.length > 0 || state.device.length > 0 || state.channel.length > 0) && (
+        <div className="flex flex-wrap items-center gap-2">
+          {state.device.map((d) => (
+            <button
+              key={`chip-device-${d}`}
+              className="inline-flex items-center gap-2 rounded-full border border-stroke bg-white px-2 py-0.5 text-xs shadow-sm dark:border-dark-3 dark:bg-dark-2"
+              onClick={() => setState((p) => ({ ...p, device: p.device.filter((v) => v !== d) }))}
+              aria-label={`Ta bort filter Enhet: ${d}`}
+              title={`Enhet: ${d}`}
+            >
+              <span className="text-gray-600 dark:text-gray-200">Enhet: {d}</span>
+              <span className="ml-1 inline-grid size-4 place-items-center rounded-full bg-gray-200 text-gray-700 dark:bg-[#FFFFFF1A] dark:text-gray-200">×</span>
+            </button>
+          ))}
+
+          {state.channel.map((c) => (
+            <button
+              key={`chip-channel-${c}`}
+              className="inline-flex items-center gap-2 rounded-full border border-stroke bg-white px-2 py-0.5 text-xs shadow-sm dark:border-dark-3 dark:bg-dark-2"
+              onClick={() => setState((p) => ({ ...p, channel: p.channel.filter((v) => v !== c) }))}
+              aria-label={`Ta bort filter Kanal: ${c}`}
+              title={`Kanal: ${c}`}
+            >
+              <span className="text-gray-600 dark:text-gray-200">Kanal: {c}</span>
+              <span className="ml-1 inline-grid size-4 place-items-center rounded-full bg-gray-200 text-gray-700 dark:bg-[#FFFFFF1A] dark:text-gray-200">×</span>
+            </button>
+          ))}
+
+          {state.audience.map((a) => (
+            <button
+              key={`chip-audience-${a}`}
+              className="inline-flex items-center gap-2 rounded-full border border-stroke bg-white px-2 py-0.5 text-xs shadow-sm dark:border-dark-3 dark:bg-dark-2"
+              onClick={() => setState((p) => ({ ...p, audience: p.audience.filter((v) => v !== a) }))}
+              aria-label={`Ta bort filter Roll: ${a}`}
+              title={`Roll: ${a}`}
+            >
+              <span className="text-gray-600 dark:text-gray-200">Roll: {a}</span>
+              <span className="ml-1 inline-grid size-4 place-items-center rounded-full bg-gray-200 text-gray-700 dark:bg-[#FFFFFF1A] dark:text-gray-200">×</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

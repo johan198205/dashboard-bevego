@@ -1,7 +1,7 @@
 'use client';
 
 import { ScoreCard } from '@/components/ui/scorecard';
-import { Users, MousePointer, TrendingUp, Clock } from 'lucide-react';
+import { Users, MousePointer, TrendingUp, Clock, UserCheck, Eye } from 'lucide-react';
 import { formatNumber, formatPercent, formatTime } from '@/utils/format';
 import type { Summary } from '@/app/api/ga4/overview/route';
 
@@ -27,6 +27,20 @@ export function KpiCards({ data }: Props) {
       description: 'Antal besökssessioner',
     },
     {
+      title: 'Total users',
+      value: data.totalUsers ?? 0,
+      delta: data.deltasYoY?.totalUsers,
+      icon: Users,
+      description: 'Totalt antal användare',
+    },
+    {
+      title: 'Returning users',
+      value: data.returningUsers ?? 0,
+      delta: data.deltasYoY?.returningUsers,
+      icon: UserCheck,
+      description: 'Återkommande användare (totalUsers − newUsers)',
+    },
+    {
       title: 'Engagerade sessioner',
       value: data.engagedSessions,
       delta: data.deltasYoY?.engagedSessions,
@@ -48,6 +62,13 @@ export function KpiCards({ data }: Props) {
       icon: Clock,
       description: 'Genomsnittlig tid per session',
       isTime: true,
+    },
+    {
+      title: 'Sidvisningar',
+      value: data.pageviews ?? 0,
+      delta: data.deltasYoY?.pageviews,
+      icon: Eye,
+      description: 'Antal sidvisningar',
     },
   ];
 
