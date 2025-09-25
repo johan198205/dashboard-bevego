@@ -9,9 +9,10 @@ type AnalyticsBlockProps = {
   children: ReactNode;
   className?: string;
   headerRight?: ReactNode;
+  icon?: ReactNode;
 };
 
-export function AnalyticsBlock({ title, description, headerRight, children, className }: AnalyticsBlockProps) {
+export function AnalyticsBlock({ title, description, headerRight, children, className, icon }: AnalyticsBlockProps) {
   return (
     <div
       className={cn(
@@ -20,6 +21,15 @@ export function AnalyticsBlock({ title, description, headerRight, children, clas
         className
       )}
     >
+      {/* Corner Icon */}
+      {icon && (
+        <div className="absolute top-4 right-4 bg-red-50 dark:bg-red-900/20 rounded-lg p-2 flex items-center justify-center">
+          <div className="text-red-500 dark:text-red-400">
+            {icon}
+          </div>
+        </div>
+      )}
+
       {(title || description || headerRight) && (
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0">

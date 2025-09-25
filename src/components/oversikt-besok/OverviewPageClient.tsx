@@ -228,11 +228,13 @@ export function OverviewPageClient({ initialApiUrl, searchParams, initialData, i
           title="Kanaler"
           data={data.channels}
           type="channel"
+          totalSessions={data.summary.sessions}
         />
         <Distributions 
           title="Enheter"
           data={data.devices}
           type="device"
+          totalSessions={data.summary.sessions}
         />
       </div>
 
