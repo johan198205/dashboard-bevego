@@ -38,6 +38,24 @@ export function OverviewPageClient({ initialApiUrl, searchParams, initialData, i
   const [loading, setLoading] = useState(!initialData && !initialError);
   const [error, setError] = useState<string | null>(initialError || null);
   const [apiUrl, setApiUrl] = useState(initialApiUrl);
+  // Which metrics are shown in the timeline chart
+  const [activeSeries, setActiveSeries] = useState<{
+    sessions: boolean;
+    totalUsers: boolean;
+    returningUsers: boolean;
+    engagedSessions: boolean;
+    engagementRatePct: boolean;
+    avgEngagementTimeSec: boolean;
+    pageviews: boolean;
+  }>({
+    sessions: true,
+    totalUsers: true,
+    returningUsers: false,
+    engagedSessions: false,
+    engagementRatePct: false,
+    avgEngagementTimeSec: false,
+    pageviews: false,
+  });
 
   // Fetch data from API
   const fetchData = async (url: string) => {
@@ -195,10 +213,14 @@ export function OverviewPageClient({ initialApiUrl, searchParams, initialData, i
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
-      <KpiCards data={data.summary} />
+      <KpiCards 
+        data={data.summary} 
+        activeSeries={activeSeries}
+        onToggleSeries={(key: keyof typeof activeSeries, value: boolean) => setActiveSeries((prev) => ({ ...prev, [key]: value }))}
+      />
 
       {/* Trends Chart */}
-      <Trends data={data.timeseries} />
+      <Trends data={data.timeseries} activeSeries={activeSeries} />
 
       {/* Distributions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

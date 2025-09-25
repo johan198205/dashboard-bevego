@@ -137,7 +137,11 @@ export class GA4Client {
       metrics: [
         { name: 'sessions' },
         { name: 'engagedSessions' },
-        { name: 'engagementRate' }
+        { name: 'engagementRate' },
+        { name: 'totalUsers' },
+        { name: 'newUsers' },
+        { name: 'screenPageViews' },
+        { name: 'averageSessionDuration' }
       ],
       dimensionFilter: this.buildDimensionFilter(filters),
       orderBys: [{ dimension: { dimensionName: 'date' } }],
@@ -151,12 +155,20 @@ export class GA4Client {
       const sessions = Number(row.metricValues?.[0]?.value || 0);
       const engagedSessions = Number(row.metricValues?.[1]?.value || 0);
       const engagementRate = Number(row.metricValues?.[2]?.value || 0);
+      const totalUsers = Number(row.metricValues?.[3]?.value || 0);
+      const newUsers = Number(row.metricValues?.[4]?.value || 0);
+      const pageviews = Number(row.metricValues?.[5]?.value || 0);
+      const avgEngagementTime = Number(row.metricValues?.[6]?.value || 0);
 
       return {
         date: `${date.slice(0,4)}-${date.slice(4,6)}-${date.slice(6,8)}`,
         sessions,
         engagedSessions,
-        engagementRatePct: engagementRate <= 1 ? engagementRate * 100 : engagementRate
+        engagementRatePct: engagementRate <= 1 ? engagementRate * 100 : engagementRate,
+        totalUsers,
+        returningUsers: Math.max(0, totalUsers - newUsers),
+        pageviews,
+        avgEngagementTimeSec: avgEngagementTime,
       };
     });
   }
