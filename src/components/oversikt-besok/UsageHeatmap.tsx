@@ -29,17 +29,17 @@ export function UsageHeatmap({ data }: Props) {
   const maxSessions = Math.max(...allSessions);
   const medianSessions = allSessions.sort((a, b) => a - b)[Math.floor(allSessions.length / 2)];
 
-  // Get color intensity based on sessions
+  // Get color intensity based on sessions using Riksbyggen red colors
   const getColorIntensity = (sessions: number) => {
-    if (sessions === 0) return 'bg-gray-100 dark:bg-gray-800';
+    if (sessions === 0) return 'bg-gray-50 dark:bg-gray-800';
     
     const intensity = (sessions - minSessions) / (maxSessions - minSessions);
     
-    if (intensity < 0.2) return 'bg-blue-100 dark:bg-blue-900';
-    if (intensity < 0.4) return 'bg-blue-200 dark:bg-blue-800';
-    if (intensity < 0.6) return 'bg-blue-300 dark:bg-blue-700';
-    if (intensity < 0.8) return 'bg-blue-400 dark:bg-blue-600';
-    return 'bg-blue-500 dark:bg-blue-500';
+    if (intensity < 0.2) return 'bg-red-50 dark:bg-red-900/20';
+    if (intensity < 0.4) return 'bg-red-100 dark:bg-red-900/40';
+    if (intensity < 0.6) return 'bg-red-200 dark:bg-red-800/60';
+    if (intensity < 0.8) return 'bg-red-300 dark:bg-red-700/80';
+    return 'bg-red-500 dark:bg-red-500';
   };
 
   const weekdays = ['Sön', 'Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör'];
@@ -48,18 +48,19 @@ export function UsageHeatmap({ data }: Props) {
     <AnalyticsBlock
       title="Användningsmönster"
       description="Sessions per veckodag och timme"
+      className="w-full"
     >
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Heatmap Grid */}
           <div className="overflow-x-auto">
-            <div className="inline-block min-w-full">
+            <div className="inline-block w-full">
               {/* Hour headers */}
               <div className="flex">
-                <div className="w-12 h-8"></div> {/* Empty cell for weekday labels */}
+                <div className="w-20 h-12"></div> {/* Empty cell for weekday labels */}
                 {Array.from({ length: 24 }, (_, hour) => (
                   <div 
                     key={hour} 
-                    className="w-8 h-8 flex items-center justify-center text-xs text-gray-600 dark:text-gray-400 font-medium"
+                    className="flex-1 h-12 flex items-center justify-center text-sm text-gray-600 dark:text-gray-400 font-medium min-w-[3rem]"
                   >
                     {hour}
                   </div>
@@ -70,7 +71,7 @@ export function UsageHeatmap({ data }: Props) {
               {grid.map((weekdayData, weekday) => (
                 <div key={weekday} className="flex">
                   {/* Weekday label */}
-                  <div className="w-12 h-8 flex items-center justify-center text-xs text-gray-600 dark:text-gray-400 font-medium">
+                  <div className="w-20 h-12 flex items-center justify-center text-sm text-gray-700 dark:text-gray-300 font-semibold">
                     {weekdays[weekday]}
                   </div>
                   
@@ -80,21 +81,23 @@ export function UsageHeatmap({ data }: Props) {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div 
-                            className={`w-8 h-8 border border-gray-200 dark:border-gray-700 cursor-pointer hover:ring-2 hover:ring-blue-300 dark:hover:ring-blue-600 ${getColorIntensity(cellData.sessions)}`}
+                            className={`flex-1 h-12 border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-2 hover:border-red-500 dark:hover:border-red-400 transition-all duration-200 min-w-[3rem] ${getColorIntensity(cellData.sessions)}`}
                             aria-label={`${formatWeekday(weekday)} ${formatHour(hour)} - ${formatNumber(cellData.sessions)} sessions`}
                           />
                         </TooltipTrigger>
-                        <TooltipContent>
-                          <div className="space-y-1">
-                            <p className="font-medium">
+                        <TooltipContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg">
+                          <div className="space-y-2 p-1">
+                            <p className="font-semibold text-base text-gray-900 dark:text-white">
                               {formatWeekday(weekday)} {formatHour(hour)}
                             </p>
-                            <p className="text-sm">
-                              Sessions: {formatNumber(cellData.sessions)}
-                            </p>
-                            <p className="text-sm">
-                              Engagerade: {formatNumber(cellData.engagedSessions)}
-                            </p>
+                            <div className="space-y-1">
+                              <p className="text-sm text-gray-700 dark:text-gray-300">
+                                <span className="font-medium text-red-600 dark:text-red-400">Sessions:</span> {formatNumber(cellData.sessions)}
+                              </p>
+                              <p className="text-sm text-gray-700 dark:text-gray-300">
+                                <span className="font-medium text-red-600 dark:text-red-400">Engagerade:</span> {formatNumber(cellData.engagedSessions)}
+                              </p>
+                            </div>
                           </div>
                         </TooltipContent>
                       </Tooltip>
@@ -106,43 +109,61 @@ export function UsageHeatmap({ data }: Props) {
           </div>
 
           {/* Legend */}
-          <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-            <div className="flex items-center gap-4">
-              <span>Lägsta:</span>
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-4 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"></div>
-                <span>{formatNumber(minSessions)}</span>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+              Trafikintensitet
+            </h4>
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-3">
+                <span className="text-gray-600 dark:text-gray-400 font-medium">Lägsta:</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded"></div>
+                  <span className="font-semibold text-gray-900 dark:text-white">{formatNumber(minSessions)}</span>
+                </div>
               </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <span>Median:</span>
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-4 bg-blue-300 dark:bg-blue-700 border border-gray-200 dark:border-gray-700"></div>
-                <span>{formatNumber(medianSessions)}</span>
+              
+              <div className="flex items-center gap-3">
+                <span className="text-gray-600 dark:text-gray-400 font-medium">Median:</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-red-200 dark:bg-red-800/60 border border-gray-200 dark:border-gray-700 rounded"></div>
+                  <span className="font-semibold text-gray-900 dark:text-white">{formatNumber(medianSessions)}</span>
+                </div>
               </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <span>Högsta:</span>
-              <div className="flex items-center gap-1">
-                <div className="w-4 h-4 bg-blue-500 dark:bg-blue-500 border border-gray-200 dark:border-gray-700"></div>
-                <span>{formatNumber(maxSessions)}</span>
+              
+              <div className="flex items-center gap-3">
+                <span className="text-gray-600 dark:text-gray-400 font-medium">Högsta:</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-red-500 dark:bg-red-500 border border-gray-200 dark:border-gray-700 rounded"></div>
+                  <span className="font-semibold text-gray-900 dark:text-white">{formatNumber(maxSessions)}</span>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Usage insights */}
-          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-              Användningsinsikter:
+          <div className="bg-red-50 dark:bg-red-900/10 rounded-lg p-4 border border-red-100 dark:border-red-900/20">
+            <h4 className="text-sm font-semibold text-red-900 dark:text-red-100 mb-3 flex items-center gap-2">
+              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              Användningsinsikter
             </h4>
-            <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-              <li>• Mörkare färger indikerar högre trafik</li>
-              <li>• Hovra över celler för detaljerad information</li>
-              <li>• Veckodagar: 0 = söndag, 1 = måndag, osv.</li>
-              <li>• Timmar: 0 = 00:00, 23 = 23:00</li>
-            </ul>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div className="space-y-2">
+                <p className="text-gray-700 dark:text-gray-300">
+                  <span className="font-medium text-red-700 dark:text-red-300">Mörkare röda färger</span> indikerar högre trafik
+                </p>
+                <p className="text-gray-700 dark:text-gray-300">
+                  <span className="font-medium text-red-700 dark:text-red-300">Hovra över celler</span> för detaljerad information
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-gray-700 dark:text-gray-300">
+                  <span className="font-medium text-red-700 dark:text-red-300">Veckodagar:</span> Sön = söndag, Mån = måndag, osv.
+                </p>
+                <p className="text-gray-700 dark:text-gray-300">
+                  <span className="font-medium text-red-700 dark:text-red-300">Timmar:</span> 0 = 00:00, 23 = 23:00
+                </p>
+              </div>
+            </div>
           </div>
         </div>
     </AnalyticsBlock>
