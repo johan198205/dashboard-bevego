@@ -154,12 +154,24 @@ export async function GET(req: NextRequest) {
       sampled: currentSummary.sampled
     };
 
-    // Calculate YoY comparison if requested
-    if (compare === 'yoy') {
-      const prevRange = getPreviousYearRange(start, end);
+    // Calculate comparison series for yoy or prev period
+    if (compare === 'yoy' || compare === 'prev') {
+      const prevRange = compare === 'yoy'
+        ? getPreviousYearRange(start, end)
+        : { start: new Date(startDate.getTime()), end: new Date(endDate.getTime()) } as any;
+      if (compare === 'prev') {
+        // Previous period: shift back by the same window length
+        const diffDays = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        const prevEnd = new Date(startDate.getTime());
+        prevEnd.setDate(prevEnd.getDate() - 1);
+        const prevStart = new Date(prevEnd.getTime());
+        prevStart.setDate(prevStart.getDate() - (diffDays - 1));
+        (prevRange as any).start = prevStart.toISOString().slice(0, 10);
+        (prevRange as any).end = prevEnd.toISOString().slice(0, 10);
+      }
       
       try {
-        const previousSummary = await client.getSummaryKPIs(prevRange.start, prevRange.end, filters);
+        const previousSummary = await client.getSummaryKPIs((prevRange as any).start, (prevRange as any).end, filters);
         summary.deltasYoY = calculateDeltas(currentSummary, previousSummary);
       } catch (error) {
         console.warn('Failed to fetch YoY comparison data:', error);

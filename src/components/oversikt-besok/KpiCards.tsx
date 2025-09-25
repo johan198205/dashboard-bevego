@@ -10,6 +10,14 @@ type Props = {
 };
 
 export function KpiCards({ data }: Props) {
+  // choose label based on Delta source: when we compute prev-period we still store in deltasYoY
+  // so detect via window.location if compare=prev to show correct label
+  let comparisonLabel = 'vs föregående år';
+  if (typeof window !== 'undefined') {
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get('compare') === 'prev') comparisonLabel = 'vs föregående period';
+    if (sp.get('compare') === 'none') comparisonLabel = '';
+  }
   const kpis = [
     {
       title: 'Sessions',
@@ -61,7 +69,7 @@ export function KpiCards({ data }: Props) {
             growthRate={kpi.delta ?? undefined}
             Icon={Icon}
             source="GA4 Data API"
-            comparisonLabel="vs föregående år"
+            comparisonLabel={comparisonLabel || undefined}
           />
         );
       })}

@@ -89,21 +89,44 @@ const PRESET_RANGES = [
 export function HeaderFilters({ searchParams, onFiltersChange, disabled = false }: Props) {
   const [localStart, setLocalStart] = useState(searchParams.start || '');
   const [localEnd, setLocalEnd] = useState(searchParams.end || '');
+  const [localCompare, setLocalCompare] = useState(searchParams.compare || 'yoy');
+  const [localChannel, setLocalChannel] = useState(searchParams.channel || 'Alla');
+  const [localDevice, setLocalDevice] = useState(searchParams.device || 'Alla');
+  const [localRole, setLocalRole] = useState(searchParams.role || 'Alla');
 
   const handleDateRangeChange = (start: string, end: string) => {
     setLocalStart(start);
     setLocalEnd(end);
-    onFiltersChange({ start, end });
   };
 
   const handlePresetRange = (preset: typeof PRESET_RANGES[0]) => {
     const range = preset.getRange();
-    handleDateRangeChange(range.start, range.end);
+    setLocalStart(range.start);
+    setLocalEnd(range.end);
+  };
+
+  const handleApply = () => {
+    onFiltersChange({
+      start: localStart,
+      end: localEnd,
+      compare: localCompare,
+      channel: localChannel === 'Alla' ? undefined : localChannel,
+      device: localDevice === 'Alla' ? undefined : localDevice,
+      role: localRole === 'Alla' ? undefined : localRole,
+    });
   };
 
   const handleReset = () => {
-    const defaultRange = PRESET_RANGES[3].getRange(); // Last 12 months
-    handleDateRangeChange(defaultRange.start, defaultRange.end);
+    const defaultRange = {
+      start: dayjs().subtract(28, 'day').format('YYYY-MM-DD'),
+      end: dayjs().format('YYYY-MM-DD'),
+    };
+    setLocalStart(defaultRange.start);
+    setLocalEnd(defaultRange.end);
+    setLocalCompare('yoy');
+    setLocalChannel('Alla');
+    setLocalDevice('Alla');
+    setLocalRole('Alla');
     onFiltersChange({
       start: defaultRange.start,
       end: defaultRange.end,
@@ -169,8 +192,8 @@ export function HeaderFilters({ searchParams, onFiltersChange, disabled = false 
               Jämförelse:
             </span>
             <Select
-              value={searchParams.compare || 'yoy'}
-              onValueChange={(value) => onFiltersChange({ compare: value })}
+              value={localCompare}
+              onValueChange={(value) => setLocalCompare(value)}
               disabled={disabled}
             >
               <SelectTrigger className="w-48">
@@ -192,8 +215,8 @@ export function HeaderFilters({ searchParams, onFiltersChange, disabled = false 
               Kanal:
             </span>
             <Select
-              value={searchParams.channel || 'Alla'}
-              onValueChange={(value) => onFiltersChange({ channel: value === 'Alla' ? undefined : value })}
+              value={localChannel}
+              onValueChange={(value) => setLocalChannel(value)}
               disabled={disabled}
             >
               <SelectTrigger className="w-40">
@@ -215,8 +238,8 @@ export function HeaderFilters({ searchParams, onFiltersChange, disabled = false 
               Enhet:
             </span>
             <Select
-              value={searchParams.device || 'Alla'}
-              onValueChange={(value) => onFiltersChange({ device: value === 'Alla' ? undefined : value })}
+              value={localDevice}
+              onValueChange={(value) => setLocalDevice(value)}
               disabled={disabled}
             >
               <SelectTrigger className="w-32">
@@ -238,8 +261,8 @@ export function HeaderFilters({ searchParams, onFiltersChange, disabled = false 
               Roll:
             </span>
             <Select
-              value={searchParams.role || 'Alla'}
-              onValueChange={(value) => onFiltersChange({ role: value === 'Alla' ? undefined : value })}
+              value={localRole}
+              onValueChange={(value) => setLocalRole(value)}
               disabled={disabled}
             >
               <SelectTrigger className="w-36">
@@ -255,17 +278,18 @@ export function HeaderFilters({ searchParams, onFiltersChange, disabled = false 
             </Select>
           </div>
 
-          {/* Reset Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleReset}
-            disabled={disabled}
-            className="ml-auto"
-          >
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Återställ
-          </Button>
+          {/* Actions */}
+          <div className="ml-auto flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              disabled={disabled}
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Återställ
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext, useMemo, useState, useEffect } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Grain } from "@/lib/types";
 import FilterDropdown from "./FilterDropdown";
 
@@ -28,7 +29,8 @@ const STORAGE_KEY = 'dashboard-filters';
 export function FiltersProvider({ children }: { children: React.ReactNode }) {
   const today = new Date();
   const start = new Date(today);
-  start.setMonth(start.getMonth() - 1);
+  // Default to senaste 28 dagarna
+  start.setDate(start.getDate() - 27);
   const defaultState: FilterState = {
     range: { start: start.toISOString().slice(0, 10), end: today.toISOString().slice(0, 10), compareYoy: true, comparisonMode: 'yoy', grain: "day" },
     audience: [],
@@ -72,8 +74,12 @@ export function FiltersProvider({ children }: { children: React.ReactNode }) {
 }
 
 export default function GlobalFilters() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const currentSearch = useSearchParams();
   const { state, setState } = useFilters();
-  const [preset, setPreset] = useState<string>("");
+  // Preselect "Senaste 28 dagarna" in dropdown on initial load
+  const [preset, setPreset] = useState<string>("last28");
   const toIso = (d: Date) => d.toISOString().slice(0, 10);
   const addDays = (d: Date, days: number) => {
     const nd = new Date(d);
@@ -117,6 +123,42 @@ export default function GlobalFilters() {
       prevQuarter === 4 ? new Date(year + 1, 0, 1) : new Date(year, quarterStartMonth + 3, 1);
     const end = addDays(nextQuarterStart, -1);
     return { start: toIso(start), end: toIso(end) };
+  };
+  const applyToUrl = () => {
+    try {
+      const params = new URLSearchParams(currentSearch?.toString() || "");
+      params.set("start", state.range.start);
+      params.set("end", state.range.end);
+      // Map comparison mode directly to query param
+      const mode = state.range.comparisonMode || "yoy";
+      params.set("compare", mode);
+      // Map device filter to API query: only single selection supported now
+      // Priority order: Mobil > Desktop > Surfplatta; om flera valda tas första
+      const device = state.device[0];
+      if (device) {
+        const map: Record<string,string> = { Desktop: 'desktop', Mobil: 'mobile', Surfplatta: 'tablet' };
+        params.set('device', map[device] || device);
+      } else {
+        params.delete('device');
+      }
+
+      // Map channel filter to GA4 default channel group names
+      const channel = state.channel[0];
+      if (channel) {
+        const chMap: Record<string, string> = {
+          'Direkt': 'Direct',
+          'Organiskt': 'Organic Search',
+          'Kampanj': 'Paid Search',
+          'E-post': 'Email',
+        };
+        params.set('channel', chMap[channel] || channel);
+      } else {
+        params.delete('channel');
+      }
+      router.push(`${pathname}?${params.toString()}`);
+    } catch (e) {
+      // no-op
+    }
   };
   return (
     <div className="mb-4 flex flex-wrap items-center gap-3" suppressHydrationWarning>
@@ -226,6 +268,14 @@ export default function GlobalFilters() {
         values={state.channel}
         onChange={(values) => setState((p) => ({ ...p, channel: values }))}
       />
+
+      {/* Apply button should come after channel section to include all filters */}
+      <button
+        className="rounded bg-primary px-3 py-1 text-white"
+        onClick={applyToUrl}
+      >
+        Uppdatera
+      </button>
     </div>
   );
 }
