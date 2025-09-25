@@ -118,7 +118,7 @@ export function HeaderFilters({ searchParams, onFiltersChange, disabled = false 
 
   const handleReset = () => {
     const defaultRange = {
-      start: dayjs().subtract(28, 'day').format('YYYY-MM-DD'),
+      start: dayjs().subtract(6, 'day').format('YYYY-MM-DD'),
       end: dayjs().format('YYYY-MM-DD'),
     };
     setLocalStart(defaultRange.start);

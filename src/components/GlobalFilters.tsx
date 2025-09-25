@@ -29,8 +29,8 @@ const STORAGE_KEY = 'dashboard-filters';
 export function FiltersProvider({ children }: { children: React.ReactNode }) {
   const today = new Date();
   const start = new Date(today);
-  // Default to senaste 28 dagarna
-  start.setDate(start.getDate() - 27);
+  // Default to senaste 7 dagarna
+  start.setDate(start.getDate() - 6);
   const defaultState: FilterState = {
     range: { start: start.toISOString().slice(0, 10), end: today.toISOString().slice(0, 10), compareYoy: true, comparisonMode: 'yoy', grain: "day" },
     audience: [],

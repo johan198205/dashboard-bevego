@@ -118,10 +118,10 @@ export function OverviewPageClient({ initialApiUrl, searchParams, initialData, i
     setApiUrl(`/api/ga4/overview?${apiParams.toString()}`);
   };
 
-  // Helper functions for default dates (senaste 28 dagarna)
+  // Helper functions for default dates (senaste 7 dagarna)
   function getDefaultStartDate() {
     const date = new Date();
-    date.setDate(date.getDate() - 28);
+    date.setDate(date.getDate() - 6);
     return date.toISOString().slice(0, 10);
   }
 

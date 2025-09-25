@@ -22,12 +22,12 @@ type Props = {
   searchParams: Promise<SearchParams>;
 };
 
-// Helper function to get default date range (last 12 months)
+// Helper function to get default date range (last 7 days)
 function getDefaultDateRange() {
   const end = new Date();
   const start = new Date();
-  // Default: senaste 28 dagarna
-  start.setDate(start.getDate() - 28);
+  // Default: senaste 7 dagarna
+  start.setDate(start.getDate() - 6);
   
   return {
     start: start.toISOString().slice(0, 10),
