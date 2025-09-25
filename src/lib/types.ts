@@ -5,7 +5,7 @@ export type Diff = { current: number; prev: number; yoyPct: number };
 export type BreakdownRow = { key: string; value: number; yoyPct?: number };
 
 export type KpiResponse = {
-  meta: { source: 'mock'; metric: string; dims: string[] };
+  meta: { source: 'mock' | 'ga4'; metric: string; dims: string[] };
   summary: Diff;
   timeseries: KpiPoint[];
   // Optional comparison series aligned to the same grain as timeseries

@@ -137,7 +137,7 @@ export function buildBreakdown(keys: string[], total: number): BreakdownRow[] {
   return sorted;
 }
 
-export function buildKpiResponse(metric: string, series: KpiPoint[], previous?: KpiPoint[], breakdownKeys?: string[], notes?: string[], source: string = 'mock'): KpiResponse {
+export function buildKpiResponse(metric: string, series: KpiPoint[], previous?: KpiPoint[], breakdownKeys?: string[], notes?: string[], source: "mock" | "ga4" = 'mock'): KpiResponse {
   const currentAgg = sumSeries(series);
   let summary: Diff = { current: currentAgg, prev: 0, yoyPct: 0 };
   if (previous) {
@@ -156,7 +156,7 @@ export function buildKpiResponse(metric: string, series: KpiPoint[], previous?: 
 }
 
 // Special build function for average metrics (like avgEngagementTime)
-export function buildAverageKpiResponse(metric: string, series: KpiPoint[], previous?: KpiPoint[], breakdownKeys?: string[], notes?: string[], source: string = 'mock'): KpiResponse {
+export function buildAverageKpiResponse(metric: string, series: KpiPoint[], previous?: KpiPoint[], breakdownKeys?: string[], notes?: string[], source: "mock" | "ga4" = 'mock'): KpiResponse {
   const currentAvg = series.length > 0 ? series.reduce((sum, p) => sum + p.value, 0) / series.length : 0;
   let summary: Diff = { current: currentAvg, prev: 0, yoyPct: 0 };
   if (previous && previous.length > 0) {

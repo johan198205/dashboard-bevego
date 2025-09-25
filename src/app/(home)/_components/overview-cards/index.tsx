@@ -191,7 +191,7 @@ export function OverviewCardsGroup() {
     switch (state.range.comparisonMode) {
       case 'yoy': return 'vs. föregående år';
       case 'prev': return 'vs. föregående period';
-      case 'none': return null; // No comparison label when none is selected
+      case 'none': return undefined; // No comparison label when none is selected
       default: return 'vs. föregående period';
     }
   };
@@ -283,7 +283,7 @@ export function OverviewCardsGroup() {
         label="Total Users"
         data={{
           value: mauSummary ? compactFormat(mauSummary.value) : "No Data",
-          growthRate: mauSummary ? mauSummary.growthRate : undefined,
+          growthRate: mauSummary?.growthRate ?? 0,
         }}
         Icon={icons.Users}
         variant="primary"

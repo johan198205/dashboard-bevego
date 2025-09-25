@@ -510,8 +510,63 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       console.error("GA4 Engagement Rate query failed:", err);
       // Calculate engagement rate from sessions and engagedSessions instead of using GA4 API
       try {
-        const sessionsData = await queryGa4Sessions({ start: range.start, end: range.end });
-        const engagedSessionsData = await queryGa4EngagedSessions({ start: range.start, end: range.end });
+        // Define the functions locally since they're not in scope here
+        async function queryGa4SessionsLocal(rangeInput: { start: string; end: string }) {
+          const isServer = typeof window === "undefined";
+          if (!isServer) throw new Error("GA4 client can only run on server");
+          
+          const { BetaAnalyticsDataClient } = await import("@google-analytics/data");
+          const credentials = JSON.parse(process.env.GA4_SA_JSON || "{}");
+          const client = new BetaAnalyticsDataClient({ credentials });
+          
+          const [response] = await client.runReport({
+            property: propertyId,
+            dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
+            dimensions: [{ name: "date" }],
+            metrics: [{ name: "sessions" }],
+            dimensionFilter: {
+              filter: {
+                fieldName: "hostName",
+                stringFilter: { matchType: "EXACT", value: "mitt.riksbyggen.se" }
+              }
+            }
+          });
+          
+          return response.rows?.map(row => ({
+            date: row.dimensionValues?.[0]?.value || "",
+            value: parseInt(row.metricValues?.[0]?.value || "0")
+          })) || [];
+        }
+        
+        async function queryGa4EngagedSessionsLocal(rangeInput: { start: string; end: string }) {
+          const isServer = typeof window === "undefined";
+          if (!isServer) throw new Error("GA4 client can only run on server");
+          
+          const { BetaAnalyticsDataClient } = await import("@google-analytics/data");
+          const credentials = JSON.parse(process.env.GA4_SA_JSON || "{}");
+          const client = new BetaAnalyticsDataClient({ credentials });
+          
+          const [response] = await client.runReport({
+            property: propertyId,
+            dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
+            dimensions: [{ name: "date" }],
+            metrics: [{ name: "engagedSessions" }],
+            dimensionFilter: {
+              filter: {
+                fieldName: "hostName",
+                stringFilter: { matchType: "EXACT", value: "mitt.riksbyggen.se" }
+              }
+            }
+          });
+          
+          return response.rows?.map(row => ({
+            date: row.dimensionValues?.[0]?.value || "",
+            value: parseInt(row.metricValues?.[0]?.value || "0")
+          })) || [];
+        }
+        
+        const sessionsData = await queryGa4SessionsLocal({ start: range.start, end: range.end });
+        const engagedSessionsData = await queryGa4EngagedSessionsLocal({ start: range.start, end: range.end });
         
         // Calculate engagement rate manually: engagedSessions / sessions * 100
         const engagementRateData = sessionsData.map((sessionPoint, index) => {
@@ -526,8 +581,8 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
         let prevEngagementRateData;
         if (prevRange) {
-          const prevSessionsData = await queryGa4Sessions(prevRange);
-          const prevEngagedSessionsData = await queryGa4EngagedSessions(prevRange);
+          const prevSessionsData = await queryGa4SessionsLocal(prevRange);
+          const prevEngagedSessionsData = await queryGa4EngagedSessionsLocal(prevRange);
           prevEngagementRateData = prevSessionsData.map((sessionPoint, index) => {
             const engagedPoint = prevEngagedSessionsData[index];
             const rate = sessionPoint.value > 0 ? (engagedPoint.value / sessionPoint.value) * 100 : 0;

@@ -1,115 +1,101 @@
-"use client";
+import { Metadata } from 'next';
+import { Suspense } from 'react';
+import { OverviewPageClient } from '@/components/oversikt-besok/OverviewPageClient';
+import { OverviewPageSkeleton } from '@/components/oversikt-besok/OverviewPageSkeleton';
 
-import { useState } from "react";
-import { useFilters } from "@/components/GlobalFilters";
-import { ScoreCard } from "@/components/ui/scorecard";
-import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
-import * as overviewIcons from "@/app/(home)/_components/overview-cards/icons";
-import { useKpi } from "@/hooks/useKpi";
-import { cn } from "@/lib/utils";
+export const metadata: Metadata = {
+  title: 'GA4 Dashboard – Besök',
+  description: 'Översikt över besöksstatistik från Google Analytics 4 för mitt.riksbyggen.se',
+};
 
-export default function Page() {
-  const { state } = useFilters();
-  const range = state.range as any;
-  const [drawer, setDrawer] = useState<{ metricId: string; title: string } | null>(null);
+type SearchParams = {
+  start?: string;
+  end?: string;
+  compare?: string;
+  channel?: string;
+  device?: string;
+  role?: string;
+  unit?: string;
+};
 
-  // Helper to fetch series for sparkline and drawer
-  const getSeries = (metricId: string) => async ({ start, end, grain, filters }: any) => {
-    const params = new URLSearchParams({
-      metric: metricId,
-      start,
-      end,
-      grain: grain || 'day',
-      comparisonMode: range.comparisonMode || 'yoy'
+type Props = {
+  searchParams: Promise<SearchParams>;
+};
+
+// Helper function to get default date range (last 12 months)
+function getDefaultDateRange() {
+  const end = new Date();
+  const start = new Date();
+  // Default: senaste 28 dagarna
+  start.setDate(start.getDate() - 28);
+  
+  return {
+    start: start.toISOString().slice(0, 10),
+    end: end.toISOString().slice(0, 10)
+  };
+}
+
+// Helper function to build API URL with search params
+function buildApiUrl(searchParams: SearchParams) {
+  const defaultRange = getDefaultDateRange();
+  
+  const params = new URLSearchParams({
+    start: searchParams.start || defaultRange.start,
+    end: searchParams.end || defaultRange.end,
+    compare: searchParams.compare || 'yoy',
+    ...(searchParams.channel && { channel: searchParams.channel }),
+    ...(searchParams.device && { device: searchParams.device }),
+    ...(searchParams.role && { role: searchParams.role }),
+    ...(searchParams.unit && { unit: searchParams.unit }),
+  });
+
+  return `/api/ga4/overview?${params.toString()}`;
+}
+
+export default async function OverviewPage({ searchParams }: Props) {
+  const resolvedSearchParams = await searchParams;
+  const apiUrl = buildApiUrl(resolvedSearchParams);
+
+  // Fetch initial data on the server
+  let initialData = null;
+  let initialError = null;
+  
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}${apiUrl}`, {
+      next: { revalidate: 300 } // Cache for 5 minutes
     });
     
-    const res = await fetch(`${window.location.origin}/api/kpi?${params}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    return data.timeseries.map((p: any) => ({ x: new Date(p.date).getTime(), y: p.value }));
-  };
-
-
-  // Get comparison label based on current comparison mode
-  const getComparisonLabel = () => {
-    switch (state.range.comparisonMode) {
-      case 'yoy': return 'vs. previous year';
-      case 'prev': return 'vs. previous period';
-      default: return 'vs. previous period';
+    if (response.ok) {
+      initialData = await response.json();
+    } else {
+      const errorData = await response.json();
+      initialError = errorData.error || `HTTP ${response.status}`;
     }
-  };
-
-  // NOTE: Using useKpi for caching and loading states
-
-  const cards = [
-    { id: "sessions", title: "Sessions", Icon: overviewIcons.Views, format: (v: number) => v.toLocaleString("sv-SE") },
-    { id: "engagedSessions", title: "Engaged Sessions", Icon: overviewIcons.Profit, format: (v: number) => v.toLocaleString("sv-SE") },
-    { id: "engagementRate", title: "Engagement rate", Icon: overviewIcons.ClarityScore, format: (v: number) => `${v.toFixed(1)}%` },
-    { id: "avgEngagementTime", title: "Avg engagement time / session", Icon: overviewIcons.CwvTotalStatus, format: (v: number) => {
-      // GA4 averageSessionDuration returns seconds, format as minutes and seconds
-      const totalSeconds = Math.round(v);
-      const minutes = Math.floor(totalSeconds / 60);
-      const seconds = totalSeconds % 60;
-      return `${minutes}m ${seconds}s`;
-    }},
-  ];
+  } catch (error) {
+    initialError = error instanceof Error ? error.message : 'Unknown error';
+  }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {cards.map((c, idx) => (
-        <KpiCard
-          key={idx}
-          title={c.title}
-          metricId={c.id}
-          Icon={c.Icon}
-          open={() => setDrawer({ metricId: c.id, title: c.title })}
-          format={c.format}
-          comparisonLabel={getComparisonLabel()}
-        />
-      ))}
-
-      {drawer && (
-        <ScorecardDetailsDrawer
-          open={!!drawer}
-          onClose={() => setDrawer(null)}
-          metricId={drawer.metricId}
-          title={drawer.title}
-          sourceLabel="GA4"
-          getSeries={getSeries(drawer.metricId)}
-          getCompareSeries={async () => []}
-        />
-      )}
-    </div>
-  );
-}
-function KpiCard({ title, metricId, Icon, open, format, comparisonLabel }: any) {
-  const { data, loading } = useKpi({ metric: metricId });
-  const displayValue = (() => {
-    const raw = data?.value;
-    if (raw === undefined || raw === null) return null;
-    if (typeof raw === "number") return format ? format(raw) : raw.toLocaleString("sv-SE");
-    return raw;
-  })();
-
-  return (
-    <div className={cn("relative")}>      
-      {loading && (
-        <div className="absolute inset-0 animate-pulse">
-          <div className="h-full w-full rounded-[5px] bg-neutral-100 dark:bg-neutral-800" />
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            GA4 Dashboard – Besök
+          </h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Översikt över besöksstatistik från Google Analytics 4 för mitt.riksbyggen.se
+          </p>
         </div>
-      )}
-      <ScoreCard
-        label={title}
-        value={displayValue ?? "—"}
-        growthRate={data?.growthRate ?? 0}
-        Icon={Icon}
-        variant="default"
-        size="compact"
-        appearance="analytics"
-        source="GA4"
-        onClick={open}
-        comparisonLabel={comparisonLabel}
-      />
+      </div>
+
+      <Suspense fallback={<OverviewPageSkeleton />}>
+        <OverviewPageClient 
+          initialApiUrl={apiUrl}
+          searchParams={resolvedSearchParams}
+          initialData={initialData}
+          initialError={initialError}
+        />
+      </Suspense>
     </div>
   );
 }

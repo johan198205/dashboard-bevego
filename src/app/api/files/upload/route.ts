@@ -14,7 +14,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   try {
     const requestPromise = handleUpload(request);
-    const result = await Promise.race([requestPromise, timeoutPromise]);
+    const result = await Promise.race([requestPromise, timeoutPromise]) as NextResponse;
     return result;
   } catch (error) {
     console.error('File upload error:', error);

@@ -2,7 +2,7 @@
 
 import { ArrowDownIcon, ArrowUpIcon } from "@/assets/icons";
 import { cn } from "@/lib/utils";
-import type { JSX, SVGProps } from "react";
+import type { JSX, SVGProps, ComponentType } from "react";
 import { MiniSparkline } from "./mini-sparkline";
 import { KpiProgressBar } from "./kpi-progress-bar";
 
@@ -10,7 +10,7 @@ type ScoreCardProps = {
   label: string;
   value: number | string;
   growthRate?: number;
-  Icon: (props: SVGProps<SVGSVGElement>) => JSX.Element;
+  Icon: ComponentType<SVGProps<SVGSVGElement>>;
   source?: string;
   variant?: "default" | "primary" | "success" | "warning" | "error" | "info";
   className?: string;

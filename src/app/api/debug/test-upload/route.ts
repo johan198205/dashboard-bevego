@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       setTimeout(() => reject(new Error('Parse timeout after 30 seconds')), 30000);
     });
 
-    const parsedData = await Promise.race([parsePromise, timeoutPromise]);
+    const parsedData = await Promise.race([parsePromise, timeoutPromise]) as any;
 
     console.log(`Parsing completed. Found ${parsedData.metricPoints.length} metric points`);
 
