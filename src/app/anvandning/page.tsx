@@ -1,5 +1,4 @@
 "use client";
-import TimeSeries from "@/widgets/TimeSeries";
 import TasksTable from "@/widgets/TasksTable";
 import FeaturesTable from "@/widgets/FeaturesTable";
 import { TopPages } from "@/components/oversikt-besok/TopPages";
@@ -41,8 +40,7 @@ export default function Page() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <TimeSeries title="Sidvisningar — tidsserie" metric="pageviews" range={range} />
+      <div className="grid grid-cols-1 gap-4">
         <div className="grid grid-cols-1 gap-4">
           <TasksTable range={range} />
           <FeaturesTable range={range} />
