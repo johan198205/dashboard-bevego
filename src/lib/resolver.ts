@@ -1,5 +1,6 @@
 import { type KpiResponse, type Params, type Grain, type Filters, type KpiPoint } from "./types";
-import { buildKpiResponse, buildAverageKpiResponse, generateTimeseries, aggregate, aggregateAverage } from "./mockData/generators";
+import { buildKpiResponse, buildAverageKpiResponse, generateTimeseries, aggregate, aggregateAverage, buildBreakdown } from "./mockData/generators";
+import { sumSeries } from "./yoy";
 import { getNdiTimeseries, getNdiCurrent, getNdiBreakdown, hasNdiData, getNdiDataSourceLabel } from "../services/ndi-data.service";
 
 function addYears(dateStr: string, years: number): string {
@@ -198,7 +199,15 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       "Övrigt",
     ];
     const dims = filters?.channel && filters.channel.length > 0 ? breakdown.filter((c) => filters.channel?.includes(c)) : breakdown;
-    return buildAverageKpiResponse("mau", series, prevAgg, dims, ["Källa: Mockdata (MAU, medel per period)"]); 
+    
+    // Generate previous breakdown data for comparison
+    let previousBreakdown;
+    if (prevRange && dims.length > 0) {
+      const prevTotal = prevAgg ? sumSeries(prevAgg) : 0;
+      previousBreakdown = buildBreakdown(dims, prevTotal);
+    }
+    
+    return buildAverageKpiResponse("mau", series, prevAgg, dims, ["Källa: Mockdata (MAU, medel per period)"], "mock", previousBreakdown); 
   }
 
   if (metric === "pageviews") {
@@ -220,8 +229,17 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       "Övrigt",
     ];
     const dims = filters?.channel && filters.channel.length > 0 ? breakdown.filter((c) => filters.channel?.includes(c)) : breakdown;
-    return buildKpiResponse("pageviews", series, prevAgg, dims, ["Källa: Mockdata (Sidvisningar)"]);
+    
+    // Generate previous breakdown data for comparison
+    let previousBreakdown;
+    if (prevRange && dims.length > 0) {
+      const prevTotal = prevAgg ? sumSeries(prevAgg) : 0;
+      previousBreakdown = buildBreakdown(dims, prevTotal);
+    }
+    
+    return buildKpiResponse("pageviews", series, prevAgg, dims, ["Källa: Mockdata (Sidvisningar)"], "mock", previousBreakdown);
   }
+
 
   if (metric === "tasks") {
     const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 750, noise: 0.15, seedKey: "tasks" }), scale);

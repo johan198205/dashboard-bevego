@@ -7,7 +7,6 @@ import { KpiCards } from './KpiCards';
 import { Trends } from './Trends';
 import { Distributions } from './Distributions';
 import { UsageHeatmap } from './UsageHeatmap';
-import { TopPages } from './TopPages';
 import { GeoTopCities } from './GeoTopCities';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -241,9 +240,8 @@ export function OverviewPageClient({ initialApiUrl, searchParams, initialData, i
       {/* Usage Heatmap */}
       <UsageHeatmap data={data.weekdayHour} />
 
-      {/* Top Pages and Cities */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TopPages data={data.topPages} />
+      {/* Cities Table */}
+      <div className="grid grid-cols-1 gap-6">
         <GeoTopCities data={data.cities} />
       </div>
 

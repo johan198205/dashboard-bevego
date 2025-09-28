@@ -118,15 +118,36 @@ export function computeYoy(currentSeries: KpiPoint[], previousSeries: KpiPoint[]
   return { summary: computeDiff(currentTotal, previousTotal), pairs };
 }
 
-export function buildBreakdown(keys: string[], total: number): BreakdownRow[] {
+export function buildBreakdown(keys: string[], total: number, previousBreakdown?: BreakdownRow[]): BreakdownRow[] {
   const rows: BreakdownRow[] = [];
   let remaining = total;
   const parts = keys.length;
+  
+  // Create a map of previous values for comparison
+  const prevMap = new Map<string, number>();
+  if (previousBreakdown) {
+    previousBreakdown.forEach(row => {
+      prevMap.set(row.key, row.value);
+    });
+  }
+  
   for (let i = 0; i < parts; i++) {
     const isLast = i === parts - 1;
     const portion = isLast ? remaining : Math.round((total / parts) * (0.7 + Math.random() * 0.6));
     remaining -= portion;
-    rows.push({ key: keys[i], value: Math.max(0, portion), yoyPct: Math.round((Math.random() * 20 - 10) * 100) / 100 });
+    
+    // Calculate percentage change if we have previous data
+    let yoyPct: number | undefined;
+    const currentValue = Math.max(0, portion);
+    const prevValue = prevMap.get(keys[i]);
+    if (prevValue !== undefined && prevValue !== null && prevValue !== 0) {
+      yoyPct = ((currentValue - prevValue) / prevValue) * 100;
+    } else {
+      // Fallback to random value if no previous data
+      yoyPct = Math.round((Math.random() * 20 - 10) * 100) / 100;
+    }
+    
+    rows.push({ key: keys[i], value: currentValue, yoyPct });
   }
   // Stable sorting: primary by value desc, tiebreak by key asc (alphabetical)
   const sorted = rows.sort((a, b) => {
@@ -137,14 +158,14 @@ export function buildBreakdown(keys: string[], total: number): BreakdownRow[] {
   return sorted;
 }
 
-export function buildKpiResponse(metric: string, series: KpiPoint[], previous?: KpiPoint[], breakdownKeys?: string[], notes?: string[], source: "mock" | "ga4" = 'mock'): KpiResponse {
+export function buildKpiResponse(metric: string, series: KpiPoint[], previous?: KpiPoint[], breakdownKeys?: string[], notes?: string[], source: "mock" | "ga4" = 'mock', previousBreakdown?: BreakdownRow[]): KpiResponse {
   const currentAgg = sumSeries(series);
   let summary: Diff = { current: currentAgg, prev: 0, yoyPct: 0 };
   if (previous) {
     const prevAgg = sumSeries(previous);
     summary = computeDiff(currentAgg, prevAgg);
   }
-  const breakdown = breakdownKeys ? buildBreakdown(breakdownKeys, currentAgg) : undefined;
+  const breakdown = breakdownKeys ? buildBreakdown(breakdownKeys, currentAgg, previousBreakdown) : undefined;
   return {
     meta: { source, metric, dims: [] },
     summary,
@@ -156,14 +177,14 @@ export function buildKpiResponse(metric: string, series: KpiPoint[], previous?: 
 }
 
 // Special build function for average metrics (like avgEngagementTime)
-export function buildAverageKpiResponse(metric: string, series: KpiPoint[], previous?: KpiPoint[], breakdownKeys?: string[], notes?: string[], source: "mock" | "ga4" = 'mock'): KpiResponse {
+export function buildAverageKpiResponse(metric: string, series: KpiPoint[], previous?: KpiPoint[], breakdownKeys?: string[], notes?: string[], source: "mock" | "ga4" = 'mock', previousBreakdown?: BreakdownRow[]): KpiResponse {
   const currentAvg = series.length > 0 ? series.reduce((sum, p) => sum + p.value, 0) / series.length : 0;
   let summary: Diff = { current: currentAvg, prev: 0, yoyPct: 0 };
   if (previous && previous.length > 0) {
     const prevAvg = previous.reduce((sum, p) => sum + p.value, 0) / previous.length;
     summary = computeDiff(currentAvg, prevAvg);
   }
-  const breakdown = breakdownKeys ? buildBreakdown(breakdownKeys, currentAvg) : undefined;
+  const breakdown = breakdownKeys ? buildBreakdown(breakdownKeys, currentAvg, previousBreakdown) : undefined;
   return {
     meta: { source, metric, dims: [] },
     summary,

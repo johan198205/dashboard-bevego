@@ -17,9 +17,19 @@ import InfoTooltip from "@/components/InfoTooltip";
 export default function ChannelTable({ metric, range }: { metric: Params["metric"]; range: Params["range"] }) {
   const [data, setData] = useState<KpiResponse | null>(null);
   const { state } = useFilters();
+  
+  // Get comparison column header based on current comparison mode
+  const getComparisonHeader = () => {
+    switch (state.range.comparisonMode) {
+      case 'yoy': return 'YoY';
+      case 'prev': return 'Föreg. period';
+      case 'none': return 'Jämförelse';
+      default: return 'Jämförelse';
+    }
+  };
   useEffect(() => {
-    getKpi({ metric, range, filters: { audience: state.audience, device: state.device, channel: state.channel } }).then(setData);
-  }, [metric, range.start, range.end, range.compareYoy, range.grain, state.audience.join(","), state.device.join(","), state.channel.join(",")]);
+    getKpi({ metric, range: { ...range, comparisonMode: state.range.comparisonMode }, filters: { audience: state.audience, device: state.device, channel: state.channel } }).then(setData);
+  }, [metric, range.start, range.end, range.grain, state.range.comparisonMode, state.audience.join(","), state.device.join(","), state.channel.join(",")]);
   const rows = data?.breakdown || [];
 
   return (
@@ -48,7 +58,7 @@ export default function ChannelTable({ metric, range }: { metric: Params["metric
                 <TableHead>Kanal</TableHead>
                 <TableHead className="text-right">Antal</TableHead>
                 <TableHead className="text-right">
-                  {range.comparisonMode === 'prev' ? 'Föreg. period' : 'YoY'}
+                  {getComparisonHeader()}
                 </TableHead>
               </TableRow>
             </TableHeader>

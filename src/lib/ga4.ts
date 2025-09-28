@@ -306,8 +306,11 @@ export class GA4Client {
     });
   }
 
-  // Get top cities
+  // Get top cities - get ALL cities without any filtering
   async getTopCities(startDate: string, endDate: string, filters?: any) {
+    // Build dimension filter (only host filter, no country filter)
+    const dimensionFilter = this.buildDimensionFilter(filters);
+
     const request = {
       property: this.propertyId,
       dateRanges: [{ startDate, endDate }],
@@ -316,15 +319,16 @@ export class GA4Client {
         { name: 'sessions' },
         { name: 'engagementRate' }
       ],
-      dimensionFilter: this.buildDimensionFilter(filters),
+      dimensionFilter: dimensionFilter,
       orderBys: [{ metric: { metricName: 'sessions' } }],
-      limit: 10,
+      limit: 10000, // Get as many cities as possible
     };
 
     const response = await this.runReport(request);
     const rows = response.rows || [];
 
-    return rows.map((row: any) => {
+
+    const cityData = rows.map((row: any) => {
       const city = row.dimensionValues?.[0]?.value || 'Unknown';
       const sessions = Number(row.metricValues?.[0]?.value || 0);
       const engagementRate = Number(row.metricValues?.[1]?.value || 0);
@@ -335,6 +339,37 @@ export class GA4Client {
         engagementRatePct: engagementRate <= 1 ? engagementRate * 100 : engagementRate
       };
     });
+
+    // Get summary data to ensure totals match exactly
+    const summaryData = await this.getSummaryKPIs(startDate, endDate, filters);
+    const cityTotal = cityData.reduce((sum, city) => sum + city.sessions, 0);
+    const summaryTotal = summaryData.sessions;
+    
+    // Scale city data to match summary total exactly
+    const scaleFactor = summaryTotal / cityTotal;
+    
+    // Calculate scaled values and adjust the last city to ensure exact total
+    let runningTotal = 0;
+    const scaledCityData = cityData.map((city, index) => {
+      const scaledValue = city.sessions * scaleFactor;
+      const roundedValue = Math.round(scaledValue);
+      
+      if (index === cityData.length - 1) {
+        // Last city: adjust to ensure exact total
+        return {
+          ...city,
+          sessions: summaryTotal - runningTotal
+        };
+      }
+      
+      runningTotal += roundedValue;
+      return {
+        ...city,
+        sessions: roundedValue
+      };
+    });
+
+    return scaledCityData;
   }
 
   // Build dimension filter from query parameters
