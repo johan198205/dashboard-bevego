@@ -139,7 +139,7 @@ export default function CwvTrends({ data, className }: CwvTrendsProps) {
 
   return (
     <div className={`card ${className}`}>
-      <h3 className="title mb-4">Trender senaste 90 dagar</h3>
+      <h3 className="title mb-4">Trender senaste 40 veckor</h3>
       <div className="-ml-4 -mr-5">
         <Chart
           options={options}

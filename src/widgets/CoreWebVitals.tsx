@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useFilters } from '@/components/GlobalFilters';
-import { getCwvSummary, getCwvTrends, getCwvTable } from '@/lib/mockData/cwv';
+import { getCruxSummary, getCruxTrends, getCruxTable } from '@/services/crux-data.service';
 import { CwvSummary, CwvTrendPoint, CwvUrlGroupRow } from '@/lib/types';
 import CwvCard from './CwvCard';
 import CwvTrends from './CwvTrends';
 import CwvTable from './CwvTable';
+import PrestandaFilters from '@/components/PrestandaFilters';
 
 export default function CoreWebVitals() {
   const { state } = useFilters();
@@ -13,17 +14,20 @@ export default function CoreWebVitals() {
   const [trends, setTrends] = useState<CwvTrendPoint[]>([]);
   const [tableData, setTableData] = useState<CwvUrlGroupRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Determine device type for display
   const getDeviceLabel = () => {
-    if (state.device.includes('Desktop') && !state.device.includes('Mobil')) {
+    if (state.device.includes('Desktop') && !state.device.includes('Mobil') && !state.device.includes('Alla')) {
       return 'Desktop p75';
-    } else if (state.device.includes('Mobil') && !state.device.includes('Desktop')) {
+    } else if (state.device.includes('Mobil') && !state.device.includes('Desktop') && !state.device.includes('Alla')) {
       return 'Mobil p75';
+    } else if (state.device.includes('Surfplatta') && !state.device.includes('Desktop') && !state.device.includes('Mobil') && !state.device.includes('Alla')) {
+      return 'Surfplatta p75';
     } else if (state.device.length === 0 || state.device.includes('Alla')) {
-      return 'Mobil p75'; // Default to mobile
+      return 'Kombinerat p75'; // Combined view when "Alla" or no device selected
     } else {
-      return 'Kombinerat p75'; // When both are selected
+      return 'Kombinerat p75'; // When multiple devices are selected
     }
   };
 
@@ -32,18 +36,19 @@ export default function CoreWebVitals() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
+      setError(null);
       try {
         const [summaryData, trendsData, tableDataResult] = await Promise.all([
-          getCwvSummary(state.range.start, state.range.end, state.device),
-          getCwvTrends(state.range.start, state.range.end, state.device),
-          getCwvTable(state.range.start, state.range.end, state.device)
+          getCruxSummary(state.range, state.device),
+          getCruxTrends(state.range, state.device),
+          getCruxTable(state.range, state.device)
         ]);
-        
         setSummary(summaryData);
         setTrends(trendsData);
         setTableData(tableDataResult);
       } catch (error) {
         console.error('Error loading Core Web Vitals data:', error);
+        setError(error instanceof Error ? error.message : 'Failed to load data');
       } finally {
         setLoading(false);
       }
@@ -58,8 +63,8 @@ export default function CoreWebVitals() {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
           Core Web Vitals (CrUX)
         </h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
-          {[...Array(5)].map((_, i) => (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
             <div key={i} className="card animate-pulse">
               <div className="h-4 bg-gray-200 rounded mb-2"></div>
               <div className="h-8 bg-gray-200 rounded mb-2"></div>
@@ -71,14 +76,24 @@ export default function CoreWebVitals() {
     );
   }
 
-  if (!summary) {
+  if (error || !summary) {
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
           Core Web Vitals (CrUX)
         </h2>
         <div className="card text-center py-8">
-          <p className="text-gray-500">Kunde inte ladda Core Web Vitals data</p>
+          <p className="text-gray-500">
+            {error === 'No field data available' 
+              ? 'No field data available for this origin in CrUX database'
+              : error || 'Kunde inte ladda Core Web Vitals data'
+            }
+          </p>
+          {error === 'No field data available' && (
+            <p className="text-sm text-gray-400 mt-2">
+              This may be because the site is new or has insufficient traffic for CrUX measurement.
+            </p>
+          )}
         </div>
       </div>
     );
@@ -86,16 +101,26 @@ export default function CoreWebVitals() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-        Core Web Vitals (CrUX)
-      </h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Core Web Vitals (CrUX)
+        </h2>
+        {summary?.period && (
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Data från: {summary.period}
+          </div>
+        )}
+      </div>
+      
+      {/* Prestanda-specific filters */}
+      <PrestandaFilters />
       
       {/* Scorecards */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Översikt (scorecards)
         </h3>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           <CwvCard
             title={`LCP (${deviceLabel})`}
             value={`${summary.lcp.p75} ms`}
@@ -116,6 +141,13 @@ export default function CoreWebVitals() {
             target="< 0,1"
             status={summary.cls.status}
             description="Cumulative Layout Shift"
+          />
+          <CwvCard
+            title={`TTFB (${deviceLabel})`}
+            value={`${summary.ttfb.p75} ms`}
+            target="< 800ms"
+            status={summary.ttfb.status}
+            description="Time to First Byte"
           />
           <CwvCard
             title="Andel passerade sidor"

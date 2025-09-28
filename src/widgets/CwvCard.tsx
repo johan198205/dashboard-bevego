@@ -61,11 +61,11 @@ export default function CwvCard({ title, value, target, status, description, Ico
         variant={getStatusVariant(status)}
         source="Mock"
       />
-      <div className="text-xs text-dark-6 dark:text-dark-4">
+      <div className="text-xs text-black dark:text-white">
         Mål: {target}
       </div>
       {description && (
-        <div className="text-xs text-dark-6 dark:text-dark-4">
+        <div className="text-xs text-black dark:text-white">
           {description}
         </div>
       )}

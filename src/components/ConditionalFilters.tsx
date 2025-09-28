@@ -6,8 +6,8 @@ import GlobalFilters from "./GlobalFilters";
 export function ConditionalFilters() {
   const pathname = usePathname();
   
-  // Don't show global filters on NDI pages
-  if (pathname.startsWith('/ndi')) {
+  // Don't show global filters on NDI pages or Prestanda page
+  if (pathname.startsWith('/ndi') || pathname.startsWith('/prestanda')) {
     return null;
   }
   

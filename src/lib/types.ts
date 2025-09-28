@@ -58,6 +58,11 @@ export type CwvSummary = {
     status: CwvStatus;
     target: number; // 0.1
   };
+  ttfb: {
+    p75: number; // in ms
+    status: CwvStatus;
+    target: number; // 800ms
+  };
   passedPages: {
     count: number;
     percentage: number;
@@ -65,7 +70,8 @@ export type CwvSummary = {
   totalStatus: {
     percentage: number; // % that pass all three metrics
   };
-  source: 'Mock' | 'GA4 API' | 'BigQuery';
+  source: 'Mock' | 'GA4 API' | 'BigQuery' | 'CrUX API';
+  period?: string; // Actual data collection period from CrUX
 };
 
 export type CwvTrendPoint = {
