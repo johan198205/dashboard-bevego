@@ -52,7 +52,22 @@ export async function GET(req: NextRequest) {
       }
       const client = new BetaAnalyticsDataClient(clientOptions);
       const run = async (range: {start:string; end:string}) => {
-        const [resp] = await client.runReport({
+        // Get total users for the entire period (same as GA4 Dashboard)
+        const [totalResp] = await client.runReport({
+          property: `properties/${process.env.GA4_PROPERTY_ID}`,
+          dateRanges: [{ startDate: range.start, endDate: range.end }],
+          metrics: [{ name: 'totalUsers' }],
+          dimensionFilter: {
+            filter: {
+              fieldName: 'hostName',
+              stringFilter: { matchType: 'EXACT', value: 'mitt.riksbyggen.se' }
+            }
+          },
+        });
+        const total = Number(totalResp?.rows?.[0]?.metricValues?.[0]?.value || 0);
+        
+        // Also get daily series for timeseries display
+        const [seriesResp] = await client.runReport({
           property: `properties/${process.env.GA4_PROPERTY_ID}`,
           dateRanges: [{ startDate: range.start, endDate: range.end }],
           dimensions: [{ name: 'date' }],
@@ -65,34 +80,32 @@ export async function GET(req: NextRequest) {
           },
           orderBys: [{ dimension: { dimensionName: 'date' } }],
         });
-        const rows = resp.rows || [];
-        return rows.map((r: any) => ({
+        const series = (seriesResp.rows || []).map((r: any) => ({
           date: `${r.dimensionValues?.[0]?.value?.slice(0,4)}-${r.dimensionValues?.[0]?.value?.slice(4,6)}-${r.dimensionValues?.[0]?.value?.slice(6,8)}`,
           value: Number(r.metricValues?.[0]?.value || 0),
         }));
+        
+        return { total, series };
       };
 
-      // Fetch daily series
-      const daySeries = await run({ start, end });
-      const dayCompare = prevRange ? await run(prevRange) : undefined;
+      // Fetch data for current and comparison periods
+      const currentData = await run({ start, end });
+      const compareData = prevRange ? await run(prevRange) : undefined;
 
-      // Respect requested grain by aggregating with average semantics
-      const series = aggregateAverage(daySeries as any, (grain as any) || 'day');
-      const compare = dayCompare ? aggregateAverage(dayCompare as any, (grain as any) || 'day') : undefined;
-
-      // Average value over the (possibly aggregated) series for summary
-      const avg = (arr: {value:number}[] | undefined) => (arr && arr.length)
-        ? arr.reduce((s,p)=>s+p.value,0) / arr.length
-        : 0;
-      const current = avg(series as any);
-      const prev = avg(compare as any);
+      // Use total users directly from GA4 (same as GA4 Dashboard)
+      const current = currentData.total;
+      const prev = compareData?.total || 0;
+      
+      // Aggregate daily series for timeseries display
+      const series = aggregateAverage(currentData.series as any, (grain as any) || 'day');
+      const compare = compareData ? aggregateAverage(compareData.series as any, (grain as any) || 'day') : undefined;
       const yoyPct = prev ? ((current - prev) / Math.abs(prev)) * 100 : 0;
       return Response.json({
         meta: { source: 'ga4', metric: 'mau', dims: [] },
         summary: { current, prev, yoyPct },
         timeseries: series,
         compareTimeseries: compare,
-        notes: ["Källa: GA4 API (medel per period)"],
+        notes: ["Källa: GA4 API (samma som GA4 Dashboard)"],
       });
     } catch (err) {
       console.error('GA4 MAU API error (no fallback):', err);

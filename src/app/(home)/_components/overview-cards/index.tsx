@@ -106,11 +106,7 @@ export function OverviewCardsGroup() {
         };
         if (mauRes) {
           const mauSource = extractSource(mauRes.notes);
-          if (mauSource.toLowerCase().includes("ga4")) {
-            setMauSummary({ value: mauRes.summary.current, growthRate: mauRes.summary.yoyPct, source: mauSource });
-          } else {
-            setMauSummary(null);
-          }
+          setMauSummary({ value: mauRes.summary.current, growthRate: mauRes.summary.yoyPct, source: mauSource });
         } else {
           setMauSummary(null);
         }
@@ -290,7 +286,7 @@ export function OverviewCardsGroup() {
         appearance="analytics"
         comparisonLabel={getComparisonLabel("mau")}
         metricId="mau"
-        onClick={() => setDrawer({ metricId: "mau", title: "Användare (MAU)" })}
+        onClick={() => setDrawer({ metricId: "mau", title: "Total users" })}
         getSeries={providers.mau}
         source={mauSummary?.source}
       />

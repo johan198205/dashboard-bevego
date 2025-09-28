@@ -53,7 +53,7 @@ function detectAnomalies(series: TimePoint[]): Anomaly[] {
 function generateInsights(metricId: string, series: TimePoint[], anomalies: Anomaly[], filters: any): Insight {
   // TODO: Replace with real OpenAI call using same input/output shape
   const nameMap: Record<string, string> = {
-    mau: "Användare (MAU)",
+    mau: "Total users",
     pageviews: "Sidvisningar",
     ndi: "Kundnöjdhet (NDI)",
     tasks: "Tasks",

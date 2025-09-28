@@ -61,7 +61,7 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
   const [data, setData] = useState<KpiResponse | null>(null);
   const { state } = useFilters();
   const [open, setOpen] = useState(false);
-  const { data: kpiSummary, loading, source } = useKpi({ metric });
+  const { data: kpiSummary, loading, source } = useKpi({ metric, ttlMs: 1000 }); // 1 second cache for testing
   
   const fetchKpi = async (args: { metric: Props["metric"]; start: string; end: string; grain: any; comparisonMode?: any; filters?: any }): Promise<KpiResponse> => {
     const qs = new URLSearchParams({

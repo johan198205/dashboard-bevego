@@ -40,7 +40,7 @@ export default function ClientHome() {
 
       {/* Other KPI Cards Section - 4 larger cards in bottom row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <TotalDiffCard title="Användare (MAU)" metric="mau" range={range} />
+        <TotalDiffCard title="Total users" metric="mau" range={range} />
         <TotalDiffCard title={getCurrentQuarterLabel()} metric="ndi" range={range} />
         <TotalDiffCard title="Användning — Sidvisningar" metric="pageviews" range={range} />
         {clarityScore && (

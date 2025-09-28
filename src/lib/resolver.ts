@@ -171,7 +171,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         const previousDaySeries = prevRange ? await queryGa4(prevRange) : undefined;
         const series = aggregateAverage(currentDaySeries, grain);
         const prevAgg = previousDaySeries ? aggregateAverage(previousDaySeries, grain) : undefined;
-        return buildAverageKpiResponse("mau", series, prevAgg, [], ["Källa: GA4 API (medel per period)"], "ga4");
+        return buildKpiResponse("mau", series, prevAgg, [], ["Källa: GA4 API (total användare för perioden)"], "ga4");
       }
     } catch (err) {
       // Fall back to mock if GA4 fails for any reason
@@ -207,7 +207,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       previousBreakdown = buildBreakdown(dims, prevTotal);
     }
     
-    return buildAverageKpiResponse("mau", series, prevAgg, dims, ["Källa: Mockdata (MAU, medel per period)"], "mock", previousBreakdown); 
+    return buildKpiResponse("mau", series, prevAgg, dims, ["Källa: Mockdata (Total Users, summa per period)"], "mock", previousBreakdown); 
   }
 
   if (metric === "pageviews") {
