@@ -211,6 +211,129 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
   }
 
   if (metric === "pageviews") {
+    const propertyId = process.env.GA4_PROPERTY_ID;
+    
+    function buildGa4FilterExpression(host: string, f?: Filters): any {
+      const andExpressions: any[] = [
+        {
+          filter: {
+            fieldName: "hostName",
+            stringFilter: { matchType: "EXACT", value: host },
+          },
+        },
+      ];
+      if (f?.device && f.device.length > 0) {
+        const deviceMap: Record<string, string> = { Desktop: "desktop", Mobil: "mobile", Surfplatta: "tablet" };
+        const deviceExpr = {
+          orGroup: {
+            expressions: f.device
+              .map((d) => deviceMap[d] || d)
+              .map((val) => ({
+                filter: {
+                  fieldName: "deviceCategory",
+                  stringFilter: { matchType: "EXACT", value: val },
+                },
+              })),
+          },
+        };
+        andExpressions.push(deviceExpr);
+      }
+      if (f?.channel && f.channel.length > 0) {
+        const channelMap: Record<string, string> = {
+          "Direkt": "Direct",
+          "Organiskt": "Organic Search",
+          "Kampanj": "Paid Search",
+          "E-post": "Email",
+        };
+        const channelExpr = {
+          orGroup: {
+            expressions: f.channel
+              .map((c) => channelMap[c] || c)
+              .map((val) => ({
+                filter: {
+                  fieldName: "sessionDefaultChannelGroup",
+                  stringFilter: { matchType: "EXACT", value: val },
+                },
+              })),
+          },
+        };
+        andExpressions.push(channelExpr);
+      }
+      const expr = { andGroup: { expressions: andExpressions } } as any;
+      if (debugGa4) {
+        // eslint-disable-next-line no-console
+        console.debug('[GA4] filter', JSON.stringify(expr));
+      }
+      return expr;
+    }
+    
+    async function queryGa4Pageviews(rangeInput: { start: string; end: string }) {
+      const isServer = typeof window === "undefined";
+      if (!isServer) throw new Error("GA4 client can only run on server");
+      
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { BetaAnalyticsDataClient } = (eval('require'))("@google-analytics/data");
+      const client = new BetaAnalyticsDataClient();
+      const extraDims: any[] = [];
+      if (filters?.device?.length) extraDims.push({ name: "deviceCategory" });
+      if (filters?.channel?.length) extraDims.push({ name: "sessionDefaultChannelGroup" });
+      const [resp] = await client.runReport({
+        property: `properties/${propertyId}`,
+        dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
+        dimensions: [{ name: "date" }, ...extraDims],
+        metrics: [{ name: "screenPageViews" }],
+        dimensionFilter: buildGa4FilterExpression("mitt.riksbyggen.se", filters),
+        orderBys: [{ dimension: { dimensionName: "date" } }],
+      });
+      if (debugGa4) {
+        // eslint-disable-next-line no-console
+        console.debug('[GA4] Pageviews rows', resp.rows?.length || 0);
+      }
+      const rows = resp.rows || [];
+      const series = rows.map((r: any) => ({
+        date: `${r.dimensionValues?.[0]?.value?.slice(0,4)}-${r.dimensionValues?.[0]?.value?.slice(4,6)}-${r.dimensionValues?.[0]?.value?.slice(6,8)}`,
+        value: Number(r.metricValues?.[0]?.value || 0),
+      }));
+      return series as { date: string; value: number }[];
+    }
+
+    try {
+      const isServer = typeof window === "undefined";
+      if (propertyId && isServer) {
+        const currentDaySeries = await queryGa4Pageviews({ start: range.start, end: range.end });
+        const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+        const previousDaySeries = prevRange ? await queryGa4Pageviews(prevRange) : undefined;
+        const series = aggregate(currentDaySeries, grain);
+        const prevAgg = previousDaySeries ? aggregate(previousDaySeries, grain) : undefined;
+        const breakdown = [
+          "Direkt",
+          "Organiskt",
+          "Kampanj",
+          "E-post",
+          "Referral",
+          "Social",
+          "Betald sök",
+          "Display",
+          "Video",
+          "Övrigt",
+        ];
+        const dims = filters?.channel && filters.channel.length > 0 ? breakdown.filter((c) => filters.channel?.includes(c)) : breakdown;
+        
+        // Generate previous breakdown data for comparison
+        let previousBreakdown;
+        if (prevRange && dims.length > 0) {
+          const prevTotal = prevAgg ? sumSeries(prevAgg) : 0;
+          previousBreakdown = buildBreakdown(dims, prevTotal);
+        }
+        
+        return buildKpiResponse("pageviews", series, prevAgg, dims, ["Källa: GA4 API"], "ga4", previousBreakdown);
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("GA4 Pageviews query failed, falling back to mock:", err);
+    }
+
+    // Mock fallback
     const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 5400, noise: 0.12, seedKey: "pageviews" }), scale);
     const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
     const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 5000, noise: 0.12, seedKey: "pageviews_prev" }), scale) : undefined;
@@ -237,7 +360,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       previousBreakdown = buildBreakdown(dims, prevTotal);
     }
     
-    return buildKpiResponse("pageviews", series, prevAgg, dims, ["Källa: Mockdata (Sidvisningar)"], "mock", previousBreakdown);
+    return buildKpiResponse("pageviews", series, prevAgg, dims, ["Källa: Mockdata (Sidvisningar - GA4 fel)"], "mock", previousBreakdown);
   }
 
 
@@ -398,6 +521,60 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
 
   if (metric === "sessions") {
     const propertyId = process.env.GA4_PROPERTY_ID;
+
+    function buildGa4FilterExpression(host: string, f?: Filters): any {
+      const andExpressions: any[] = [
+        {
+          filter: {
+            fieldName: "hostName",
+            stringFilter: { matchType: "EXACT", value: host },
+          },
+        },
+      ];
+      if (f?.device && f.device.length > 0) {
+        const deviceMap: Record<string, string> = { Desktop: "desktop", Mobil: "mobile", Surfplatta: "tablet" };
+        const deviceExpr = {
+          orGroup: {
+            expressions: f.device
+              .map((d) => deviceMap[d] || d)
+              .map((val) => ({
+                filter: {
+                  fieldName: "deviceCategory",
+                  stringFilter: { matchType: "EXACT", value: val },
+                },
+              })),
+          },
+        };
+        andExpressions.push(deviceExpr);
+      }
+      if (f?.channel && f.channel.length > 0) {
+        const channelExpr = {
+          orGroup: {
+            expressions: f.channel.map((val) => ({
+              filter: {
+                fieldName: "sessionDefaultChannelGroup",
+                stringFilter: { matchType: "EXACT", value: val },
+              },
+            })),
+          },
+        };
+        andExpressions.push(channelExpr);
+      }
+      if (f?.audience && f.audience.length > 0) {
+        const audienceExpr = {
+          orGroup: {
+            expressions: f.audience.map((val) => ({
+              filter: {
+                fieldName: "userType",
+                stringFilter: { matchType: "EXACT", value: val === "Ny användare" ? "new" : "returning" },
+              },
+            })),
+          },
+        };
+        andExpressions.push(audienceExpr);
+      }
+      return andExpressions.length === 1 ? andExpressions[0] : { andGroup: { expressions: andExpressions } };
+    }
     
     async function queryGa4Sessions(rangeInput: { start: string; end: string }) {
       const isServer = typeof window === "undefined";
@@ -456,6 +633,60 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
 
   if (metric === "engagedSessions") {
     const propertyId = process.env.GA4_PROPERTY_ID;
+
+    function buildGa4FilterExpression(host: string, f?: Filters): any {
+      const andExpressions: any[] = [
+        {
+          filter: {
+            fieldName: "hostName",
+            stringFilter: { matchType: "EXACT", value: host },
+          },
+        },
+      ];
+      if (f?.device && f.device.length > 0) {
+        const deviceMap: Record<string, string> = { Desktop: "desktop", Mobil: "mobile", Surfplatta: "tablet" };
+        const deviceExpr = {
+          orGroup: {
+            expressions: f.device
+              .map((d) => deviceMap[d] || d)
+              .map((val) => ({
+                filter: {
+                  fieldName: "deviceCategory",
+                  stringFilter: { matchType: "EXACT", value: val },
+                },
+              })),
+          },
+        };
+        andExpressions.push(deviceExpr);
+      }
+      if (f?.channel && f.channel.length > 0) {
+        const channelExpr = {
+          orGroup: {
+            expressions: f.channel.map((val) => ({
+              filter: {
+                fieldName: "sessionDefaultChannelGroup",
+                stringFilter: { matchType: "EXACT", value: val },
+              },
+            })),
+          },
+        };
+        andExpressions.push(channelExpr);
+      }
+      if (f?.audience && f.audience.length > 0) {
+        const audienceExpr = {
+          orGroup: {
+            expressions: f.audience.map((val) => ({
+              filter: {
+                fieldName: "userType",
+                stringFilter: { matchType: "EXACT", value: val === "Ny användare" ? "new" : "returning" },
+              },
+            })),
+          },
+        };
+        andExpressions.push(audienceExpr);
+      }
+      return andExpressions.length === 1 ? andExpressions[0] : { andGroup: { expressions: andExpressions } };
+    }
     
     async function queryGa4EngagedSessions(rangeInput: { start: string; end: string }) {
       const isServer = typeof window === "undefined";
@@ -708,6 +939,60 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
 
   if (metric === "avgEngagementTime") {
     const propertyId = process.env.GA4_PROPERTY_ID;
+
+    function buildGa4FilterExpression(host: string, f?: Filters): any {
+      const andExpressions: any[] = [
+        {
+          filter: {
+            fieldName: "hostName",
+            stringFilter: { matchType: "EXACT", value: host },
+          },
+        },
+      ];
+      if (f?.device && f.device.length > 0) {
+        const deviceMap: Record<string, string> = { Desktop: "desktop", Mobil: "mobile", Surfplatta: "tablet" };
+        const deviceExpr = {
+          orGroup: {
+            expressions: f.device
+              .map((d) => deviceMap[d] || d)
+              .map((val) => ({
+                filter: {
+                  fieldName: "deviceCategory",
+                  stringFilter: { matchType: "EXACT", value: val },
+                },
+              })),
+          },
+        };
+        andExpressions.push(deviceExpr);
+      }
+      if (f?.channel && f.channel.length > 0) {
+        const channelExpr = {
+          orGroup: {
+            expressions: f.channel.map((val) => ({
+              filter: {
+                fieldName: "sessionDefaultChannelGroup",
+                stringFilter: { matchType: "EXACT", value: val },
+              },
+            })),
+          },
+        };
+        andExpressions.push(channelExpr);
+      }
+      if (f?.audience && f.audience.length > 0) {
+        const audienceExpr = {
+          orGroup: {
+            expressions: f.audience.map((val) => ({
+              filter: {
+                fieldName: "userType",
+                stringFilter: { matchType: "EXACT", value: val === "Ny användare" ? "new" : "returning" },
+              },
+            })),
+          },
+        };
+        andExpressions.push(audienceExpr);
+      }
+      return andExpressions.length === 1 ? andExpressions[0] : { andGroup: { expressions: andExpressions } };
+    }
     
     async function queryGa4AvgEngagementTime(rangeInput: { start: string; end: string }) {
       const isServer = typeof window === "undefined";

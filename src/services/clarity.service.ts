@@ -138,7 +138,6 @@ export class ClarityService {
   private generateMockUrls(params: ClarityParams): ClarityUrlRow[] {
     const mockUrls = [
       '/',
-      '/anvandare',
       '/anvandning',
       '/konverteringar',
       '/kundnojdhet',

@@ -78,7 +78,6 @@ export default function GlobalFilters() {
   const pathname = usePathname();
   const currentSearch = useSearchParams();
   const { state, setState } = useFilters();
-  const [isApplying, setIsApplying] = useState(false);
   // Preset reflects the actual selected date range; derive from state
   const [preset, setPreset] = useState<string>("");
   const toIso = (d: Date) => d.toISOString().slice(0, 10);
@@ -125,36 +124,6 @@ export default function GlobalFilters() {
     const end = addDays(nextQuarterStart, -1);
     return { start: toIso(start), end: toIso(end) };
   };
-  const applyToUrl = () => {
-    try {
-      const params = new URLSearchParams(currentSearch?.toString() || "");
-      params.set("start", state.range.start);
-      params.set("end", state.range.end);
-      // Map comparison mode directly to query param
-      const mode = state.range.comparisonMode || "yoy";
-      params.set("compare", mode);
-      // Include multi-select filters as comma-separated lists
-      if (state.device.length > 0) {
-        params.set('device', state.device.join(','));
-      } else {
-        params.delete('device');
-      }
-      if (state.channel.length > 0) {
-        params.set('channel', state.channel.join(','));
-      } else {
-        params.delete('channel');
-      }
-      if (state.audience.length > 0) {
-        params.set('audience', state.audience.join(','));
-      } else {
-        params.delete('audience');
-      }
-      setIsApplying(true);
-      router.push(`${pathname}?${params.toString()}`);
-    } catch (e) {
-      // no-op
-    }
-  };
 
   // Keep preset label in sync with the chosen date range
   useEffect(() => {
@@ -186,10 +155,35 @@ export default function GlobalFilters() {
     }
   }, [state.range.start, state.range.end]);
 
-  // Reset applying state when search params update (navigation finished)
+  // Auto-sync filter changes with URL (replaces manual apply button)
   useEffect(() => {
-    if (isApplying) setIsApplying(false);
-  }, [currentSearch, isApplying]);
+    const params = new URLSearchParams(currentSearch?.toString() || "");
+    params.set("start", state.range.start);
+    params.set("end", state.range.end);
+    const mode = state.range.comparisonMode || "yoy";
+    params.set("compare", mode);
+    
+    // Include multi-select filters as comma-separated lists
+    if (state.device.length > 0) {
+      params.set('device', state.device.join(','));
+    } else {
+      params.delete('device');
+    }
+    if (state.channel.length > 0) {
+      params.set('channel', state.channel.join(','));
+    } else {
+      params.delete('channel');
+    }
+    if (state.audience.length > 0) {
+      params.set('audience', state.audience.join(','));
+    } else {
+      params.delete('audience');
+    }
+    
+    const newUrl = `${pathname}?${params.toString()}`;
+    router.replace(newUrl);
+  }, [state.range.start, state.range.end, state.range.comparisonMode, state.device, state.channel, state.audience, currentSearch, pathname, router]);
+
   return (
     <div className="mb-4 flex flex-wrap items-center gap-3" suppressHydrationWarning>
       <div className="card filter-box">
@@ -299,15 +293,7 @@ export default function GlobalFilters() {
         onChange={(values) => setState((p) => ({ ...p, channel: values }))}
       />
 
-      {/* Apply button should come after channel section to include all filters */}
-      <button
-        className={`rounded bg-primary px-3 py-1 text-white ${isApplying ? 'opacity-70 cursor-not-allowed' : ''}`}
-        onClick={applyToUrl}
-        disabled={isApplying}
-        aria-busy={isApplying}
-      >
-        {isApplying ? 'Uppdaterar…' : 'Uppdatera'}
-      </button>
+      {/* Apply button removed - all dashboards now use auto-apply */}
 
       {/* Selected filter chips */}
       {(state.audience.length > 0 || state.device.length > 0 || state.channel.length > 0) && (

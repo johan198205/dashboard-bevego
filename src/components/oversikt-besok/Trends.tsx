@@ -111,9 +111,7 @@ export function Trends({ data, activeSeries }: Props) {
     const keys: Array<{ key: keyof typeof data[number]; enabled: boolean }> = [
       { key: 'sessions', enabled: activeSeries?.sessions !== false },
       { key: 'engagedSessions', enabled: activeSeries?.engagedSessions !== false },
-      { key: 'totalUsers', enabled: !!activeSeries?.totalUsers },
-      { key: 'returningUsers', enabled: !!activeSeries?.returningUsers },
-      { key: 'pageviews', enabled: !!activeSeries?.pageviews },
+      { key: 'engagementRatePct', enabled: !!activeSeries?.engagementRatePct },
     ];
     const anyEnabled = keys.some(k => k.enabled);
     const effectiveKeys = keys.filter(k => k.enabled);
@@ -127,7 +125,7 @@ export function Trends({ data, activeSeries }: Props) {
     );
   })();
   const maxPct = 100;
-  const maxTime = Math.max(...data.map(d => d.avgEngagementTimeSec || 0));
+  const maxTime = 100; // Fixed max for percentage values
 
   return (
     <AnalyticsBlock

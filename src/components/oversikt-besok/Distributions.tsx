@@ -141,7 +141,7 @@ export function Distributions({ title, data, type, totalSessions }: Props) {
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ name, percent }) => `${(percent * 100).toFixed(1)}%\n${name}`}
+              label={(props: any) => `${(props.percent * 100).toFixed(1)}%\n${props.name}`}
               outerRadius={120}
               innerRadius={60}
               fill="#8884d8"

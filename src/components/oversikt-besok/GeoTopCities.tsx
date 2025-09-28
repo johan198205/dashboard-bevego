@@ -141,14 +141,6 @@ export function GeoTopCities({ data }: Props) {
       <AnalyticsBlock
         title="Kanalgrupper"
         description="Alla städer med sessions, engagemang och jämförelse"
-        rightSlot={
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-500 dark:text-gray-400">
-              Jämför med: {compareMode === 'yoy' ? 'Föreg. år' : 'Föreg. period'}
-            </span>
-            {loadingPrev && <span className="text-blue-600">Laddar...</span>}
-          </div>
-        }
       >
       <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
         <div className="grid grid-cols-12 bg-gray-50 dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300">

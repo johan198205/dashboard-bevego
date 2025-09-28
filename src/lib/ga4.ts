@@ -342,7 +342,7 @@ export class GA4Client {
 
     // Get summary data to ensure totals match exactly
     const summaryData = await this.getSummaryKPIs(startDate, endDate, filters);
-    const cityTotal = cityData.reduce((sum, city) => sum + city.sessions, 0);
+    const cityTotal = cityData.reduce((sum: number, city: any) => sum + city.sessions, 0);
     const summaryTotal = summaryData.sessions;
     
     // Scale city data to match summary total exactly
@@ -350,7 +350,7 @@ export class GA4Client {
     
     // Calculate scaled values and adjust the last city to ensure exact total
     let runningTotal = 0;
-    const scaledCityData = cityData.map((city, index) => {
+    const scaledCityData = cityData.map((city: any, index: number) => {
       const scaledValue = city.sessions * scaleFactor;
       const roundedValue = Math.round(scaledValue);
       

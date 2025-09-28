@@ -90,8 +90,6 @@ export default async function OverviewPage({ searchParams }: Props) {
 
       <Suspense fallback={<OverviewPageSkeleton />}>
         <OverviewPageClient 
-          initialApiUrl={apiUrl}
-          searchParams={resolvedSearchParams}
           initialData={initialData}
           initialError={initialError}
         />

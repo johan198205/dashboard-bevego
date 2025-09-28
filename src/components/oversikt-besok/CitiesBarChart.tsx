@@ -60,7 +60,6 @@ export function CitiesBarChart({ data, title = "Top 5 Städer", height = 300 }: 
       },
       animations: {
         enabled: true,
-        easing: 'easeinout',
         speed: 800,
       },
     },

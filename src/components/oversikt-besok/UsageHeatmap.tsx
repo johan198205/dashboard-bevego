@@ -140,31 +140,6 @@ export function UsageHeatmap({ data }: Props) {
             </div>
           </div>
 
-          {/* Usage insights */}
-          <div className="bg-red-50 dark:bg-red-900/10 rounded-lg p-4 border border-red-100 dark:border-red-900/20">
-            <h4 className="text-sm font-semibold text-red-900 dark:text-red-100 mb-3 flex items-center gap-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              Användningsinsikter
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div className="space-y-2">
-                <p className="text-gray-700 dark:text-gray-300">
-                  <span className="font-medium text-red-700 dark:text-red-300">Mörkare röda färger</span> indikerar högre trafik
-                </p>
-                <p className="text-gray-700 dark:text-gray-300">
-                  <span className="font-medium text-red-700 dark:text-red-300">Hovra över celler</span> för detaljerad information
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-gray-700 dark:text-gray-300">
-                  <span className="font-medium text-red-700 dark:text-red-300">Veckodagar:</span> Sön = söndag, Mån = måndag, osv.
-                </p>
-                <p className="text-gray-700 dark:text-gray-300">
-                  <span className="font-medium text-red-700 dark:text-red-300">Timmar:</span> 0 = 00:00, 23 = 23:00
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
     </AnalyticsBlock>
   );

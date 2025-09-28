@@ -13,7 +13,6 @@ export const NAV_DATA = [
           { title: "GA4 Dashboard", url: "/oversikt/besok" },
         ],
       },
-      { title: "Användare", url: "/anvandare", icon: Icons.User, items: [] },
       { title: "Användning", url: "/anvandning", icon: Icons.Table, items: [] },
       // TODO: Konverteringar section - controlled by FEATURE_FLAGS.conversions
       ...(FEATURE_FLAGS.conversions ? [{ title: "Konverteringar", url: "/konverteringar", icon: Icons.PieChart, items: [] }] : []),
