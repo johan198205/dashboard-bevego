@@ -3,40 +3,21 @@ Minsta möjliga ändringar per iteration (PDD). Spec → Test → Kod. Håll pub
 
 Arkitektur (översikt)
 
-UI (Next.js + TypeScript): Toggle dataSource: 'ga4' | 'bq'. Widgetar läser samma schema.
-
-Server
-
-ga4Client.query(metric, dims, filters, dateRange)
-
-bqClient.query(sqlTemplate, params)
-
-resolver.getKpi(params, dataSource) → normaliserar till kontraktsschemat.
-
-Kontraktsschema
-
-{
-  date: string (YYYY-MM-DD),
-  channel_group: string,
-  sessions: number,
-  engaged_sessions: number,
-  pageviews: number,
-  users: number,
-  source_label: 'GA4 API' | 'BigQuery'
+UI (NextF
 }
 
 
-Käll-explainer
+Käll-explainerTOS
 
 GA4: “Inkluderar Consent Mode-modellering, Signals, spamfilter. Kan ändras av Google.”
 
 BQ: “Rådata. Ingen modellering. Sessioner/Users enligt våra SQL-regler (device-based).”
 
 Data & tidszon
-
+DeMTJVMENVäe
 Tidszon: Europe/Stockholm.
 
-GA4-läge: hämta sessions, engagedSessions, screenPageViews, totalUsers med dimensioner date, sessionDefaultChannelGroup.
+GA4-läge: hämta sessions, engagedSessions, screenPageViews, totalUsers med dimensioner date, sessionDefaultChannelGroup. Top pages data för Core Web Vitals analys. Kräver GA4_PROPERTY_ID env variabel.
 
 BQ-läge: vyer vw_sessions, vw_pageviews_users (TBD projektnamn). SQL räknar enligt given dedupe/engagement-logik.
 

@@ -1,18 +1,17 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useFilters } from '@/components/GlobalFilters';
-import { getCruxSummary, getCruxTrends, getCruxTable } from '@/services/crux-data.service';
-import { CwvSummary, CwvTrendPoint, CwvUrlGroupRow } from '@/lib/types';
+import { getCruxSummary, getCruxTrends } from '@/services/crux-data.service';
+import { CwvSummary, CwvTrendPoint } from '@/lib/types';
 import CwvCard from './CwvCard';
 import CwvTrends from './CwvTrends';
-import CwvTable from './CwvTable';
+import TopPagesTable from './TopPagesTable';
 import PrestandaFilters from '@/components/PrestandaFilters';
 
 export default function CoreWebVitals() {
   const { state } = useFilters();
   const [summary, setSummary] = useState<CwvSummary | null>(null);
   const [trends, setTrends] = useState<CwvTrendPoint[]>([]);
-  const [tableData, setTableData] = useState<CwvUrlGroupRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,14 +37,12 @@ export default function CoreWebVitals() {
       setLoading(true);
       setError(null);
       try {
-        const [summaryData, trendsData, tableDataResult] = await Promise.all([
+        const [summaryData, trendsData] = await Promise.all([
           getCruxSummary(state.range, state.device),
-          getCruxTrends(state.range, state.device),
-          getCruxTable(state.range, state.device)
+          getCruxTrends(state.range, state.device)
         ]);
         setSummary(summaryData);
         setTrends(trendsData);
-        setTableData(tableDataResult);
       } catch (error) {
         console.error('Error loading Core Web Vitals data:', error);
         setError(error instanceof Error ? error.message : 'Failed to load data');
@@ -169,8 +166,8 @@ export default function CoreWebVitals() {
       {/* Trends */}
       <CwvTrends data={trends} />
 
-      {/* Table */}
-      <CwvTable data={tableData} />
+      {/* Top Pages Table */}
+      <TopPagesTable device={state.device} />
     </div>
   );
 }

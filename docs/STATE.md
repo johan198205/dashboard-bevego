@@ -2,7 +2,7 @@ Status (initial)
 
 Stack: Next.js + TypeScript (OK). Tester: npm test (TBD konfiguration). Node LTS TBD.
 
-Datakällor: GA4 propertyId TBD. BigQuery project.dataset TBD; tabellprefix events_* antas. CrUX API key TBD.
+Datakällor: GA4 propertyId TBD. BigQuery project.dataset TBD; tabellprefix events_* antas. CrUX API key TBD. GA4_PROPERTY_ID env variabel för top pages data.
 
 Vyer: vw_sessions, vw_pageviews_users (att skapa).
 
