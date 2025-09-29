@@ -84,6 +84,41 @@ export default function TopPagesTable({ device, className }: TopPagesTableProps)
     return 'Pass';
   };
 
+  const calculateTotalScore = (lcpStatus: string, inpStatus: string, clsStatus: string, ttfbStatus: string) => {
+    // Score system: Pass = 3, Needs Improvement = 2, Fail = 1
+    const getScore = (status: string) => {
+      switch (status) {
+        case 'Pass': return 3;
+        case 'Needs Improvement': return 2;
+        case 'Fail': return 1;
+        default: return 0;
+      }
+    };
+
+    const lcpScore = getScore(lcpStatus);
+    const inpScore = getScore(inpStatus);
+    const clsScore = getScore(clsStatus);
+    const ttfbScore = getScore(ttfbStatus);
+
+    // Calculate weighted average (all metrics equally important)
+    const totalScore = (lcpScore + inpScore + clsScore + ttfbScore) / 4;
+    
+    // Convert to percentage (0-100)
+    return Math.round((totalScore / 3) * 100);
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'text-green-600 font-semibold';
+    if (score >= 60) return 'text-yellow-600 font-semibold';
+    return 'text-red-600 font-semibold';
+  };
+
+  const getScoreStatus = (score: number) => {
+    if (score >= 80) return 'Pass';
+    if (score >= 60) return 'Needs Improvement';
+    return 'Fail';
+  };
+
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat('sv-SE').format(num);
   };
@@ -128,6 +163,7 @@ export default function TopPagesTable({ device, className }: TopPagesTableProps)
               <th className="text-center py-3 px-4 font-medium text-gray-600 dark:text-gray-300">INP p75</th>
               <th className="text-center py-3 px-4 font-medium text-gray-600 dark:text-gray-300">CLS p75</th>
               <th className="text-center py-3 px-4 font-medium text-gray-600 dark:text-gray-300">TTFB p75</th>
+              <th className="text-center py-3 px-4 font-medium text-gray-600 dark:text-gray-300">Total Score</th>
               <th className="text-center py-3 px-4 font-medium text-gray-600 dark:text-gray-300">Status</th>
               <th className="text-center py-3 px-4 font-medium text-gray-600 dark:text-gray-300">Sessions</th>
               <th className="text-center py-3 px-4 font-medium text-gray-600 dark:text-gray-300">Senast testad</th>
@@ -180,15 +216,31 @@ export default function TopPagesTable({ device, className }: TopPagesTableProps)
                 </td>
                 <td className="text-center py-3 px-4">
                   {(() => {
-                    const overallStatus = getOverallStatus(
+                    const totalScore = calculateTotalScore(
                       page.cwvData.lcp.status,
                       page.cwvData.inp.status,
                       page.cwvData.cls.status,
                       page.cwvData.ttfb.status
                     );
                     return (
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(overallStatus)}`}>
-                        {getStatusText(overallStatus)}
+                      <span className={getScoreColor(totalScore)}>
+                        {totalScore}%
+                      </span>
+                    );
+                  })()}
+                </td>
+                <td className="text-center py-3 px-4">
+                  {(() => {
+                    const totalScore = calculateTotalScore(
+                      page.cwvData.lcp.status,
+                      page.cwvData.inp.status,
+                      page.cwvData.cls.status,
+                      page.cwvData.ttfb.status
+                    );
+                    const scoreStatus = getScoreStatus(totalScore);
+                    return (
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(scoreStatus)}`}>
+                        {getStatusText(scoreStatus)}
                       </span>
                     );
                   })()}
