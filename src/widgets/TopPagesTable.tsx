@@ -108,14 +108,14 @@ export default function TopPagesTable({ device, className }: TopPagesTableProps)
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 font-semibold';
-    if (score >= 60) return 'text-yellow-600 font-semibold';
+    if (score >= 75) return 'text-green-600 font-semibold';
+    if (score >= 50) return 'text-yellow-600 font-semibold';
     return 'text-red-600 font-semibold';
   };
 
   const getScoreStatus = (score: number) => {
-    if (score >= 80) return 'Pass';
-    if (score >= 60) return 'Needs Improvement';
+    if (score >= 75) return 'Pass';
+    if (score >= 50) return 'Needs Improvement';
     return 'Fail';
   };
 
