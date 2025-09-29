@@ -49,6 +49,19 @@ export default function TopPagesTable({ device, className }: TopPagesTableProps)
     }
   };
 
+  const getValueColor = (status: string) => {
+    switch (status) {
+      case 'Pass':
+        return 'text-green-600 font-semibold';
+      case 'Needs Improvement':
+        return 'text-yellow-600 font-semibold';
+      case 'Fail':
+        return 'text-red-600 font-semibold';
+      default:
+        return 'text-gray-500';
+    }
+  };
+
   const getStatusText = (status: string) => {
     switch (status) {
       case 'Pass':
@@ -60,6 +73,15 @@ export default function TopPagesTable({ device, className }: TopPagesTableProps)
       default:
         return 'Okänd';
     }
+  };
+
+  const getOverallStatus = (lcpStatus: string, inpStatus: string, clsStatus: string, ttfbStatus: string) => {
+    const statuses = [lcpStatus, inpStatus, clsStatus, ttfbStatus];
+    
+    // Priority: Fail > Needs Improvement > Pass
+    if (statuses.includes('Fail')) return 'Fail';
+    if (statuses.includes('Needs Improvement')) return 'Needs Improvement';
+    return 'Pass';
   };
 
   const formatNumber = (num: number) => {
@@ -105,6 +127,7 @@ export default function TopPagesTable({ device, className }: TopPagesTableProps)
               <th className="text-center py-3 px-4 font-medium text-gray-600 dark:text-gray-300">LCP p75</th>
               <th className="text-center py-3 px-4 font-medium text-gray-600 dark:text-gray-300">INP p75</th>
               <th className="text-center py-3 px-4 font-medium text-gray-600 dark:text-gray-300">CLS p75</th>
+              <th className="text-center py-3 px-4 font-medium text-gray-600 dark:text-gray-300">TTFB p75</th>
               <th className="text-center py-3 px-4 font-medium text-gray-600 dark:text-gray-300">Status</th>
               <th className="text-center py-3 px-4 font-medium text-gray-600 dark:text-gray-300">Sessions</th>
               <th className="text-center py-3 px-4 font-medium text-gray-600 dark:text-gray-300">Senast testad</th>
@@ -120,18 +143,55 @@ export default function TopPagesTable({ device, className }: TopPagesTableProps)
                   </div>
                 </td>
                 <td className="text-center py-3 px-4">
-                  {page.cwvData.lcp.p75 > 0 ? `${page.cwvData.lcp.p75} ms` : '-'}
+                  {page.cwvData.lcp.p75 > 0 ? (
+                    <span className={getValueColor(page.cwvData.lcp.status)}>
+                      {page.cwvData.lcp.p75} ms
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
                 </td>
                 <td className="text-center py-3 px-4">
-                  {page.cwvData.inp.p75 > 0 ? `${page.cwvData.inp.p75} ms` : '-'}
+                  {page.cwvData.inp.p75 > 0 ? (
+                    <span className={getValueColor(page.cwvData.inp.status)}>
+                      {page.cwvData.inp.p75} ms
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
                 </td>
                 <td className="text-center py-3 px-4">
-                  {page.cwvData.cls.p75 > 0 ? page.cwvData.cls.p75.toFixed(2) : '-'}
+                  {page.cwvData.cls.p75 > 0 ? (
+                    <span className={getValueColor(page.cwvData.cls.status)}>
+                      {page.cwvData.cls.p75.toFixed(2)}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
                 </td>
                 <td className="text-center py-3 px-4">
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(page.cwvData.lcp.status)}`}>
-                    {getStatusText(page.cwvData.lcp.status)}
-                  </span>
+                  {page.cwvData.ttfb.p75 > 0 ? (
+                    <span className={getValueColor(page.cwvData.ttfb.status)}>
+                      {page.cwvData.ttfb.p75} ms
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </td>
+                <td className="text-center py-3 px-4">
+                  {(() => {
+                    const overallStatus = getOverallStatus(
+                      page.cwvData.lcp.status,
+                      page.cwvData.inp.status,
+                      page.cwvData.cls.status,
+                      page.cwvData.ttfb.status
+                    );
+                    return (
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(overallStatus)}`}>
+                        {getStatusText(overallStatus)}
+                      </span>
+                    );
+                  })()}
                 </td>
                 <td className="text-center py-3 px-4">
                   {formatNumber(page.sessions)}
