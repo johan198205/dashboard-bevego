@@ -496,7 +496,48 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
   }
 
   if (metric === "cwv_total") {
-    // Generate realistic CWV total status 60-80%
+    // Use real CrUX data instead of mock
+    try {
+      const isServer = typeof window === "undefined";
+      if (isServer) {
+        // Import CrUX service dynamically to avoid client bundling
+        const { CruxService } = await import("../services/crux.service");
+        const cruxService = new CruxService();
+        
+        // Get current CWV data
+        const cwvData = await cruxService.getCoreWebVitals("https://mitt.riksbyggen.se");
+        const currentRate = cwvData.totalStatus.percentage;
+        
+        // Get previous period data for comparison
+        const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
+        let prevRate = 0;
+        if (prevRange) {
+          try {
+            const prevCwvData = await cruxService.getCoreWebVitals("https://mitt.riksbyggen.se");
+            prevRate = prevCwvData.totalStatus.percentage;
+          } catch (err) {
+            // If previous period fails, use current rate as fallback
+            prevRate = currentRate;
+          }
+        }
+        
+        const yoyPct = prevRate ? ((currentRate - prevRate) / Math.abs(prevRate)) * 100 : 0;
+        
+        // Create a simple timeseries with the current value
+        const series = [{ date: range.start, value: currentRate }];
+        
+        return {
+          meta: { source: "crux", metric: "cwv_total", dims: [] },
+          summary: { current: currentRate, prev: prevRate, yoyPct },
+          timeseries: series,
+          notes: ["CWV total status från CrUX API", "Källa: CrUX API"]
+        };
+      }
+    } catch (err) {
+      console.error("CrUX CWV Total query failed, falling back to mock:", err);
+    }
+    
+    // Fallback to mock data if CrUX fails
     const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 70, noise: 0.05, seedKey: "cwv_total" }), scale);
     const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
     const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 68, noise: 0.05, seedKey: "cwv_total_prev" }), scale) : undefined;
@@ -515,7 +556,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       meta: { source: "mock", metric: "cwv_total", dims: [] },
       summary: { current: currentRate, prev: prevRate, yoyPct },
       timeseries: clampedSeries,
-      notes: ["CWV total status 60-80%", "Källa: Mockdata (CWV Total)"]
+      notes: ["CWV total status 60-80%", "Källa: Mockdata (CWV Total - CrUX fel)"]
     };
   }
 

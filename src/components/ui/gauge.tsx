@@ -102,16 +102,11 @@ export function Gauge({
         </svg>
       </div>
       
-      {/* Value text - moved outside SVG container */}
+      {/* Value text - prefer provided label; otherwise show 1-decimal percent */}
       <div className="text-center mt-2">
         <div className="text-2xl font-bold text-gray-900 dark:text-white">
-          {Math.round(valuePct)}%
+          {label ? label : `${(Math.round(valuePct * 10) / 10).toFixed(1)}%`}
         </div>
-        {label && (
-          <div className="text-sm text-gray-600 dark:text-dark-5 mt-1">
-            {label}
-          </div>
-        )}
       </div>
     </div>
   );

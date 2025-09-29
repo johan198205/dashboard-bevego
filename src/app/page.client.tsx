@@ -16,11 +16,14 @@ import { ClarityScoreCard } from "./(home)/_components/overview-cards/clarity-sc
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
 import { useClarityData } from "@/hooks/useClarityData";
 import * as overviewIcons from "./(home)/_components/overview-cards/icons";
+import { useCwvData } from "@/hooks/useCwvData";
+import { CwvTotalStatusCard } from "@/components/shared/CwvTotalStatusCard";
 
 export default function ClientHome() {
   const { state } = useFilters();
   const range = state.range;
   const { clarityScore } = useClarityData();
+  const { summary: cwvSummary } = useCwvData();
   const [drawer, setDrawer] = useState<{ metricId: string; title: string } | null>(null);
   const getCurrentQuarterLabel = () => {
     // Compute quarter from the selected end date in the global filters
@@ -35,7 +38,20 @@ export default function ClientHome() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <GaugeCard title="Tasks" metric="tasks_rate" range={range} compact={true} />
         <GaugeCard title="Funktioner" metric="features_rate" range={range} compact={true} />
-        <GaugeCard title="CWV total status" metric="cwv_total" range={range} compact={true} />
+        {cwvSummary ? (
+          <CwvTotalStatusCard
+            label="CWV total status"
+            data={{
+              value: `${cwvSummary.totalStatus.percentage.toFixed(1)}%`,
+              percentage: cwvSummary.totalStatus.percentage,
+              status: cwvSummary.totalStatus.percentage >= 75 ? 'Pass' : 'Needs Improvement',
+              target: "> 75%",
+              description: "Klarar alla tre"
+            }}
+          />
+        ) : (
+          <GaugeCard title="CWV total status" metric="cwv_total" range={range} compact={true} />
+        )}
       </div>
 
       {/* Other KPI Cards Section - 4 larger cards in bottom row */}

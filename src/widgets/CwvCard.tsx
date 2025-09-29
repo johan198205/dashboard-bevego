@@ -53,30 +53,34 @@ function getStatusText(status: CwvStatus): string {
 
 export default function CwvCard({ title, value, target, status, description, Icon }: CwvCardProps) {
   return (
-    <div className="space-y-2">
-      <ScoreCard
-        label={title}
-        value={value}
-        Icon={Icon || PerformanceIcon}
-        variant={getStatusVariant(status)}
-        source="Mock"
-      />
-      <div className="text-xs text-black dark:text-white">
-        Mål: {target}
-      </div>
-      {description && (
-        <div className="text-xs text-black dark:text-white">
-          {description}
+    <div className="relative">
+      {/* Card */}
+      <div className="relative">
+        <ScoreCard
+          label={title}
+          value={value}
+          Icon={Icon || PerformanceIcon}
+          variant={getStatusVariant(status)}
+          source="Mock"
+          className="pb-16"
+        />
+        {/* Inline meta inside card - bottom-left */}
+        <div className="absolute left-6 bottom-4 text-xs text-black dark:text-white space-y-1 pointer-events-none">
+          <div>Mål: {target}</div>
+          {description && (
+            <div>{description}</div>
+          )}
         </div>
-      )}
-      <div className="flex items-center gap-2">
-        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-          status === 'Pass' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
-          status === 'Needs Improvement' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
-          'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-        }`}>
-          {getStatusText(status)}
-        </span>
+        {/* Status badge in bottom-right corner */}
+        <div className="absolute bottom-4 right-4 pointer-events-none">
+          <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+            status === 'Pass' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
+            status === 'Needs Improvement' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
+            'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+          }`}>
+            {getStatusText(status)}
+          </span>
+        </div>
       </div>
     </div>
   );

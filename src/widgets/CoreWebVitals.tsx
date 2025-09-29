@@ -5,6 +5,7 @@ import { getCruxSummary, getCruxTrends } from '@/services/crux-data.service';
 import { CwvSummary, CwvTrendPoint } from '@/lib/types';
 import CwvCard from './CwvCard';
 import CwvTrends from './CwvTrends';
+import { CwvTotalStatusCard } from '@/components/shared/CwvTotalStatusCard';
 import TopPagesTable from './TopPagesTable';
 import PrestandaFilters from '@/components/PrestandaFilters';
 
@@ -115,32 +116,47 @@ export default function CoreWebVitals() {
       {/* Scorecards */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Översikt (scorecards)
+          Översikt - Snitt över senaste 28 dagarna
         </h3>
+        {/* CWV total status highlighted on its own row (gauge), same size */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <CwvTotalStatusCard
+              label="CWV total status"
+              data={{
+                value: `${summary.totalStatus.percentage}%`,
+                percentage: summary.totalStatus.percentage,
+                status: summary.totalStatus.percentage >= 75 ? 'Pass' : 'Needs Improvement',
+                target: '> 75%',
+                description: 'Klarar alla tre'
+              }}
+            />
+          </div>
+        </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           <CwvCard
-            title={`LCP (${deviceLabel})`}
+            title={`LCP`}
             value={`${summary.lcp.p75} ms`}
             target="< 2,5s"
             status={summary.lcp.status}
             description="Largest Contentful Paint"
           />
           <CwvCard
-            title={`INP (${deviceLabel})`}
+            title={`INP`}
             value={`${summary.inp.p75} ms`}
             target="< 200ms"
             status={summary.inp.status}
             description="Interaction to Next Paint"
           />
           <CwvCard
-            title={`CLS (${deviceLabel})`}
+            title={`CLS`}
             value={summary.cls.p75.toString()}
             target="< 0,1"
             status={summary.cls.status}
             description="Cumulative Layout Shift"
           />
           <CwvCard
-            title={`TTFB (${deviceLabel})`}
+            title={`TTFB`}
             value={`${summary.ttfb.p75} ms`}
             target="< 800ms"
             status={summary.ttfb.status}
@@ -152,13 +168,6 @@ export default function CoreWebVitals() {
             target="> 75%"
             status={summary.passedPages.percentage >= 75 ? 'Pass' : 'Needs Improvement'}
             description={`${summary.passedPages.count} sidor`}
-          />
-          <CwvCard
-            title="CWV total status"
-            value={`${summary.totalStatus.percentage}%`}
-            target="> 75%"
-            status={summary.totalStatus.percentage >= 75 ? 'Pass' : 'Needs Improvement'}
-            description="Klarar alla tre"
           />
         </div>
       </div>

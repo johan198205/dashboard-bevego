@@ -216,16 +216,14 @@ export function OverviewCardsGroup() {
         <CwvTotalStatusCard
           label="CWV total status"
           data={{
-            value: `${cwvSummary.totalStatus.percentage}%`,
+            value: `${cwvSummary.totalStatus.percentage.toFixed(1)}%`,
             percentage: cwvSummary.totalStatus.percentage,
             status: cwvSummary.totalStatus.percentage >= 75 ? 'Pass' : 'Needs Improvement',
             target: "> 75%",
             description: "Klarar alla tre"
           }}
-          Icon={icons.CwvTotalStatus}
-          comparisonLabel={getComparisonLabel("cwv_total")}
+          comparisonLabel={undefined}
           onClick={() => setDrawer({ metricId: "cwv_total", title: "CWV total status" })}
-          // no sparkline on this card
         />
       )}
 
@@ -297,7 +295,13 @@ export function OverviewCardsGroup() {
           onClose={() => setDrawer(null)}
           metricId={drawer.metricId}
           title={drawer.title}
-          sourceLabel={drawer.metricId === "clarity" ? "Mock" : "Mock"}
+          sourceLabel={(() => {
+            if (drawer.metricId === 'mau') return mauSummary?.source || 'GA4';
+            if (drawer.metricId === 'pageviews') return pageviewsSummary?.source || 'GA4';
+            if (drawer.metricId === 'cwv_total') return cwvSummary ? 'CrUX API' : 'Mock';
+            if (drawer.metricId === 'clarity') return clarityScore ? 'Clarity' : 'Mock';
+            return 'Mock';
+          })()}
           getSeries={providers[drawer.metricId as keyof typeof providers]}
           getCompareSeries={async (args) => {
             // Where resolver provides compare series, align by index

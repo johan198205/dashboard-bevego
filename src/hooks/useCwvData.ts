@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useFilters } from '@/components/GlobalFilters';
-import { getCwvSummary } from '@/lib/mockData/cwv';
+// Use real CrUX data from our API client
+import { getCruxSummary } from '@/services/crux-data.service';
 import { CwvSummary } from '@/lib/types';
 
 export function useCwvData() {
@@ -12,12 +13,8 @@ export function useCwvData() {
     const loadData = async () => {
       setLoading(true);
       try {
-        const summaryData = await getCwvSummary(
-          state.range.start, 
-          state.range.end, 
-          state.device
-        );
-        setSummary(summaryData);
+        const summaryData = await getCruxSummary(state.range, state.device);
+        setSummary(summaryData || null);
       } catch (error) {
         console.error('Error loading CWV data:', error);
       } finally {
