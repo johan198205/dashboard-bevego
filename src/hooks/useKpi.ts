@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { makeCacheKey, getCached, setCached } from "@/lib/utils";
 import { useFilters } from "@/components/GlobalFilters";
+import { usePathname } from "next/navigation";
+import { fetchWithCache, buildKpiCacheKey, abortAllRequests } from "@/lib/dataCache";
+import { schedulePrefetch } from "@/lib/prefetch";
 
 type UseKpiOptions = {
   metric: string;
@@ -14,6 +16,7 @@ type KpiSummary = { value: number | string; growthRate: number };
 export function useKpi({ metric, ttlMs = 5 * 60 * 1000 }: UseKpiOptions) {
   const { state } = useFilters();
   const { range, audience, device, channel } = state as any;
+  const pathname = usePathname();
 
   const params = useMemo(() => {
     // NDI should always compare against previous quarter on the KPI card,
@@ -31,61 +34,68 @@ export function useKpi({ metric, ttlMs = 5 * 60 * 1000 }: UseKpiOptions) {
     };
   }, [metric, range.start, range.end, range.grain, range.comparisonMode, audience, device, channel]);
 
-  const cacheKey = useMemo(() => makeCacheKey({ type: "kpi", ...params }), [params]);
+  const cacheKey = useMemo(() => buildKpiCacheKey(params), [params]);
 
-  const [data, setData] = useState<KpiSummary | null>(() => getCached<KpiSummary>(cacheKey));
-  const [loading, setLoading] = useState<boolean>(!getCached<KpiSummary>(cacheKey));
+  const [data, setData] = useState<KpiSummary | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
-    const cached = getCached<KpiSummary>(cacheKey);
-    if (cached) {
-      setData(cached);
-      setLoading(false);
-      return;
-    }
 
     setLoading(true);
     setError(null);
-    const search = new URLSearchParams({
-      metric: params.metric,
-      start: params.start,
-      end: params.end,
-      grain: params.grain,
-      comparisonMode: params.comparisonMode,
-    });
-    // Pass multi-select filters as comma-separated lists
-    if ((params.audience as string[] | undefined)?.length) {
-      search.set('audience', (params.audience as string[]).join(','));
-    }
-    if ((params.device as string[] | undefined)?.length) {
-      search.set('device', (params.device as string[]).join(','));
-    }
-    if ((params.channel as string[] | undefined)?.length) {
-      search.set('channel', (params.channel as string[]).join(','));
-    }
 
-    fetch(`${window.location.origin}/api/kpi?${search.toString()}`)
-      .then(async (res) => {
+    // Fetch with enhanced cache (deduplication, abort support, stale-while-revalidate)
+    fetchWithCache(
+      cacheKey,
+      async (signal) => {
+        const search = new URLSearchParams({
+          metric: params.metric,
+          start: params.start,
+          end: params.end,
+          grain: params.grain,
+          comparisonMode: params.comparisonMode,
+        });
+        
+        if ((params.audience as string[] | undefined)?.length) {
+          search.set('audience', (params.audience as string[]).join(','));
+        }
+        if ((params.device as string[] | undefined)?.length) {
+          search.set('device', (params.device as string[]).join(','));
+        }
+        if ((params.channel as string[] | undefined)?.length) {
+          search.set('channel', (params.channel as string[]).join(','));
+        }
+
+        const res = await fetch(`${window.location.origin}/api/kpi?${search.toString()}`, { signal });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
+        return res.json();
+      },
+      { ttlMs }
+    )
+      .then((json) => {
+        if (cancelled) return;
+        
         const valueRaw = json.summary.current;
         const summary: KpiSummary = {
           value: valueRaw,
           growthRate: json.summary.yoyPct ?? 0,
         };
-        if (!cancelled) {
-          setCached(cacheKey, summary, ttlMs);
-          setData(summary);
-          const src = (json.notes || []).find?.((n: string) => n.startsWith("Källa:"))?.replace("Källa:", "").trim();
-          setSource(src);
-          setLoading(false);
-        }
+        
+        setData(summary);
+        const src = (json.notes || []).find?.((n: string) => n.startsWith("Källa:"))?.replace("Källa:", "").trim();
+        setSource(src);
+        setLoading(false);
       })
       .catch((e) => {
         if (cancelled) return;
+        if (e.name === 'AbortError') {
+          // Aborted fetch is expected on filter change
+          console.debug('[useKpi] Request aborted for metric:', metric);
+          return;
+        }
         setError(e?.message || "Unknown error");
         setLoading(false);
       });
@@ -94,6 +104,21 @@ export function useKpi({ metric, ttlMs = 5 * 60 * 1000 }: UseKpiOptions) {
       cancelled = true;
     };
   }, [cacheKey, params, ttlMs]);
+
+  // Trigger prefetch on filter change (throttled)
+  useEffect(() => {
+    if (pathname) {
+      schedulePrefetch(pathname, {
+        start: range.start,
+        end: range.end,
+        grain: range.grain || 'day',
+        comparisonMode: range.comparisonMode || 'none',
+        audience,
+        device,
+        channel,
+      });
+    }
+  }, [pathname, range.start, range.end, range.grain, range.comparisonMode, audience, device, channel]);
 
   return { data, loading, error, source };
 }

@@ -50,29 +50,44 @@ function detectAnomalies(series: TimePoint[]): Anomaly[] {
   return anomalies;
 }
 
-// Cache for insights to avoid redundant OpenAI calls
-const insightsCache = new Map<string, { insight: Insight; usedOpenAI: boolean; timestamp: number }>();
-const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
+// Import enhanced cache system with sessionStorage persistence
+import { fetchWithCache, buildInsightsCacheKey, getCacheTTL, rateLimiter } from "@/lib/dataCache";
 
-function getCacheKey(metricId: string, dateRange: { start: string; end: string }, filters: any): string {
-  const filterKey = JSON.stringify({
+async function generateInsights(metricId: string, series: TimePoint[], anomalies: Anomaly[], filters: any, dateRange: { start: string; end: string }, comparisonSeries?: TimePoint[]): Promise<{ insight: Insight; usedOpenAI: boolean }> {
+  // Build cache key using centralized cache system
+  const cacheKey = buildInsightsCacheKey({
+    metricId,
+    start: dateRange.start,
+    end: dateRange.end,
     device: filters?.device || [],
     channel: filters?.channel || [],
     audience: filters?.audience || []
   });
-  return `${metricId}-${dateRange.start}-${dateRange.end}-${filterKey}`;
-}
 
-async function generateInsights(metricId: string, series: TimePoint[], anomalies: Anomaly[], filters: any, dateRange: { start: string; end: string }, comparisonSeries?: TimePoint[]): Promise<{ insight: Insight; usedOpenAI: boolean }> {
-  // Check cache first
-  const cacheKey = getCacheKey(metricId, dateRange, filters);
-  const cached = insightsCache.get(cacheKey);
-  if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-    console.log('✓ Using cached insights');
-    return cached;
+  // Check rate limiter first
+  const rateLimitCheck = rateLimiter.shouldAllow(`insights:${metricId}`);
+  if (!rateLimitCheck.allowed) {
+    console.warn(`[Insights] Rate limited, waiting ${rateLimitCheck.waitMs}ms before retry`);
+    // Try to return cached data if available
+    try {
+      const cached = await fetchWithCache<{ insight: Insight; usedOpenAI: boolean }>(
+        cacheKey,
+        async () => { throw new Error('Rate limited'); },
+        { ttlMs: getCacheTTL('insights'), forceRefresh: false }
+      );
+      console.log('✓ Using cached insights (rate limited)');
+      return cached;
+    } catch {
+      // Fall through to mock if no cache
+    }
   }
 
-  const nameMap: Record<string, string> = {
+  // Use enhanced cache with sessionStorage persistence
+  try {
+    return await fetchWithCache(
+      cacheKey,
+      async (signal) => {
+        const nameMap: Record<string, string> = {
     mau: "Total users",
     pageviews: "Sidvisningar",
     ndi: "Kundnöjdhet (NDI)",
@@ -117,24 +132,40 @@ async function generateInsights(metricId: string, series: TimePoint[], anomalies
     const response = await fetch('/api/insights', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal, // Pass abort signal for cancellation support
       body: JSON.stringify(payload)
     });
 
     if (response.ok) {
       const data = await response.json();
       if (!data.useMock && data.observations) {
-        console.log('✓ Using real OpenAI insights');
+        console.log('✓ Using real OpenAI insights (cached to sessionStorage)');
         const result = { insight: data as Insight, usedOpenAI: true };
-        // Cache the result
-        insightsCache.set(cacheKey, { ...result, timestamp: Date.now() });
+        rateLimiter.recordSuccess(`insights:${metricId}`);
         return result;
       }
+    } else if (response.status === 429 || response.status === 403) {
+      // Rate limit or quota error
+      rateLimiter.recordFailure(`insights:${metricId}`, true);
+      throw new Error('Rate limit exceeded');
     }
     
     // Fall through to mock if API failed or returned useMock flag
     console.warn('OpenAI insights unavailable, using mock data');
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to fetch OpenAI insights:', error);
+    
+    // Record failure for rate limiting
+    if (rateLimiter.isQuotaError(error)) {
+      rateLimiter.recordFailure(`insights:${metricId}`, true);
+    } else {
+      rateLimiter.recordFailure(`insights:${metricId}`, false);
+    }
+    
+    // Re-throw if aborted
+    if (error.name === 'AbortError') {
+      throw error;
+    }
   }
 
   // Fallback: Mock insights (same as before)
@@ -182,15 +213,31 @@ async function generateInsights(metricId: string, series: TimePoint[], anomalies
 
   const note = filtersNote ? `(Filter: ${filtersNote})` : undefined;
 
-  const result = { 
+  return { 
     insight: { observations, insights, explanations, recommendations, note },
     usedOpenAI: false 
   };
-  
-  // Cache mock insights too
-  insightsCache.set(cacheKey, { ...result, timestamp: Date.now() });
-  
-  return result;
+      },
+      { ttlMs: getCacheTTL('insights') }
+    );
+  } catch (error: any) {
+    // If error is AbortError, rethrow
+    if (error.name === 'AbortError') {
+      throw error;
+    }
+    
+    // For other errors, return minimal mock
+    console.error('[Insights] Cache fetch failed:', error);
+    return {
+      insight: {
+        observations: ['Kunde inte hämta insikter'],
+        insights: ['Försök igen senare'],
+        recommendations: [],
+        explanations: []
+      },
+      usedOpenAI: false
+    };
+  }
 }
 
 export default function ScorecardDetailsDrawer({ open, onClose, metricId, title, sourceLabel, getSeries, getCompareSeries, showChart = true }: DrawerProps) {

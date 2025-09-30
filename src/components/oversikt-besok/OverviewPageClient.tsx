@@ -68,6 +68,9 @@ export function OverviewPageClient({ initialData, initialError }: Props) {
 
   // Auto-apply: Fetch data when filters change (same pattern as KPI dashboard)
   useEffect(() => {
+    // Abort any in-flight requests on filter change
+    const controller = new AbortController();
+    
     const buildApiUrl = () => {
       const params = new URLSearchParams({
         start: filterState.range.start,
@@ -96,8 +99,38 @@ export function OverviewPageClient({ initialData, initialError }: Props) {
       return `/api/ga4/overview?${params.toString()}`;
     };
 
-    const apiUrl = buildApiUrl();
-    fetchData(apiUrl);
+    setLoading(true);
+    setError(null);
+    
+    const fetchWithAbort = async () => {
+      try {
+        const fullUrl = `${window.location.origin}${buildApiUrl()}`;
+        const response = await fetch(fullUrl, { signal: controller.signal });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+        
+        const result: OverviewPayload = await response.json();
+        setData(result);
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          console.debug('[OverviewPageClient] Request aborted');
+          return;
+        }
+        console.error('Failed to fetch GA4 data:', err);
+        setError(err instanceof Error ? err.message : 'Okänt fel');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchWithAbort();
+    
+    return () => {
+      controller.abort();
+    };
   }, [filterState.range.start, filterState.range.end, filterState.range.comparisonMode, filterState.channel, filterState.device, filterState.audience]);
 
   // Initial data fetch (only if we don't have initial data)
