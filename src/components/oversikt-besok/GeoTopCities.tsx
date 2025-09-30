@@ -9,9 +9,10 @@ import type { Split } from '@/app/api/ga4/overview/route';
 
 type Props = {
   data: Split[];
+  onClick?: () => void;
 };
 
-export function GeoTopCities({ data }: Props) {
+export function GeoTopCities({ data, onClick }: Props) {
   const urlSearchParams = useSearchParams();
   const [compareMode, setCompareMode] = useState<'prev' | 'yoy'>('prev');
   
@@ -136,21 +137,23 @@ export function GeoTopCities({ data }: Props) {
   }, [previousCities]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div 
+      onClick={onClick}
+      className={`grid grid-cols-1 lg:grid-cols-2 gap-6 ${onClick ? "cursor-pointer transition-all hover:ring-2 hover:ring-red-500 hover:ring-opacity-50 rounded-[5px]" : ""}`}
+    >
       {/* Table Section */}
       <AnalyticsBlock
-        title="Kanalgrupper"
+        title="Städer"
         description="Alla städer med sessions, engagemang och jämförelse"
       >
       <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
-        <div className="grid grid-cols-12 bg-gray-50 dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300">
+        <div className="grid grid-cols-12 bg-gray-50 dark:bg-gray-800 px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300">
           <div className="col-span-4">Stad</div>
           <div className="col-span-2 text-right">Antal</div>
           <div className="col-span-2 text-right">% av total</div>
           <div className="col-span-2 text-right">Eng. rate</div>
           <div className="col-span-2 text-right">
-            {compareMode === 'yoy' ? 'Föreg. år' : 'Föreg. period'}
-            <span className="ml-1 text-xs text-blue-600">({compareMode})</span>
+            Föreg. period <span className="text-xs text-blue-600">({compareMode})</span>
           </div>
         </div>
         <div className="divide-y divide-gray-200 dark:divide-gray-800">
@@ -164,7 +167,7 @@ export function GeoTopCities({ data }: Props) {
             console.log(`City: ${city.key}, Current: ${city.sessions}, Previous: ${prev}, Delta: ${deltaPct}, Mode: ${compareMode}`);
             
             return (
-              <div key={city.key} className="grid grid-cols-12 px-4 py-3 items-center">
+              <div key={city.key} className="grid grid-cols-12 px-3 py-2 items-center">
                 <div className="col-span-4 truncate text-gray-900 dark:text-white">{city.name}</div>
                 <div className="col-span-2 text-right font-medium text-gray-900 dark:text-white">
                   {formatNumber(city.sessions)}
@@ -189,7 +192,7 @@ export function GeoTopCities({ data }: Props) {
           })}
         </div>
         {!showAll && allCities.length > 10 && (
-          <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-800">
+          <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-800">
             <button
               onClick={() => setShowAll(true)}
               className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
@@ -199,7 +202,7 @@ export function GeoTopCities({ data }: Props) {
           </div>
         )}
         {showAll && allCities.length > 10 && (
-          <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-800">
+          <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-800">
             <button
               onClick={() => setShowAll(false)}
               className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
@@ -208,7 +211,7 @@ export function GeoTopCities({ data }: Props) {
             </button>
           </div>
         )}
-        <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 flex justify-between">
+        <div className="bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 flex justify-between">
           <span>Totalt</span>
           <span className="font-medium text-gray-900 dark:text-white">{formatNumber(totalSessions)}</span>
         </div>

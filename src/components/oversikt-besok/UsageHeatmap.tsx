@@ -7,9 +7,10 @@ import type { WeekdayHour } from '@/app/api/ga4/overview/route';
 
 type Props = {
   data: WeekdayHour[];
+  onClick?: () => void;
 };
 
-export function UsageHeatmap({ data }: Props) {
+export function UsageHeatmap({ data, onClick }: Props) {
   // Create a 7x24 grid (weekdays x hours)
   const grid = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => ({ sessions: 0, engagedSessions: 0 })));
   
@@ -45,11 +46,15 @@ export function UsageHeatmap({ data }: Props) {
   const weekdays = ['Sön', 'Mån', 'Tis', 'Ons', 'Tor', 'Fre', 'Lör'];
 
   return (
-    <AnalyticsBlock
-      title="Användningsmönster"
-      description="Sessions per veckodag och timme"
-      className="w-full"
+    <div 
+      onClick={onClick}
+      className={onClick ? "cursor-pointer transition-all hover:ring-2 hover:ring-red-500 hover:ring-opacity-50 rounded-[5px]" : ""}
     >
+      <AnalyticsBlock
+        title="Användningsmönster"
+        description="Sessions per veckodag och timme"
+        className="w-full"
+      >
         <div className="space-y-6">
           {/* Heatmap Grid */}
           <div className="overflow-x-auto">
@@ -141,6 +146,7 @@ export function UsageHeatmap({ data }: Props) {
           </div>
 
         </div>
-    </AnalyticsBlock>
+      </AnalyticsBlock>
+    </div>
   );
 }

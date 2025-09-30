@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { useFilters } from '@/components/GlobalFilters';
 import type { OverviewPayload } from '@/app/api/ga4/overview/route';
+import ScorecardDetailsDrawer, { type TimePoint } from '@/components/ScorecardDetailsDrawer';
 
 type Props = {
   initialData?: OverviewPayload | null;
@@ -22,6 +23,7 @@ export function OverviewPageClient({ initialData, initialError }: Props) {
   const [data, setData] = useState<OverviewPayload | null>(initialData || null);
   const [loading, setLoading] = useState(!initialData && !initialError);
   const [error, setError] = useState<string | null>(initialError || null);
+  const [drawer, setDrawer] = useState<{ metricId: string; title: string; sourceLabel: string; distributionContext?: string } | null>(null);
   // Which metrics are shown in the timeline chart
   const [activeSeries, setActiveSeries] = useState<{
     sessions: boolean;
@@ -33,7 +35,7 @@ export function OverviewPageClient({ initialData, initialError }: Props) {
     pageviews: boolean;
   }>({
     sessions: true,
-    totalUsers: true,
+    totalUsers: false,
     returningUsers: false,
     engagedSessions: false,
     engagementRatePct: false,
@@ -224,6 +226,98 @@ export function OverviewPageClient({ initialData, initialError }: Props) {
     );
   }
 
+  // Get distribution metadata for context
+  const getDistributionContext = (metricId: string): string => {
+    if (!data) return '';
+
+    if (metricId === 'channels') {
+      const channelNames: Record<string, string> = {
+        'Organic Search': 'Organisk sökning',
+        'Direct': 'Direkt',
+        'Referral': 'Referral',
+        'Social': 'Social',
+        'Paid Search': 'Betald sökning',
+      };
+      return data.channels
+        .map(ch => `${channelNames[ch.key] || ch.key}: ${ch.sessions.toLocaleString('sv-SE')} sessions (${((ch.sessions / data.summary.sessions) * 100).toFixed(1)}%)`)
+        .join(', ');
+    }
+
+    if (metricId === 'devices') {
+      const deviceNames: Record<string, string> = {
+        'mobile': 'Mobil',
+        'desktop': 'Desktop',
+        'tablet': 'Surfplatta',
+      };
+      return data.devices
+        .map(dev => `${deviceNames[dev.key] || dev.key}: ${dev.sessions.toLocaleString('sv-SE')} sessions (${((dev.sessions / data.summary.sessions) * 100).toFixed(1)}%)`)
+        .join(', ');
+    }
+
+    if (metricId === 'cities') {
+      return data.cities.slice(0, 10)
+        .map((city, idx) => `${idx + 1}. ${city.key === '(not set)' ? 'Okänd' : city.key}: ${city.sessions.toLocaleString('sv-SE')} sessions`)
+        .join(', ');
+    }
+
+    if (metricId === 'usage_patterns') {
+      // Find peak hours
+      const hourlyAggregates = Array.from({ length: 24 }, () => 0);
+      data.weekdayHour.forEach(item => {
+        hourlyAggregates[item.hour] += item.sessions;
+      });
+      const maxHour = hourlyAggregates.indexOf(Math.max(...hourlyAggregates));
+      const minHour = hourlyAggregates.indexOf(Math.min(...hourlyAggregates.filter(s => s > 0)));
+      return `Peak: ${maxHour}:00 (${hourlyAggregates[maxHour].toLocaleString('sv-SE')} sessions), Lägst: ${minHour}:00 (${hourlyAggregates[minHour].toLocaleString('sv-SE')} sessions)`;
+    }
+
+    return '';
+  };
+
+  // Get series function based on metric type
+  const getSeries = async (metricId: string): Promise<TimePoint[]> => {
+    if (!data) return [];
+
+    // For distributions (channels, devices), aggregate by total sessions
+    if (metricId === 'channels') {
+      // Convert channel distribution to time points (using index as x, sessions as y)
+      return data.channels.map((channel, index) => ({
+        x: Date.now() - (data.channels.length - index) * 24 * 60 * 60 * 1000,
+        y: channel.sessions
+      }));
+    }
+
+    if (metricId === 'devices') {
+      // Convert device distribution to time points
+      return data.devices.map((device, index) => ({
+        x: Date.now() - (data.devices.length - index) * 24 * 60 * 60 * 1000,
+        y: device.sessions
+      }));
+    }
+
+    if (metricId === 'cities') {
+      // Convert top cities to time points (top 10)
+      return data.cities.slice(0, 10).map((city, index) => ({
+        x: Date.now() - (10 - index) * 24 * 60 * 60 * 1000,
+        y: city.sessions
+      }));
+    }
+
+    if (metricId === 'usage_patterns') {
+      // Aggregate usage patterns by hour across all days
+      const hourlyAggregates = Array.from({ length: 24 }, () => 0);
+      data.weekdayHour.forEach(item => {
+        hourlyAggregates[item.hour] += item.sessions;
+      });
+      return hourlyAggregates.map((sessions, hour) => ({
+        x: Date.now() - (24 - hour) * 60 * 60 * 1000,
+        y: sessions
+      }));
+    }
+
+    return [];
+  };
+
   // Main content
   return (
     <div className="space-y-6">
@@ -244,21 +338,49 @@ export function OverviewPageClient({ initialData, initialError }: Props) {
           data={data.channels}
           type="channel"
           totalSessions={data.summary.sessions}
+          onClick={() => setDrawer({ 
+            metricId: 'channels', 
+            title: 'Kanaler', 
+            sourceLabel: 'GA4',
+            distributionContext: getDistributionContext('channels')
+          })}
         />
         <Distributions 
           title="Enheter"
           data={data.devices}
           type="device"
           totalSessions={data.summary.sessions}
+          onClick={() => setDrawer({ 
+            metricId: 'devices', 
+            title: 'Enheter', 
+            sourceLabel: 'GA4',
+            distributionContext: getDistributionContext('devices')
+          })}
         />
       </div>
 
       {/* Usage Heatmap */}
-      <UsageHeatmap data={data.weekdayHour} />
+      <UsageHeatmap 
+        data={data.weekdayHour}
+        onClick={() => setDrawer({ 
+          metricId: 'usage_patterns', 
+          title: 'Användningsmönster', 
+          sourceLabel: 'GA4',
+          distributionContext: getDistributionContext('usage_patterns')
+        })}
+      />
 
       {/* Cities Table */}
       <div className="grid grid-cols-1 gap-6">
-        <GeoTopCities data={data.cities} />
+        <GeoTopCities 
+          data={data.cities}
+          onClick={() => setDrawer({ 
+            metricId: 'cities', 
+            title: 'Städer', 
+            sourceLabel: 'GA4',
+            distributionContext: getDistributionContext('cities')
+          })}
+        />
       </div>
 
       {/* Data source info */}
@@ -269,6 +391,20 @@ export function OverviewPageClient({ initialData, initialError }: Props) {
             Data kan vara samplad på grund av höga volymer. Vissa värden kan vara uppskattningar.
           </AlertDescription>
         </Alert>
+      )}
+
+      {/* Scorecard Details Drawer */}
+      {drawer && (
+        <ScorecardDetailsDrawer
+          open={!!drawer}
+          onClose={() => setDrawer(null)}
+          metricId={drawer.metricId}
+          title={drawer.title}
+          sourceLabel={drawer.sourceLabel}
+          getSeries={async (args) => getSeries(drawer.metricId)}
+          showChart={false}
+          distributionContext={drawer.distributionContext}
+        />
       )}
     </div>
   );

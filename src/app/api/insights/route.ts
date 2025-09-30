@@ -12,6 +12,7 @@ type InsightsRequest = {
   comparisonSeries?: Array<{ date: string; value: number }>;
   anomalies?: Array<{ date: string; value: number; delta: number; severity: string }>;
   filters?: any;
+  distributionContext?: string;
 };
 
 type InsightsResponse = {
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body: InsightsRequest = await req.json();
-    const { metricId, metricName, dateRange, series, comparisonSeries, anomalies = [], filters } = body;
+    const { metricId, metricName, dateRange, series, comparisonSeries, anomalies = [], filters, distributionContext } = body;
 
     // Validate input
     if (!metricId || !metricName || !series || series.length === 0) {
@@ -102,8 +103,30 @@ Svara ALLTID med exakt denna JSON-struktur (inga extra fält):
   "recommendations": ["sträng1", "sträng2", "sträng3", "sträng4"]
 }`;
 
-    // User prompt: compact data summary
-    const userPrompt = `Metrik: ${metricName} (${metricId})
+    // User prompt: adapt based on whether it's a distribution or time series
+    const isDistribution = !!distributionContext;
+    
+    let userPrompt = '';
+    
+    if (isDistribution) {
+      // For distributions (channels, devices, cities, usage patterns)
+      userPrompt = `Metrik: ${metricName} (${metricId})
+Period: ${dateRange.start} → ${dateRange.end}
+Filter: ${filtersSummary}
+
+DATA - Fördelning av ${metricName}:
+${distributionContext}
+
+VIKTIGT: Detta är en FÖRDELNING (inte en tidsserie). Analysera mönstret i fördelningen ovan:
+- Vilka kategorier dominerar?
+- Finns det obalanser eller koncentration?
+- Vad kan fördelningen berätta om användarnas beteende?
+- Vilka insikter kan man dra för att förbättra användarupplevelsen?
+
+Ge koncisa, actionable insikter i JSON-format enligt instruktionerna.`;
+    } else {
+      // For time series (sessions, pageviews, etc.)
+      userPrompt = `Metrik: ${metricName} (${metricId})
 Period: ${dateRange.start} → ${dateRange.end} (${series.length} datapunkter)
 Filter: ${filtersSummary}
 
@@ -118,6 +141,7 @@ Statistik (nuvarande period):
 VIKTIGT: Analysera förändringen mot föregående period (om tillgänglig) och ge insikter om vad som driver skillnaden.
 
 Ge koncisa, actionable insikter i JSON-format enligt instruktionerna.`;
+    }
 
     // Call OpenAI
     const completion = await openai.chat.completions.create({

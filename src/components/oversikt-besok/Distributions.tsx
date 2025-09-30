@@ -20,21 +20,13 @@ type Props = {
   data: Split[];
   type: 'channel' | 'device';
   totalSessions?: number;
+  onClick?: () => void;
 };
 
-// Clean color palette for charts
-const COLORS = [
-  '#3b82f6', // blue
-  '#10b981', // emerald
-  '#f59e0b', // amber
-  '#ef4444', // red
-  '#8b5cf6', // violet
-  '#06b6d4', // cyan
-  '#84cc16', // lime
-  '#f97316', // orange
-  '#ec4899', // pink
-  '#6b7280', // gray
-];
+import { riksbyggenChartPalette } from '@/lib/theme-tokens';
+
+// Riksbyggen brand color palette - red shades for cohesive visualization
+const COLORS = [...riksbyggenChartPalette];
 
 // Channel name mapping
 const CHANNEL_NAMES: Record<string, string> = {
@@ -59,7 +51,7 @@ const DEVICE_NAMES: Record<string, string> = {
   'tablet': 'Surfplatta',
 };
 
-export function Distributions({ title, data, type, totalSessions }: Props) {
+export function Distributions({ title, data, type, totalSessions, onClick }: Props) {
   // Use provided totalSessions or calculate from data
   const calculatedTotalSessions = data.reduce((sum, item) => sum + item.sessions, 0);
   const finalTotalSessions = totalSessions || calculatedTotalSessions;
@@ -127,11 +119,15 @@ export function Distributions({ title, data, type, totalSessions }: Props) {
   };
 
   return (
-    <AnalyticsBlock
-      title={title}
-      description={`Fördelning av sessions per ${type === 'channel' ? 'kanal' : 'enhet'}`}
-      icon={type === 'channel' ? <PieChartIcon size={24} /> : <DeviceIcon size={24} />}
+    <div 
+      onClick={onClick}
+      className={onClick ? "cursor-pointer transition-all hover:ring-2 hover:ring-red-500 hover:ring-opacity-50 rounded-[5px]" : ""}
     >
+      <AnalyticsBlock
+        title={title}
+        description={`Fördelning av sessions per ${type === 'channel' ? 'kanal' : 'enhet'}`}
+        icon={type === 'channel' ? <PieChartIcon size={24} /> : <DeviceIcon size={24} />}
+      >
       {/* Donut Chart */}
       <div className="h-80 mb-6">
         <ResponsiveContainer width="100%" height="100%">
@@ -213,5 +209,6 @@ export function Distributions({ title, data, type, totalSessions }: Props) {
         </div>
       </div>
     </AnalyticsBlock>
+    </div>
   );
 }

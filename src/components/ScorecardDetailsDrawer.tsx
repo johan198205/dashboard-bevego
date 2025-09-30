@@ -19,6 +19,7 @@ export type DrawerProps = {
   getSeries: (args: { start: string; end: string; grain: Grain; filters: any }) => Promise<TimePoint[]>;
   getCompareSeries?: (args: { start: string; end: string; grain: Grain; filters: any }) => Promise<TimePoint[]>;
   showChart?: boolean;
+  distributionContext?: string;
 };
 
 type Insight = {
@@ -53,7 +54,7 @@ function detectAnomalies(series: TimePoint[]): Anomaly[] {
 // Import enhanced cache system with sessionStorage persistence
 import { fetchWithCache, buildInsightsCacheKey, getCacheTTL, rateLimiter } from "@/lib/dataCache";
 
-async function generateInsights(metricId: string, series: TimePoint[], anomalies: Anomaly[], filters: any, dateRange: { start: string; end: string }, comparisonSeries?: TimePoint[]): Promise<{ insight: Insight; usedOpenAI: boolean }> {
+async function generateInsights(metricId: string, series: TimePoint[], anomalies: Anomaly[], filters: any, dateRange: { start: string; end: string }, comparisonSeries?: TimePoint[], distributionContext?: string): Promise<{ insight: Insight; usedOpenAI: boolean }> {
   // Build cache key using centralized cache system
   const cacheKey = buildInsightsCacheKey({
     metricId,
@@ -103,6 +104,10 @@ async function generateInsights(metricId: string, series: TimePoint[], anomalies
     engagedSessions: "Engaged Sessions",
     engagementRate: "Engagement Rate",
     avgEngagementTime: "Avg Engagement Time",
+    channels: "Kanaler",
+    devices: "Enheter",
+    usage_patterns: "Användningsmönster",
+    cities: "Städer",
   };
   const metricName = nameMap[metricId] || metricId;
   
@@ -126,7 +131,8 @@ async function generateInsights(metricId: string, series: TimePoint[], anomalies
         delta: a.delta,
         severity: a.severity
       })),
-      filters
+      filters,
+      distributionContext
     };
 
     const response = await fetch('/api/insights', {
@@ -240,7 +246,7 @@ async function generateInsights(metricId: string, series: TimePoint[], anomalies
   }
 }
 
-export default function ScorecardDetailsDrawer({ open, onClose, metricId, title, sourceLabel, getSeries, getCompareSeries, showChart = true }: DrawerProps) {
+export default function ScorecardDetailsDrawer({ open, onClose, metricId, title, sourceLabel, getSeries, getCompareSeries, showChart = true, distributionContext }: DrawerProps) {
   const { state } = useFilters();
   const [series, setSeries] = useState<TimePoint[]>([]);
   const [compare, setCompare] = useState<TimePoint[]>([]);
@@ -295,7 +301,7 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
       
       // Start loading insights
       setLoadingInsights(true);
-      const result = await generateInsights(metricId, s, anomaliesDetected, args.filters, { start: args.start, end: args.end }, comparisonData);
+      const result = await generateInsights(metricId, s, anomaliesDetected, args.filters, { start: args.start, end: args.end }, comparisonData, distributionContext);
       setInsight(result.insight);
       setUsingOpenAI(result.usedOpenAI);
       setLoadingInsights(false);
@@ -391,19 +397,32 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
     </section>
   );
 
-  const SeverityPill = ({ sev }: { sev: Anomaly["severity"] }) => (
-    <span
-      className={
-        sev === "high"
-          ? "rounded-full bg-red/10 px-2 py-0.5 text-xs font-medium text-red"
-          : sev === "medium"
-          ? "rounded-full bg-yellow-400/10 px-2 py-0.5 text-xs font-medium text-yellow-dark"
-          : "rounded-full bg-dark-3/10 px-2 py-0.5 text-xs font-medium text-dark-6"
+  const SeverityPill = ({ sev }: { sev: Anomaly["severity"] }) => {
+    const config = {
+      high: {
+        icon: "🔴",
+        label: "Hög",
+        className: "rounded-lg bg-red/15 px-3 py-1.5 text-xs font-semibold text-red border border-red/30 dark:bg-red/20 dark:border-red/40"
+      },
+      medium: {
+        icon: "🟡",
+        label: "Medel",
+        className: "rounded-lg bg-yellow-400/15 px-3 py-1.5 text-xs font-semibold text-yellow-dark border border-yellow-400/30 dark:bg-yellow-400/20 dark:border-yellow-400/40"
+      },
+      low: {
+        icon: "🔵",
+        label: "Låg",
+        className: "rounded-lg bg-blue-500/15 px-3 py-1.5 text-xs font-semibold text-blue-600 border border-blue-500/30 dark:bg-blue-500/20 dark:border-blue-500/40 dark:text-blue-400"
       }
-    >
-      {sev}
-    </span>
-  );
+    }[sev];
+
+    return (
+      <span className={config.className}>
+        <span className="mr-1">{config.icon}</span>
+        {config.label}
+      </span>
+    );
+  };
 
   // focus trap within drawer
   const onKeyDownTrap = (e: React.KeyboardEvent) => {
@@ -531,22 +550,24 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
             )}
           </SectionCard>
 
-          {/* 3. Avvikelser - reserverad plats från start */}
-          <SectionCard title={showChart ? "3. Avvikelser" : "Avvikelser"} icon={<XIcon /> } accent="text-yellow-dark bg-yellow-400/10">
-            {anomalies.length === 0 ? (
-              <div className="text-sm text-dark dark:text-white/70">Inga avvikelser.</div>
-            ) : (
-              <ul className="space-y-2 text-sm">
-                {anomalies.map((a, i) => (
-                  <li key={i} className="flex items-center justify-between rounded-xl border border-dark-3/20 bg-white px-3 py-2 dark:border-white/10 dark:bg-transparent">
-                    <span className="font-medium text-dark dark:text-white">{a.date}</span>
-                    <span className="text-dark dark:text-white/80">värde {Math.round(a.value)} ({a.delta > 0 ? "+" : ""}{Math.round(a.delta)})</span>
-                    <SeverityPill sev={a.severity} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </SectionCard>
+          {/* 3. Avvikelser - endast när det finns diagram */}
+          {showChart && (
+            <SectionCard title="3. Avvikelser" icon={<XIcon /> } accent="text-yellow-dark bg-yellow-400/10">
+              {anomalies.length === 0 ? (
+                <div className="text-sm text-dark dark:text-white/70">Inga avvikelser.</div>
+              ) : (
+                <ul className="space-y-2 text-sm">
+                  {anomalies.map((a, i) => (
+                    <li key={i} className="flex items-center justify-between rounded-xl border border-dark-3/20 bg-white px-3 py-2 dark:border-white/10 dark:bg-transparent">
+                      <span className="font-medium text-dark dark:text-white">{a.date}</span>
+                      <span className="text-dark dark:text-white/80">värde {Math.round(a.value)} ({a.delta > 0 ? "+" : ""}{Math.round(a.delta)})</span>
+                      <SeverityPill sev={a.severity} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </SectionCard>
+          )}
 
           {/* 4. Rekommendationer - reserverad plats från start */}
           <SectionCard title={showChart ? "4. Rekommendationer" : "Rekommendationer"} icon={<CheckIcon /> } accent="text-green-600 bg-green-600/10">
