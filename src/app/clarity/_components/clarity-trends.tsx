@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ClarityTrendsChart } from "./clarity-trends-chart";
-import { ClarityTrendPoint } from "@/lib/types";
+import { ClarityTrendPoint, ClarityOverview } from "@/lib/types";
 import { clarityService } from "@/services/clarity.service";
 import { useFilters } from "@/components/GlobalFilters";
 import { cn } from "@/lib/utils";
@@ -10,27 +10,45 @@ import { cn } from "@/lib/utils";
 export function ClarityTrends() {
   const { state } = useFilters();
   const [data, setData] = useState<ClarityTrendPoint[]>([]);
+  const [source, setSource] = useState<string>('Mock');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const result = await clarityService.getTrends({
-          range: {
-            start: state.range.start,
-            end: state.range.end,
-            grain: state.range.grain
-          },
-          filters: {
-            device: state.device,
-            country: [], // TODO: Add country filter to global filters
-            source: state.channel,
-            browser: [], // TODO: Add browser filter to global filters
-            os: [] // TODO: Add OS filter to global filters
-          }
-        });
-        setData(result);
+        const [trendsResult, overviewResult] = await Promise.all([
+          clarityService.getTrends({
+            range: {
+              start: state.range.start,
+              end: state.range.end,
+              grain: state.range.grain
+            },
+            filters: {
+              device: state.device,
+              country: [], // TODO: Add country filter to global filters
+              source: state.channel,
+              browser: [], // TODO: Add browser filter to global filters
+              os: [] // TODO: Add OS filter to global filters
+            }
+          }),
+          clarityService.getOverview({
+            range: {
+              start: state.range.start,
+              end: state.range.end,
+              grain: state.range.grain
+            },
+            filters: {
+              device: state.device,
+              country: [],
+              source: state.channel,
+              browser: [],
+              os: []
+            }
+          })
+        ]);
+        setData(trendsResult);
+        setSource(overviewResult.source);
       } catch (error) {
         console.error("Failed to fetch Clarity trends data:", error);
       } finally {
@@ -63,7 +81,7 @@ export function ClarityTrends() {
             Sessions & Engagemangstid
           </h2>
           <p className="text-sm text-dark-6 dark:text-dark-4 mt-1">
-            Källa: Mock
+            Källa: {source}
           </p>
         </div>
         <ClarityTrendsChart
@@ -94,7 +112,7 @@ export function ClarityTrends() {
             Scroll Depth
           </h2>
           <p className="text-sm text-dark-6 dark:text-dark-4 mt-1">
-            Källa: Mock
+            Källa: {source}
           </p>
         </div>
         <ClarityTrendsChart
@@ -120,7 +138,7 @@ export function ClarityTrends() {
             Rage/Dead/Quick-back
           </h2>
           <p className="text-sm text-dark-6 dark:text-dark-4 mt-1">
-            Källa: Mock
+            Källa: {source}
           </p>
         </div>
         <ClarityTrendsChart
@@ -156,7 +174,7 @@ export function ClarityTrends() {
             Script Errors
           </h2>
           <p className="text-sm text-dark-6 dark:text-dark-4 mt-1">
-            Källa: Mock
+            Källa: {source}
           </p>
         </div>
         <ClarityTrendsChart

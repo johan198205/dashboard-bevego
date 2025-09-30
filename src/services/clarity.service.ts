@@ -8,28 +8,112 @@ import {
 } from '@/lib/types';
 import { computeClarityScore } from '@/lib/clarity-score';
 
-// TODO: Replace with real Clarity API integration
-// This service provides a clean interface for Clarity data fetching
-// Real implementation should connect to Microsoft Clarity API
+// Service provides a clean interface for Clarity data fetching
+// Calls internal /api/clarity endpoint which securely proxies to Clarity Data Exporter
 
 export class ClarityService {
   /**
    * Get overview metrics for the specified date range and filters
    */
   async getOverview(params: ClarityParams): Promise<ClarityOverview> {
-    // TODO: Implement real Clarity API call
-    // For now, return mock data that respects date range and filters
-    const mockData = this.generateMockOverview(params);
-    return mockData;
+    try {
+      const queryParams = new URLSearchParams({
+        start: params.range.start,
+        end: params.range.end,
+        type: 'overview',
+      });
+
+      // Add filters if present
+      if (params.filters?.device && params.filters.device.length > 0) {
+        queryParams.append('device', params.filters.device[0]);
+      }
+      if (params.filters?.country && params.filters.country.length > 0) {
+        queryParams.append('country', params.filters.country[0]);
+      }
+      if (params.filters?.source && params.filters.source.length > 0) {
+        queryParams.append('channel', params.filters.source[0]);
+      }
+      if (params.filters?.browser && params.filters.browser.length > 0) {
+        queryParams.append('browser', params.filters.browser[0]);
+      }
+      if (params.filters?.os && params.filters.os.length > 0) {
+        queryParams.append('os', params.filters.os[0]);
+      }
+
+      const response = await fetch(`/api/clarity?${queryParams.toString()}`, {
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to fetch Clarity overview:', response.statusText, errorData);
+        
+        // If no data in DB, show helpful message
+        if (response.status === 404) {
+          throw new Error('Ingen Clarity-data tillgänglig. Kör datahämtning först.');
+        }
+        
+        throw new Error(errorData.error || 'Failed to fetch data');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching Clarity overview:', error);
+      throw error; // Don't fall back to mock - let UI handle empty state
+    }
   }
 
   /**
    * Get trend data for the specified date range and filters
    */
   async getTrends(params: ClarityParams): Promise<ClarityTrendPoint[]> {
-    // TODO: Implement real Clarity API call
-    const mockData = this.generateMockTrends(params);
-    return mockData;
+    try {
+      const queryParams = new URLSearchParams({
+        start: params.range.start,
+        end: params.range.end,
+        type: 'timeseries',
+      });
+
+      // Add filters if present
+      if (params.filters?.device && params.filters.device.length > 0) {
+        queryParams.append('device', params.filters.device[0]);
+      }
+      if (params.filters?.country && params.filters.country.length > 0) {
+        queryParams.append('country', params.filters.country[0]);
+      }
+      if (params.filters?.source && params.filters.source.length > 0) {
+        queryParams.append('channel', params.filters.source[0]);
+      }
+      if (params.filters?.browser && params.filters.browser.length > 0) {
+        queryParams.append('browser', params.filters.browser[0]);
+      }
+      if (params.filters?.os && params.filters.os.length > 0) {
+        queryParams.append('os', params.filters.os[0]);
+      }
+
+      const response = await fetch(`/api/clarity?${queryParams.toString()}`, {
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to fetch Clarity trends:', response.statusText, errorData);
+        
+        // If no data in DB, return empty array
+        if (response.status === 404) {
+          return [];
+        }
+        
+        throw new Error(errorData.error || 'Failed to fetch data');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching Clarity trends:', error);
+      return []; // Return empty array instead of mock
+    }
   }
 
   /**

@@ -49,3 +49,33 @@ enum FileKind {
   AGGREGATED
   BREAKDOWN
 }
+
+// Microsoft Clarity daily snapshots
+model ClaritySnapshot {
+  id                String   @id @default(cuid())
+  date              DateTime // The date this snapshot represents (YYYY-MM-DD)
+  fetchedAt         DateTime @default(now()) // When we fetched this data
+  
+  // Aggregate metrics
+  sessions          Int
+  avgEngagementTime Int      // seconds
+  avgScrollDepth    Float    // percentage
+  
+  rageClicksCount   Int
+  rageClicksPct     Float
+  
+  deadClicksCount   Int
+  deadClicksPct     Float
+  
+  quickBackPct      Float
+  
+  scriptErrorsCount Int
+  
+  // Raw JSON for flexibility
+  rawData           String   // JSON string of complete API response
+  
+  @@unique([date]) // Only one snapshot per date
+  @@index([date])
+  @@index([fetchedAt])
+  @@map("clarity_snapshots")
+}

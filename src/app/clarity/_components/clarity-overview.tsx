@@ -40,8 +40,10 @@ export function ClarityOverview() {
         
         setData(overviewResult);
         setClarityScore(scoreResult);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to fetch Clarity overview data:", error);
+        setData(null); // Set to null to trigger empty state
+        setClarityScore(null);
       } finally {
         setLoading(false);
       }
@@ -63,7 +65,40 @@ export function ClarityOverview() {
   if (!data) {
     return (
       <div className="rounded-lg border border-stroke bg-white p-6 shadow-sm dark:border-dark-3 dark:bg-gray-dark">
-        <p className="text-dark-6 dark:text-dark-4">Kunde inte ladda Clarity-data</p>
+        <div className="text-center py-8">
+          <div className="mb-4">
+            <svg className="mx-auto h-12 w-12 text-dark-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-dark dark:text-white mb-2">
+            Ingen Clarity-data tillgänglig
+          </h3>
+          <p className="text-dark-6 dark:text-dark-4 mb-4">
+            Databasen är tom. Kör datahämtning för att synka Clarity-data.
+          </p>
+          <button
+            onClick={async () => {
+              try {
+                setLoading(true);
+                const response = await fetch('/api/clarity/sync', { method: 'POST' });
+                if (response.ok) {
+                  window.location.reload();
+                } else {
+                  alert('Datahämtning misslyckades. Se konsolen för detaljer.');
+                }
+              } catch (error) {
+                alert('Datahämtning misslyckades: ' + error);
+              } finally {
+                setLoading(false);
+              }
+            }}
+            className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            disabled={loading}
+          >
+            {loading ? 'Hämtar...' : 'Hämta Clarity-data nu'}
+          </button>
+        </div>
       </div>
     );
   }
