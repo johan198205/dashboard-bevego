@@ -50,8 +50,28 @@ function detectAnomalies(series: TimePoint[]): Anomaly[] {
   return anomalies;
 }
 
-function generateInsights(metricId: string, series: TimePoint[], anomalies: Anomaly[], filters: any): Insight {
-  // TODO: Replace with real OpenAI call using same input/output shape
+// Cache for insights to avoid redundant OpenAI calls
+const insightsCache = new Map<string, { insight: Insight; usedOpenAI: boolean; timestamp: number }>();
+const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
+
+function getCacheKey(metricId: string, dateRange: { start: string; end: string }, filters: any): string {
+  const filterKey = JSON.stringify({
+    device: filters?.device || [],
+    channel: filters?.channel || [],
+    audience: filters?.audience || []
+  });
+  return `${metricId}-${dateRange.start}-${dateRange.end}-${filterKey}`;
+}
+
+async function generateInsights(metricId: string, series: TimePoint[], anomalies: Anomaly[], filters: any, dateRange: { start: string; end: string }, comparisonSeries?: TimePoint[]): Promise<{ insight: Insight; usedOpenAI: boolean }> {
+  // Check cache first
+  const cacheKey = getCacheKey(metricId, dateRange, filters);
+  const cached = insightsCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+    console.log('✓ Using cached insights');
+    return cached;
+  }
+
   const nameMap: Record<string, string> = {
     mau: "Total users",
     pageviews: "Sidvisningar",
@@ -63,11 +83,61 @@ function generateInsights(metricId: string, series: TimePoint[], anomalies: Anom
     clarity: "Clarity Score",
     cwv_total: "CWV total status",
     sessions: "Sessions",
+    totalUsers: "Total users",
+    returningUsers: "Returning users",
     engagedSessions: "Engaged Sessions",
     engagementRate: "Engagement Rate",
     avgEngagementTime: "Avg Engagement Time",
   };
-  const title = nameMap[metricId] || metricId;
+  const metricName = nameMap[metricId] || metricId;
+  
+  // Try to get real AI insights from OpenAI
+  try {
+    const payload = {
+      metricId,
+      metricName,
+      dateRange,
+      series: series.map(p => ({
+        date: new Date(p.x).toISOString().slice(0, 10),
+        value: p.y
+      })),
+      comparisonSeries: comparisonSeries?.map(p => ({
+        date: new Date(p.x).toISOString().slice(0, 10),
+        value: p.y
+      })),
+      anomalies: anomalies.map(a => ({
+        date: a.date,
+        value: a.value,
+        delta: a.delta,
+        severity: a.severity
+      })),
+      filters
+    };
+
+    const response = await fetch('/api/insights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (!data.useMock && data.observations) {
+        console.log('✓ Using real OpenAI insights');
+        const result = { insight: data as Insight, usedOpenAI: true };
+        // Cache the result
+        insightsCache.set(cacheKey, { ...result, timestamp: Date.now() });
+        return result;
+      }
+    }
+    
+    // Fall through to mock if API failed or returned useMock flag
+    console.warn('OpenAI insights unavailable, using mock data');
+  } catch (error) {
+    console.error('Failed to fetch OpenAI insights:', error);
+  }
+
+  // Fallback: Mock insights (same as before)
   const values = series.map((p) => p.y);
   const avg = values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 0;
   const last = values.at(-1) ?? 0;
@@ -75,9 +145,8 @@ function generateInsights(metricId: string, series: TimePoint[], anomalies: Anom
   const changePct = first ? Math.round(((last - first) / Math.max(1, first)) * 100) : 0;
   const filtersNote = [filters?.device?.length ? `enhet: ${filters.device.join("/")}` : null, filters?.channel?.length ? `kanal: ${filters.channel.join("/")}` : null, filters?.audience?.length ? `roll: ${filters.audience.join("/")}` : null].filter(Boolean).join(", ");
 
-  // Heuristics for bullets
   const observations: string[] = [
-    `Genomsnitt: ${avg} ${title} under perioden.`,
+    `Genomsnitt: ${avg} ${metricName} under perioden.`,
     `${changePct >= 0 ? "+" : ""}${changePct} % tillväxt jämfört med föregående period.`,
   ];
   if (values.length > 6) {
@@ -86,7 +155,6 @@ function generateInsights(metricId: string, series: TimePoint[], anomalies: Anom
   }
 
   const insights: string[] = [];
-  // Trend break: compare first vs last third
   if (values.length > 9) {
     const third = Math.floor(values.length / 3);
     const startAvg = Math.round(values.slice(0, third).reduce((a, b) => a + b, 0) / third);
@@ -114,7 +182,15 @@ function generateInsights(metricId: string, series: TimePoint[], anomalies: Anom
 
   const note = filtersNote ? `(Filter: ${filtersNote})` : undefined;
 
-  return { observations, insights, explanations, recommendations, note };
+  const result = { 
+    insight: { observations, insights, explanations, recommendations, note },
+    usedOpenAI: false 
+  };
+  
+  // Cache mock insights too
+  insightsCache.set(cacheKey, { ...result, timestamp: Date.now() });
+  
+  return result;
 }
 
 export default function ScorecardDetailsDrawer({ open, onClose, metricId, title, sourceLabel, getSeries, getCompareSeries, showChart = true }: DrawerProps) {
@@ -125,13 +201,24 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [show, setShow] = useState(false);
   const [currentValue, setCurrentValue] = useState<number>(0);
+  const [usingOpenAI, setUsingOpenAI] = useState<boolean>(false);
+  const [loadingInsights, setLoadingInsights] = useState<boolean>(false);
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
-  const Chart = useMemo(() => dynamic(() => import("react-apexcharts"), { ssr: false }), []);
+  const Chart = useMemo(() => dynamic(() => import("react-apexcharts"), { 
+    ssr: false,
+    loading: () => <div className="h-60 animate-pulse rounded-xl bg-dark-2/10 dark:bg-white/10" />
+  }), []);
 
   useEffect(() => {
     if (!open) return;
+    // Reset states
+    setSeries([]);
+    setCompare([]);
+    setInsight(null);
+    setAnomalies([]);
+    
     // start enter animation on next frame
     setShow(false);
     const id = requestAnimationFrame(() => setShow(true));
@@ -143,11 +230,28 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
     };
     window.addEventListener("keydown", onKey);
     const args = { start: state.range.start, end: state.range.end, grain: state.range.grain, filters: { audience: state.audience, device: state.device, channel: state.channel } };
-    getSeries(args).then((s) => {
+    getSeries(args).then(async (s) => {
       setSeries(s);
       const anomaliesDetected = detectAnomalies(s);
       setAnomalies(anomaliesDetected);
-      setInsight(generateInsights(metricId, s, anomaliesDetected, args.filters));
+      
+      // Get comparison series for insights
+      let comparisonData: TimePoint[] | undefined;
+      if (getCompareSeries) {
+        try {
+          comparisonData = await getCompareSeries(args);
+          setCompare(comparisonData);
+        } catch (error) {
+          console.warn('Failed to fetch comparison series:', error);
+        }
+      }
+      
+      // Start loading insights
+      setLoadingInsights(true);
+      const result = await generateInsights(metricId, s, anomaliesDetected, args.filters, { start: args.start, end: args.end }, comparisonData);
+      setInsight(result.insight);
+      setUsingOpenAI(result.usedOpenAI);
+      setLoadingInsights(false);
       
       // For gauge metrics, get current value from summary
       if (isGaugeMetric) {
@@ -158,7 +262,6 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
         });
       }
     });
-    if (getCompareSeries) getCompareSeries(args).then(setCompare).catch(() => setCompare([]));
     // body lock to ensure only drawer scrolls
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -224,7 +327,7 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
   };
 
   const KpiChip = ({ label }: { label: string }) => (
-    <span className="rounded-full border border-dark-3/30 px-2.5 py-1 text-xs text-dark-6 dark:border-white/15 dark:text-white/70">{label}</span>
+    <span className="rounded-full border border-dark-3/30 px-2.5 py-1 text-xs text-dark dark:border-white/15 dark:text-white/90">{label}</span>
   );
 
   const SectionCard = ({ title: sectionTitle, icon, accent = "text-red bg-red/10", children }: { title: string; icon?: React.ReactNode; accent?: string; children: React.ReactNode }) => (
@@ -294,20 +397,21 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
               <IconByMetric />
               <div>
                 <h2 id="drawer-title" className="text-xl font-semibold text-dark dark:text-white">{title}</h2>
-                <div id="drawer-desc" className="mt-0.5 flex items-center gap-2 text-xs text-dark-5">
+                <div id="drawer-desc" className="mt-0.5 flex items-center gap-2 text-xs text-dark dark:text-white/80">
                   <span>Källa: {sourceLabel}</span>
                   <span>•</span>
                   <KpiChip label={`Period ${state.range.start} — ${state.range.end}`} />
                 </div>
               </div>
             </div>
-            <button ref={closeBtnRef as any} className="rounded-full border border-dark-3/30 p-2 text-dark-6 hover:bg-dark-2/10 focus:outline-none focus:ring-2 focus:ring-red dark:border-white/15 dark:text-white/80" onClick={handleClose} aria-label="Stäng">
+            <button ref={closeBtnRef as any} className="rounded-full border border-dark-3/50 p-2 text-dark hover:bg-dark-2/20 focus:outline-none focus:ring-2 focus:ring-red dark:border-white/30 dark:text-white hover:border-dark-3 dark:hover:border-white/50 transition-colors" onClick={handleClose} aria-label="Stäng">
               <XIcon />
             </button>
           </div>
         </header>
 
         <div className="px-6 pt-4 pb-28">{/* padding for sticky footer */}
+          {/* 1. Diagram - visas direkt när data finns */}
           {showChart && (
             <SectionCard title="1. Diagram" icon={<TrendingUpIcon /> } accent="text-red bg-red/10">
               {series.length === 0 ? (
@@ -331,33 +435,65 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
             </SectionCard>
           )}
 
+          {/* 2. AI-insikter - reserverad plats från start */}
           <SectionCard title={showChart ? "2. AI-insikter" : "AI-insikter"} icon={<MessageOutlineIcon /> } accent="text-blue-600 bg-blue-600/10">
-            <div className="text-sm text-dark dark:text-white">
-              <div className="mb-1 font-semibold text-dark dark:text-white">Iakttagelser</div>
-              <ul className="ml-5 list-disc space-y-1">
-                {(insight?.observations || []).map((t, i) => (<li key={i}>{t}</li>))}
-              </ul>
-              <div className="mt-3 mb-1 font-semibold text-dark dark:text-white">Insikter</div>
-              <ul className="ml-5 list-disc space-y-1">
-                {(insight?.insights || []).map((t, i) => (<li key={i}>{t}</li>))}
-              </ul>
-              <div className="mt-3 mb-1 font-semibold text-dark dark:text-white">Möjliga förklaringar</div>
-              <ul className="ml-5 list-disc space-y-1">
-                {(insight?.explanations || []).map((t, i) => (<li key={i}>{t}</li>))}
-              </ul>
-              <div className="mt-2 text-xs opacity-70">Källa: Mock – AI {insight?.note ? `· ${insight.note}` : ""}</div>
-            </div>
+            {loadingInsights ? (
+              <div className="space-y-4">
+                <div className="animate-pulse space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-blue-600 animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="h-2 w-2 rounded-full bg-blue-600 animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="h-2 w-2 rounded-full bg-blue-600 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    <span className="text-sm text-blue-600 dark:text-blue-400 font-medium ml-2">
+                      Analyserar med AI...
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-dark-2/10 dark:bg-white/10 rounded w-full"></div>
+                    <div className="h-4 bg-dark-2/10 dark:bg-white/10 rounded w-5/6"></div>
+                    <div className="h-4 bg-dark-2/10 dark:bg-white/10 rounded w-4/6"></div>
+                  </div>
+                  <div className="space-y-2 mt-4">
+                    <div className="h-4 bg-dark-2/10 dark:bg-white/10 rounded w-full"></div>
+                    <div className="h-4 bg-dark-2/10 dark:bg-white/10 rounded w-3/4"></div>
+                  </div>
+                  <div className="space-y-2 mt-4">
+                    <div className="h-4 bg-dark-2/10 dark:bg-white/10 rounded w-5/6"></div>
+                    <div className="h-4 bg-dark-2/10 dark:bg-white/10 rounded w-4/6"></div>
+                  </div>
+                </div>
+              </div>
+            ) : insight ? (
+              <div className="text-sm text-dark dark:text-white">
+                <div className="mb-1 font-semibold text-dark dark:text-white">Iakttagelser</div>
+                <ul className="ml-5 list-disc space-y-1">
+                  {(insight.observations || []).map((t, i) => (<li key={i}>{t}</li>))}
+                </ul>
+                <div className="mt-3 mb-1 font-semibold text-dark dark:text-white">Insikter</div>
+                <ul className="ml-5 list-disc space-y-1">
+                  {(insight.insights || []).map((t, i) => (<li key={i}>{t}</li>))}
+                </ul>
+                <div className="mt-3 mb-1 font-semibold text-dark dark:text-white">Möjliga förklaringar</div>
+                <ul className="ml-5 list-disc space-y-1">
+                  {(insight.explanations || []).map((t, i) => (<li key={i}>{t}</li>))}
+                </ul>
+                <div className="mt-2 text-xs opacity-70">Källa: {usingOpenAI ? 'OpenAI (GPT-4o-mini)' : 'Mock – AI'} {insight.note ? `· ${insight.note}` : ""}</div>
+              </div>
+            ) : (
+              <div className="text-sm text-dark dark:text-white/70">Laddar insikter...</div>
+            )}
           </SectionCard>
 
+          {/* 3. Avvikelser - reserverad plats från start */}
           <SectionCard title={showChart ? "3. Avvikelser" : "Avvikelser"} icon={<XIcon /> } accent="text-yellow-dark bg-yellow-400/10">
             {anomalies.length === 0 ? (
-              <div className="text-sm text-dark-6">Inga avvikelser.</div>
+              <div className="text-sm text-dark dark:text-white/70">Inga avvikelser.</div>
             ) : (
               <ul className="space-y-2 text-sm">
                 {anomalies.map((a, i) => (
                   <li key={i} className="flex items-center justify-between rounded-xl border border-dark-3/20 bg-white px-3 py-2 dark:border-white/10 dark:bg-transparent">
                     <span className="font-medium text-dark dark:text-white">{a.date}</span>
-                    <span className="text-dark-6">värde {Math.round(a.value)} ({a.delta > 0 ? "+" : ""}{Math.round(a.delta)})</span>
+                    <span className="text-dark dark:text-white/80">värde {Math.round(a.value)} ({a.delta > 0 ? "+" : ""}{Math.round(a.delta)})</span>
                     <SeverityPill sev={a.severity} />
                   </li>
                 ))}
@@ -365,33 +501,33 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
             )}
           </SectionCard>
 
+          {/* 4. Rekommendationer - reserverad plats från start */}
           <SectionCard title={showChart ? "4. Rekommendationer" : "Rekommendationer"} icon={<CheckIcon /> } accent="text-green-600 bg-green-600/10">
-            {insight?.recommendations?.length ? (
-              <ul className="space-y-2 text-sm">
-                {insight.recommendations.map((r, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="mt-0.5 text-green-600"><CheckIcon /></span>
-                    <span>{r}</span>
-                  </li>
-                ))}
-              </ul>
+            {loadingInsights ? (
+              <div className="space-y-2">
+                <div className="h-6 animate-pulse rounded-xl bg-dark-2/10 dark:bg-white/10" />
+                <div className="h-6 animate-pulse rounded-xl bg-dark-2/10 dark:bg-white/10" />
+                <div className="h-6 animate-pulse rounded-xl bg-dark-2/10 dark:bg-white/10" />
+              </div>
+            ) : insight?.recommendations?.length ? (
+              <div>
+                <ul className="space-y-2 text-sm">
+                  {insight.recommendations.map((r, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="mt-0.5 text-green-600"><CheckIcon /></span>
+                      <span>{r}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-3 text-xs opacity-70">Källa: {usingOpenAI ? 'OpenAI (GPT-4o-mini)' : 'Mock – AI'}</div>
+              </div>
             ) : (
-              <div className="h-16 animate-pulse rounded-xl bg-dark-2/10 dark:bg-white/10" />
+              <div className="text-sm text-dark dark:text-white/70">Inga rekommendationer tillgängliga.</div>
             )}
           </SectionCard>
-
-          <div className="mt-4 text-xs text-dark-5">Källa: {sourceLabel}</div>
         </div>
 
-        <footer className="sticky bottom-0 z-10 flex items-center justify-between gap-3 border-t border-dark-3/10 bg-white/95 px-6 py-3 backdrop-blur dark:border-white/10 dark:bg-gray-dark/95">
-          <div className="flex gap-2">
-            <button className="cursor-not-allowed rounded-lg bg-dark-2/10 px-3 py-2 text-sm text-dark-6 dark:bg-white/10 dark:text-white/50" disabled>
-              Exportera
-            </button>
-            <button className="cursor-not-allowed rounded-lg bg-dark-2/10 px-3 py-2 text-sm text-dark-6 dark:bg-white/10 dark:text-white/50" disabled>
-              Kopiera
-            </button>
-          </div>
+        <footer className="sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t border-dark-3/10 bg-white/95 px-6 py-3 backdrop-blur dark:border-white/10 dark:bg-gray-dark/95">
           <button className="rounded-lg bg-red px-4 py-2 text-sm font-medium text-white hover:bg-red/90" onClick={handleClose}>Stäng</button>
         </footer>
       </aside>
