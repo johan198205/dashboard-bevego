@@ -1,9 +1,98 @@
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 
+// Simple in-memory cache for GA4 queries
+class QueryCache {
+  private cache = new Map<string, { data: any; timestamp: number }>();
+  private ttl = 5 * 60 * 1000; // 5 minutes TTL
+
+  get(key: string): any | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    
+    if (Date.now() - entry.timestamp > this.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return entry.data;
+  }
+
+  set(key: string, data: any): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
+  }
+
+  generateKey(method: string, params: any): string {
+    return `${method}:${JSON.stringify(params)}`;
+  }
+}
+
+// Rate limiting and concurrency control
+class RateLimiter {
+  private queue: Array<() => Promise<any>> = [];
+  private running = 0;
+  private maxConcurrent = 2; // Max 2 concurrent requests
+  private maxRPS = 5; // Max 5 requests per second
+  private lastRequestTime = 0;
+  private requestCount = 0;
+  private windowStart = Date.now();
+
+  async execute<T>(fn: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.queue.push(async () => {
+        try {
+          const result = await fn();
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      });
+      this.processQueue();
+    });
+  }
+
+  private async processQueue() {
+    if (this.running >= this.maxConcurrent || this.queue.length === 0) {
+      return;
+    }
+
+    // Check RPS limit
+    const now = Date.now();
+    if (now - this.windowStart >= 1000) {
+      // Reset window every second
+      this.requestCount = 0;
+      this.windowStart = now;
+    }
+
+    if (this.requestCount >= this.maxRPS) {
+      // Wait until next second
+      setTimeout(() => this.processQueue(), 1000 - (now - this.windowStart));
+      return;
+    }
+
+    this.running++;
+    this.requestCount++;
+
+    const task = this.queue.shift();
+    if (task) {
+      try {
+        await task();
+      } finally {
+        this.running--;
+        this.processQueue();
+      }
+    }
+  }
+}
+
 // Server-only GA4 client wrapper
 export class GA4Client {
   private client: BetaAnalyticsDataClient;
   private propertyId: string;
+  private rateLimiter = new RateLimiter();
+  private cache = new QueryCache();
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -49,33 +138,69 @@ export class GA4Client {
 
   // Execute GA4 report with retry logic and error handling
   async runReport(request: any, retries = 3): Promise<any> {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        const [response] = await this.client.runReport(request);
-        
-        // Check for sampling
-        const sampled = response.metadata?.schemaRestrictionResponse?.activeMetricRestrictions?.some(
-          (restriction: any) => restriction.restrictedMetricNames?.includes('sessions')
-        ) || false;
+    return this.rateLimiter.execute(async () => {
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          // Add quota tracking to request
+          const requestWithQuota = {
+            ...request,
+            returnPropertyQuota: true
+          };
 
-        return { ...response, sampled };
-      } catch (error: any) {
-        const isRateLimit = error.code === 8 || error.message?.includes('RESOURCE_EXHAUSTED') || error.message?.includes('429');
-        
-        if (isRateLimit && attempt < retries) {
-          // Exponential backoff: 1s, 2s, 4s
-          const delay = Math.pow(2, attempt - 1) * 1000;
-          await new Promise(resolve => setTimeout(resolve, delay));
-          continue;
+          const [response] = await this.client.runReport(requestWithQuota);
+          
+          // Log quota information if available
+          if (response.propertyQuota) {
+            console.log('GA4 Quota:', {
+              tokensPerHour: response.propertyQuota.tokensPerHour,
+              tokensPerDay: response.propertyQuota.tokensPerDay,
+              concurrentRequests: response.propertyQuota.concurrentRequests
+            });
+          }
+          
+          // Check for sampling
+          const sampled = response.metadata?.schemaRestrictionResponse?.activeMetricRestrictions?.some(
+            (restriction: any) => restriction.restrictedMetricNames?.includes('sessions')
+          ) || false;
+
+          return { ...response, sampled };
+        } catch (error: any) {
+          const isRateLimit = error.code === 8 || error.code === 14 || 
+                             error.message?.includes('RESOURCE_EXHAUSTED') || 
+                             error.message?.includes('429') ||
+                             error.message?.includes('Too Many Requests');
+          
+          if (isRateLimit && attempt < retries) {
+            // Improved exponential backoff with jitter
+            const baseDelay = Math.min(4 * Math.pow(2, attempt - 1), 64) * 1000; // 4s, 8s, 16s, 32s, 64s max
+            const jitter = Math.random() * 0.2 * baseDelay; // ±20% jitter
+            const delay = baseDelay + jitter;
+            
+            // Check for Retry-After header
+            const retryAfter = error.metadata?.get?.('retry-after')?.[0];
+            const finalDelay = retryAfter ? parseInt(retryAfter) * 1000 : delay;
+            
+            console.log(`GA4 rate limit hit, retrying in ${Math.round(finalDelay/1000)}s (attempt ${attempt}/${retries})`);
+            await new Promise(resolve => setTimeout(resolve, finalDelay));
+            continue;
+          }
+          
+          throw error;
         }
-        
-        throw error;
       }
-    }
+    });
   }
 
   // Get summary KPIs for date range
   async getSummaryKPIs(startDate: string, endDate: string, filters?: any) {
+    // Check cache first
+    const cacheKey = this.cache.generateKey('getSummaryKPIs', { startDate, endDate, filters });
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      console.log('Using cached summary KPIs');
+      return cached;
+    }
+
     const request = {
       property: this.propertyId,
       dateRanges: [{ startDate, endDate }],
@@ -116,7 +241,7 @@ export class GA4Client {
     const pageviews = Number(row.metricValues?.[6]?.value || 0);
     const returningUsers = Math.max(0, totalUsers - newUsers);
 
-    return {
+    const result = {
       sessions,
       engagedSessions,
       engagementRatePct: engagementRate <= 1 ? engagementRate * 100 : engagementRate,
@@ -126,6 +251,10 @@ export class GA4Client {
       pageviews,
       sampled: response.sampled || false
     };
+
+    // Cache the result
+    this.cache.set(cacheKey, result);
+    return result;
   }
 
   // Get timeseries data
@@ -306,26 +435,49 @@ export class GA4Client {
     });
   }
 
-  // Get top cities - get ALL cities without any filtering
+  // Get top cities - optimized with pagination
   async getTopCities(startDate: string, endDate: string, filters?: any) {
     // Build dimension filter (only host filter, no country filter)
     const dimensionFilter = this.buildDimensionFilter(filters);
 
-    const request = {
-      property: this.propertyId,
-      dateRanges: [{ startDate, endDate }],
-      dimensions: [{ name: 'city' }],
-      metrics: [
-        { name: 'sessions' },
-        { name: 'engagementRate' }
-      ],
-      dimensionFilter: dimensionFilter,
-      orderBys: [{ metric: { metricName: 'sessions' } }],
-      limit: 10000, // Get as many cities as possible
-    };
+    // Use pagination to avoid hitting limits
+    const limit = 50000; // Reasonable limit per request
+    let offset = 0;
+    let allRows: any[] = [];
+    let hasMore = true;
 
-    const response = await this.runReport(request);
-    const rows = response.rows || [];
+    while (hasMore) {
+      const request = {
+        property: this.propertyId,
+        dateRanges: [{ startDate, endDate }],
+        dimensions: [{ name: 'city' }],
+        metrics: [
+          { name: 'sessions' },
+          { name: 'engagementRate' }
+        ],
+        dimensionFilter: dimensionFilter,
+        orderBys: [{ metric: { metricName: 'sessions' } }],
+        limit,
+        offset
+      };
+
+      const response = await this.runReport(request);
+      const rows = response.rows || [];
+      
+      allRows = allRows.concat(rows);
+      
+      // Check if we got fewer rows than requested (end of data)
+      hasMore = rows.length === limit;
+      offset += limit;
+      
+      // Safety break to avoid infinite loops
+      if (offset > 200000) {
+        console.warn('Reached safety limit for city pagination');
+        break;
+      }
+    }
+
+    const rows = allRows;
 
 
     const cityData = rows.map((row: any) => {

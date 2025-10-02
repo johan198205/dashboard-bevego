@@ -208,7 +208,27 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     console.error('GA4 Overview API error:', error);
     
-    // Return structured error response
+    // Handle rate limiting specifically
+    const isRateLimit = error.code === 14 || error.message?.includes('429') || error.message?.includes('Too Many Requests');
+    
+    if (isRateLimit) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'GA4 API rate limit exceeded',
+          details: 'Too many requests. Please wait 1-2 minutes before trying again.',
+          retryAfter: 120 // seconds
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            'content-type': 'application/json',
+            'Retry-After': '120'
+          } 
+        }
+      );
+    }
+    
+    // Return structured error response for other errors
     return new Response(
       JSON.stringify({ 
         error: 'Failed to fetch GA4 data',
