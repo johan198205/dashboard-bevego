@@ -103,24 +103,59 @@ export type CwvUrlGroupRow = {
 
 // Microsoft Clarity types
 export type ClarityOverview = {
+  // Core metrics
   sessions: number;
-  avgEngagementTime: number; // in seconds
+  uniqueUsers: number;
+  pagesPerSession: number;
   avgScrollDepth: number; // percentage
+  avgEngagementTime: number; // in seconds
+  totalTimeSpent: number; // in seconds
+  
+  // User behavior insights
   rageClicks: {
-    count: number;
+    sessions: number; // number of sessions with rage clicks
     percentage: number; // % of sessions
   };
   deadClicks: {
-    count: number;
+    sessions: number; // number of sessions with dead clicks
+    percentage: number; // % of sessions
+  };
+  excessiveScrolling: {
+    sessions: number; // number of sessions with excessive scrolling
     percentage: number; // % of sessions
   };
   quickBack: {
+    sessions: number; // number of sessions with quick back
     percentage: number; // % of sessions
   };
+  
+  // Technical metrics
   scriptErrors: {
-    count: number;
+    sessions: number; // number of sessions with script errors
+    percentage: number; // % of sessions
+    totalErrors: number; // total number of errors
   };
+  botTraffic: {
+    sessions: number; // number of bot sessions
+    percentage: number; // % of total sessions
+  };
+  
+  // User segments
+  newUsers: {
+    sessions: number;
+    percentage: number;
+  };
+  returningUsers: {
+    sessions: number;
+    percentage: number;
+  };
+  
   source: 'Mock' | 'Clarity API';
+  dataPoints?: number;
+  dateRange?: {
+    start: string;
+    end: string;
+  };
 };
 
 export type ClarityTrendPoint = {

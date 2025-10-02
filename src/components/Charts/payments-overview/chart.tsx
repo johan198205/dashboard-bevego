@@ -22,7 +22,7 @@ export function PaymentsOverviewChart({ data }: PropsType) {
     legend: {
       show: false,
     },
-    colors: ["#E01E26", "#3C50E0"], // Primary red and accent blue
+    colors: ["#E01E26", "#F87171"], // Riksbyggen red palette
     chart: {
       height: 310,
       type: "area",

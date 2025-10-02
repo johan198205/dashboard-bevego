@@ -77,10 +77,10 @@ export function NDIChart({ data, className }: NDIChartProps) {
               <Line 
                 type="monotone" 
                 dataKey="value" 
-                stroke="#dc2626" 
+                stroke="#E01E26" 
                 strokeWidth={3}
-                dot={{ fill: '#dc2626', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, stroke: '#dc2626', strokeWidth: 2 }}
+                dot={{ fill: '#E01E26', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, stroke: '#E01E26', strokeWidth: 2 }}
                 connectNulls={false}
               />
             )}
@@ -88,11 +88,11 @@ export function NDIChart({ data, className }: NDIChartProps) {
               <Line 
                 type="monotone" 
                 dataKey="r4" 
-                stroke="#059669" 
+                stroke="#F87171" 
                 strokeWidth={2}
                 strokeDasharray="5 5"
-                dot={{ fill: '#059669', strokeWidth: 2, r: 3 }}
-                activeDot={{ r: 5, stroke: '#059669', strokeWidth: 2 }}
+                dot={{ fill: '#F87171', strokeWidth: 2, r: 3 }}
+                activeDot={{ r: 5, stroke: '#F87171', strokeWidth: 2 }}
                 connectNulls={false}
               />
             )}
@@ -100,11 +100,11 @@ export function NDIChart({ data, className }: NDIChartProps) {
               <Line 
                 type="monotone" 
                 dataKey="yoy" 
-                stroke="#3b82f6" 
+                stroke="#FCA5A5" 
                 strokeWidth={2}
                 strokeDasharray="8 8"
-                dot={{ fill: '#3b82f6', strokeWidth: 2, r: 3 }}
-                activeDot={{ r: 5, stroke: '#3b82f6', strokeWidth: 2 }}
+                dot={{ fill: '#FCA5A5', strokeWidth: 2, r: 3 }}
+                activeDot={{ r: 5, stroke: '#FCA5A5', strokeWidth: 2 }}
                 connectNulls={false}
               />
             )}
@@ -121,7 +121,7 @@ export function NDIChart({ data, className }: NDIChartProps) {
             onChange={(e) => setShowQuarterly(e.target.checked)}
             className="w-5 h-5 text-red-600 bg-white border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 accent-red-600"
           />
-          <div className="w-6 h-1 bg-red-600 rounded-sm"></div>
+          <div className="w-6 h-1 rounded-sm" style={{ backgroundColor: '#E01E26' }}></div>
           <span className="text-gray-700 dark:text-gray-300 font-medium group-hover:text-red-600 transition-colors duration-200">NDI per kvartal</span>
         </label>
         
@@ -132,7 +132,7 @@ export function NDIChart({ data, className }: NDIChartProps) {
             onChange={(e) => setShowRolling4Q(e.target.checked)}
             className="w-5 h-5 text-red-600 bg-white border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 accent-red-600"
           />
-          <div className="w-6 h-1 bg-green-600 rounded-sm border-dashed border-t-2 border-green-600"></div>
+          <div className="w-6 h-1 rounded-sm border-dashed border-t-2" style={{ backgroundColor: '#F87171', borderColor: '#F87171' }}></div>
           <span className="text-gray-700 dark:text-gray-300 font-medium group-hover:text-red-600 transition-colors duration-200">Rullande 4Q</span>
         </label>
         
@@ -143,7 +143,7 @@ export function NDIChart({ data, className }: NDIChartProps) {
             onChange={(e) => setShowYoY(e.target.checked)}
             className="w-5 h-5 text-red-600 bg-white border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 accent-red-600"
           />
-          <div className="w-6 h-1 bg-blue-600 rounded-sm border-dashed border-t-2 border-blue-600"></div>
+          <div className="w-6 h-1 rounded-sm border-dashed border-t-2" style={{ backgroundColor: '#FCA5A5', borderColor: '#FCA5A5' }}></div>
           <span className="text-gray-700 dark:text-gray-300 font-medium group-hover:text-red-600 transition-colors duration-200">Samma kvartal året innan</span>
         </label>
       </div>

@@ -73,10 +73,10 @@ export function computeClarityScore(metrics: ClarityOverview): {
   }
 
   // Calculate derived percentages and rates
-  const ragePct = (metrics.rageClicks.count / metrics.sessions) * 100;
-  const deadPct = (metrics.deadClicks.count / metrics.sessions) * 100;
+  const ragePct = metrics.rageClicks.percentage;
+  const deadPct = metrics.deadClicks.percentage;
   const quickbackPct = metrics.quickBack.percentage;
-  const scriptPer1k = (metrics.scriptErrors.count / Math.max(metrics.sessions, 1)) * 1000;
+  const scriptPer1k = (metrics.scriptErrors.totalErrors / Math.max(metrics.sessions, 1)) * 1000;
   const engagementTime = metrics.avgEngagementTime;
   const scrollDepth = metrics.avgScrollDepth;
 

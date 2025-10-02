@@ -31,12 +31,12 @@ export function Gauge({
   const strokeDasharray = circumference;
   const strokeDashoffset = circumference * (1 - normalizedValue);
   
-  // Colors based on value - using theme tokens
+  // Colors based on value - Riksbyggen red gradient
   const getColor = (value: number) => {
-    if (value >= 80) return "#22AD5C"; // green (theme token)
-    if (value >= 60) return "#F59E0B"; // yellow-dark (theme token)
-    if (value >= 40) return "#F23030"; // red (theme token)
-    return "#6B7280"; // gray-500
+    if (value >= 80) return "#E01E26"; // Primary red (best)
+    if (value >= 60) return "#F23030"; // Bright red (good)
+    if (value >= 40) return "#F87171"; // Light red (moderate)
+    return "#FCA5A5"; // Lighter red (needs improvement)
   };
   
   const color = getColor(valuePct);

@@ -18,7 +18,7 @@ export function DonutChart({ data }: PropsType) {
       type: "donut",
       fontFamily: "inherit",
     },
-    colors: ["#E01E26", "#3C50E0", "#22AD5C", "#F59460"], // Riksbyggen brand colors
+    colors: ["#E01E26", "#F23030", "#F87171", "#FCA5A5"], // Riksbyggen red palette
     labels: data.map((item) => item.name),
     legend: {
       show: true,

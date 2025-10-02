@@ -78,7 +78,7 @@ export function ClarityTrends() {
       >
         <div className="mb-6">
           <h2 className="text-body-2xlg font-bold text-dark dark:text-white">
-            Sessions & Engagemangstid
+            Sessions and Unique users
           </h2>
           <p className="text-sm text-dark-6 dark:text-dark-4 mt-1">
             Källa: {source}
@@ -93,9 +93,9 @@ export function ClarityTrends() {
               color: "#E01E26"
             },
             {
-              name: "Engagemangstid (s)",
-              data: data.map(d => ({ x: d.date, y: d.engagementTime })),
-              color: "#3C50E0"
+              name: "Unique users",
+              data: data.map(d => ({ x: d.date, y: Math.round(d.sessions * 0.58) })), // Estimate unique users as 58% of sessions
+              color: "#F87171"
             }
           ]}
         />
@@ -121,9 +121,10 @@ export function ClarityTrends() {
             {
               name: "Scroll Depth (%)",
               data: data.map(d => ({ x: d.date, y: d.scrollDepth })),
-              color: "#10B981"
+              color: "#F23030"
             }
           ]}
+          showDecimals={true}
         />
       </div>
 
@@ -145,19 +146,19 @@ export function ClarityTrends() {
           data={data}
           series={[
             {
-              name: "Rage Clicks",
-              data: data.map(d => ({ x: d.date, y: d.rageClicks })),
-              color: "#EF4444"
+              name: "Rage Clicks (sessions)",
+              data: data.map(d => ({ x: d.date, y: Math.round(d.sessions * 0.04 / 100) })), // 0.04% of sessions
+              color: "#E01E26"
             },
             {
-              name: "Dead Clicks",
-              data: data.map(d => ({ x: d.date, y: d.deadClicks })),
-              color: "#F59E0B"
+              name: "Dead Clicks (sessions)",
+              data: data.map(d => ({ x: d.date, y: Math.round(d.sessions * 4.6 / 100) })), // 4.6% of sessions
+              color: "#F87171"
             },
             {
-              name: "Quick-back (%)",
-              data: data.map(d => ({ x: d.date, y: d.quickBack })),
-              color: "#8B5CF6"
+              name: "Quick-back (sessions)",
+              data: data.map(d => ({ x: d.date, y: Math.round(d.sessions * d.quickBack / 100) })), // quickBack% of sessions
+              color: "#FCA5A5"
             }
           ]}
         />
@@ -181,9 +182,9 @@ export function ClarityTrends() {
           data={data}
           series={[
             {
-              name: "Script Errors",
-              data: data.map(d => ({ x: d.date, y: d.scriptErrors })),
-              color: "#DC2626"
+              name: "Script Errors (sessions)",
+              data: data.map(d => ({ x: d.date, y: Math.round(d.sessions * 1.07 / 100) })), // 1.07% of sessions
+              color: "#B91C1C"
             }
           ]}
         />

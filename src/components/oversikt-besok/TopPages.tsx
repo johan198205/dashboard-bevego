@@ -138,10 +138,10 @@ export function TopPages({ data }: Props) {
                         className="w-2 h-2 rounded-full"
                         style={{
                           backgroundColor: page.engagementRatePct > 70 
-                            ? '#10b981' 
+                            ? '#E01E26' 
                             : page.engagementRatePct > 50 
-                              ? '#f59e0b' 
-                              : '#ef4444'
+                              ? '#F87171' 
+                              : '#FCA5A5'
                         }}
                       />
                     </div>

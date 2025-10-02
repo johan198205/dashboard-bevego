@@ -77,6 +77,40 @@ export const chartColors = {
   muted: brandColors.neutral[400],
 } as const;
 
+/**
+ * Riksbyggen Chart Color Palette
+ * Monochromatic red palette for cohesive brand visualization
+ */
+export const riksbyggenChartPalette = [
+  "#E01E26", // Primary Riksbyggen red (darkest/most saturated)
+  "#F23030", // Bright red
+  "#F87171", // Light red
+  "#FCA5A5", // Lighter red
+  "#FECACA", // Very light red
+  "#FEE2E2", // Pale red
+  "#DC2626", // Deep red (alternative)
+  "#B91C1C", // Darker red
+  "#991B1B", // Very dark red
+  "#7F1D1D", // Darkest red
+] as const;
+
+/**
+ * Get chart colors for a specific number of data points
+ * Returns appropriate red shades based on data length
+ */
+export function getChartColors(count: number): string[] {
+  if (count <= 3) {
+    // For small datasets, use well-spaced colors
+    return ["#E01E26", "#F87171", "#FCA5A5"];
+  } else if (count <= 6) {
+    // Medium datasets
+    return ["#E01E26", "#F23030", "#F87171", "#FCA5A5", "#FECACA", "#DC2626"];
+  } else {
+    // Large datasets - use full palette
+    return riksbyggenChartPalette.slice(0, Math.min(count, riksbyggenChartPalette.length));
+  }
+}
+
 export const spacing = {
   xs: "0.25rem",
   sm: "0.5rem", 

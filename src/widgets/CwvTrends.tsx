@@ -22,7 +22,7 @@ export default function CwvTrends({ data, className }: CwvTrendsProps) {
       },
       fontFamily: "inherit",
     },
-    colors: ["#E01E26", "#0ABEF9", "#10B981"],
+    colors: ["#E01E26", "#F87171", "#FCA5A5"],
     stroke: {
       curve: "smooth",
       width: 3,
@@ -71,12 +71,12 @@ export default function CwvTrends({ data, className }: CwvTrendsProps) {
         title: {
           text: "INP (ms)",
           style: {
-            color: "#0ABEF9",
+            color: "#F87171",
           },
         },
         labels: {
           style: {
-            colors: "#0ABEF9",
+            colors: "#F87171",
           },
         },
       },
@@ -85,12 +85,12 @@ export default function CwvTrends({ data, className }: CwvTrendsProps) {
         title: {
           text: "CLS",
           style: {
-            color: "#10B981",
+            color: "#FCA5A5",
           },
         },
         labels: {
           style: {
-            colors: "#10B981",
+            colors: "#FCA5A5",
           },
         },
         min: 0,

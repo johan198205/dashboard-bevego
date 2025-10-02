@@ -17,9 +17,10 @@ type SeriesData = {
 type PropsType = {
   data: any[];
   series: SeriesData[];
+  showDecimals?: boolean;
 };
 
-export function ClarityTrendsChart({ data, series }: PropsType) {
+export function ClarityTrendsChart({ data, series, showDecimals = false }: PropsType) {
   const isMobile = useIsMobile();
 
   const options: ApexOptions = {
@@ -63,6 +64,35 @@ export function ClarityTrendsChart({ data, series }: PropsType) {
       marker: {
         show: true,
       },
+      x: {
+        formatter: function (val) {
+          // Handle 3-day period format for tooltip
+          if (val && typeof val === 'string' && val.includes(' - ')) {
+            const [startDate, endDate] = val.split(' - ');
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const startStr = start.toLocaleDateString('sv-SE', { 
+              weekday: 'short', 
+              day: 'numeric', 
+              month: 'short' 
+            });
+            const endStr = end.toLocaleDateString('sv-SE', { 
+              weekday: 'short', 
+              day: 'numeric', 
+              month: 'short' 
+            });
+            return `${startStr} - ${endStr}`;
+          } else {
+            // Fallback for single date format
+            const date = new Date(val);
+            return date.toLocaleDateString('sv-SE', { 
+              weekday: 'short', 
+              day: 'numeric', 
+              month: 'short' 
+            });
+          }
+        },
+      },
     },
     xaxis: {
       axisBorder: {
@@ -71,12 +101,29 @@ export function ClarityTrendsChart({ data, series }: PropsType) {
       axisTicks: {
         show: false,
       },
-      type: "datetime",
+      type: "category",
+      labels: {
+        formatter: function (val) {
+          // Handle 3-day period format (e.g., "2025-09-29 - 2025-10-01" -> "29 Sep - 1 Okt")
+          if (val && typeof val === 'string' && val.includes(' - ')) {
+            const [startDate, endDate] = val.split(' - ');
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const startStr = start.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
+            const endStr = end.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
+            return `${startStr} - ${endStr}`;
+          } else {
+            // Fallback for single date format
+            const date = new Date(val);
+            return date.toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' });
+          }
+        },
+      },
     },
     yaxis: {
       labels: {
         formatter: function (val) {
-          return Math.round(val).toString();
+          return showDecimals ? val.toFixed(2) : Math.round(val).toString();
         },
       },
     },

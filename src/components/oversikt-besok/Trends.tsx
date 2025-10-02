@@ -29,15 +29,15 @@ export function Trends({ data, activeSeries }: Props) {
     })
   }));
 
-  // Palette per series (unique colors)
+  // Riksbyggen red palette for all series - varied shades for distinction
   const COLORS = {
-    sessions: '#3b82f6', // blue
-    engagedSessions: '#10b981', // green
-    engagementRatePct: '#8b5cf6', // purple (dashed)
-    totalUsers: '#f59e0b', // amber
-    returningUsers: '#ef4444', // red
-    pageviews: '#0ea5e9', // sky
-    avgEngagementTimeSec: '#14b8a6', // teal
+    sessions: '#E01E26', // Primary Riksbyggen red
+    engagedSessions: '#DC2626', // Deep red
+    engagementRatePct: '#B91C1C', // Darker red (dashed)
+    totalUsers: '#F87171', // Light red
+    returningUsers: '#991B1B', // Very dark red
+    pageviews: '#F23030', // Bright red
+    avgEngagementTimeSec: '#FCA5A5', // Lighter red
   } as const;
 
   // Custom tooltip
