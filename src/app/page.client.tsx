@@ -12,17 +12,17 @@ import GaugeCard from "@/widgets/GaugeCard";
 // import PerfCard from "@/widgets/PerfCard";
 // import WcagCard from "@/widgets/WcagCard";
 import { useFilters } from "@/components/GlobalFilters";
-import { ClarityScoreCard } from "./(home)/_components/overview-cards/clarity-score-card";
+// import { ClarityScoreCard } from "./(home)/_components/overview-cards/clarity-score-card"; // Removed
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
-import { useClarityData } from "@/hooks/useClarityData";
-import * as overviewIcons from "./(home)/_components/overview-cards/icons";
+// import { useClarityData } from "@/hooks/useClarityData"; // Removed
+// import * as overviewIcons from "./(home)/_components/overview-cards/icons"; // Removed
 import { useCwvData } from "@/hooks/useCwvData";
 import { CwvTotalStatusCard } from "@/components/shared/CwvTotalStatusCard";
 
 export default function ClientHome() {
   const { state } = useFilters();
   const range = state.range;
-  const { clarityScore } = useClarityData();
+  // const { clarityScore } = useClarityData(); // Removed
   const { summary: cwvSummary } = useCwvData();
   const [drawer, setDrawer] = useState<{ metricId: string; title: string } | null>(null);
   return (
@@ -52,26 +52,7 @@ export default function ClientHome() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <TotalDiffCard title="Total users" metric="mau" range={range} />
         <TotalDiffCard title="Användning — Sidvisningar" metric="pageviews" range={range} />
-        {clarityScore && (
-          <ClarityScoreCard
-            label="Clarity Score"
-            data={{
-              value: `${clarityScore.score} / 100`,
-              growthRate: 0,
-              grade: clarityScore.grade,
-            }}
-            Icon={overviewIcons.ClarityScore}
-            comparisonLabel={(() => {
-              switch (state.range.comparisonMode) {
-                case 'yoy': return 'vs. föregående år';
-                case 'prev': return 'vs. föregående period';
-                case 'none': return null;
-                default: return 'vs. föregående period';
-              }
-            })()}
-            onClick={() => setDrawer({ metricId: "clarity", title: "Clarity Score" })}
-          />
-        )}
+        {/* ClarityScoreCard removed */}
       </div>
 
       {drawer && (
