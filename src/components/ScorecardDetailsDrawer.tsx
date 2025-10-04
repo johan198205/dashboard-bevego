@@ -12,7 +12,7 @@ export type TimePoint = { x: number; y: number };
 export type DrawerProps = {
   open: boolean;
   onClose: () => void;
-  metricId: string; // e.g. mau, pageviews, tasks, features, cwv_total
+  metricId: string; // e.g. mau, pageviews, tasks, features
   title: string;
   sourceLabel: string;
   getSeries: (args: { start: string; end: string; grain: Grain; filters: any }) => Promise<TimePoint[]>;
@@ -94,7 +94,7 @@ async function generateInsights(metricId: string, series: TimePoint[], anomalies
     features: "Funktioner",
     tasks_rate: "Tasks",
     features_rate: "Funktioner",
-    cwv_total: "CWV total status",
+    // cwv_total: "CWV total status", // Hidden for now
     sessions: "Sessions",
     totalUsers: "Total users",
     returningUsers: "Returning users",
@@ -333,8 +333,8 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
 
   if (!open) return null;
 
-  const isRateMetric = metricId === "tasks_rate" || metricId === "features_rate" || metricId === "cwv_total" || metricId === "engagementRate";
-  const isGaugeMetric = metricId === "tasks_rate" || metricId === "features_rate" || metricId === "cwv_total";
+  const isRateMetric = metricId === "tasks_rate" || metricId === "features_rate" || metricId === "engagementRate";
+  const isGaugeMetric = metricId === "tasks_rate" || metricId === "features_rate";
   
   const options = {
     chart: { type: "line", toolbar: { show: false }, fontFamily: "inherit" },

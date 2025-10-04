@@ -16,7 +16,7 @@ export const NAV_DATA = [
       { title: "Användning", url: "/anvandning", icon: Icons.Table, items: [] },
       // TODO: Konverteringar section - controlled by FEATURE_FLAGS.conversions
       ...(FEATURE_FLAGS.conversions ? [{ title: "Konverteringar", url: "/konverteringar", icon: Icons.PieChart, items: [] }] : []),
-      { title: "Prestanda", url: "/prestanda", icon: Icons.Table, items: [] },
+      // { title: "Prestanda", url: "/prestanda", icon: Icons.Table, items: [] }, // Hidden for now
       { title: "Inställningar", url: "/installningar", icon: Icons.Alphabet, items: [] },
     ],
   },

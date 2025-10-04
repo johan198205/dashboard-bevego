@@ -27,11 +27,12 @@ export default function ClientHome() {
   const [drawer, setDrawer] = useState<{ metricId: string; title: string } | null>(null);
   return (
     <div className="space-y-6">
-      {/* Gauge Cards Section - 3 compact cards in top row */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Gauge Cards Section - 2 compact cards in top row */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <GaugeCard title="Tasks" metric="tasks_rate" range={range} compact={true} />
         <GaugeCard title="Funktioner" metric="features_rate" range={range} compact={true} />
-        {cwvSummary ? (
+        {/* CWV card hidden for now */}
+        {/* {cwvSummary ? (
           <CwvTotalStatusCard
             label="CWV total status"
             data={{
@@ -44,7 +45,7 @@ export default function ClientHome() {
           />
         ) : (
           <GaugeCard title="CWV total status" metric="cwv_total" range={range} compact={true} />
-        )}
+        )} */}
       </div>
 
       {/* Other KPI Cards Section - 4 larger cards in bottom row */}

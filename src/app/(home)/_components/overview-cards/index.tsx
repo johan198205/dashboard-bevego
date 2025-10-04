@@ -152,7 +152,7 @@ export function OverviewCardsGroup() {
   if (cwvLoading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4 2xl:gap-7.5">
-        {Array.from({ length: 5 }).map((_, i) => (
+        {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
         ))}
       </div>
@@ -173,8 +173,8 @@ export function OverviewCardsGroup() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4 2xl:gap-7.5">
-      {/* CWV Total Status - First prominent card */}
-      {cwvSummary && (
+      {/* CWV Total Status - Hidden for now */}
+      {/* {cwvSummary && (
         <CwvTotalStatusCard
           label="CWV total status"
           data={{
@@ -187,7 +187,7 @@ export function OverviewCardsGroup() {
           comparisonLabel={undefined}
           onClick={() => setDrawer({ metricId: "cwv_total", title: "CWV total status" })}
         />
-      )}
+      )} */}
 
       <OverviewCard
         label="Total Views"
