@@ -14,12 +14,12 @@ import GaugeCard from "@/widgets/GaugeCard";
 import { useFilters } from "@/components/GlobalFilters";
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
 import { useCwvData } from "@/hooks/useCwvData";
-import { CwvTotalStatusCard } from "@/components/shared/CwvTotalStatusCard";
+// import { CwvTotalStatusCard } from "@/components/shared/CwvTotalStatusCard";
 
 export default function ClientHome() {
   const { state } = useFilters();
   const range = state.range;
-  const { summary: cwvSummary } = useCwvData();
+  // const { summary: cwvSummary } = useCwvData();
   const [drawer, setDrawer] = useState<{ metricId: string; title: string } | null>(null);
   return (
     <div className="space-y-6">
