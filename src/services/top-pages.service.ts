@@ -28,7 +28,7 @@ export class TopPagesService {
       const topPages = await this.ga4Service.getTopPages(limit, startDate, endDate);
       
       // Convert page paths to full URLs
-      const urls = topPages.map(page => `https://mitt.riksbyggen.se${page.pagePath}`);
+      const urls = topPages.map(page => `https://www.bevego.se${page.pagePath}`);
       
       // Get Core Web Vitals data for these pages
       const cwvData = await this.cruxPagesService.getPagesCwvData(urls, formFactor);

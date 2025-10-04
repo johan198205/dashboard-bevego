@@ -536,7 +536,7 @@ export class GA4Client {
         fieldName: 'hostName',
         stringFilter: {
           matchType: 'EXACT',
-          value: 'mitt.riksbyggen.se'
+          value: 'www.bevego.se'
         }
       }
     });

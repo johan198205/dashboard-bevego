@@ -113,7 +113,7 @@ describe('CrUX Data Mapping', () => {
       record: {
         key: {
           formFactor: 'PHONE',
-          origin: 'https://mitt.riksbyggen.se'
+          origin: 'https://bevego.se'
         },
         metrics: {
           largest_contentful_paint: {
@@ -142,7 +142,7 @@ describe('CrUX Data Mapping', () => {
       record: {
         key: {
           formFactor: 'PHONE',
-          origin: 'https://mitt.riksbyggen.se'
+          origin: 'https://bevego.se'
         },
         metrics: {
           core_web_vitals: {

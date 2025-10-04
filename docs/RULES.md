@@ -1,6 +1,6 @@
 ## GA4 API – host‑filter
 
-- Alla anrop till GA4 Data API ska filtreras på `hostName = mitt.riksbyggen.se`.
+- Alla anrop till GA4 Data API ska filtreras på `hostName = bevego.se`.
 - Gäller både totalsiffror och tidsserier.
 - Syfte: isolera trafik för Mitt Riksbyggen och undvika att andra hosts påverkar KPI:er.
 

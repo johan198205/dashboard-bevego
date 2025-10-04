@@ -34,8 +34,6 @@ const getMetricIcon = (metric: string) => {
     case "pageviews":
     case "sessions":
       return GlobeIcon;
-    case "ndi":
-      return UserIcon; // NDI uses UserIcon like MAU
     default:
       return UserIcon;
   }
@@ -50,8 +48,6 @@ const getMetricVariant = (metric: string) => {
     case "pageviews":
     case "sessions":
       return "success" as const;
-    case "ndi":
-      return "primary" as const; // NDI uses primary variant like MAU
     default:
       return "default" as const;
   }
@@ -89,11 +85,6 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
   
   // Get comparison label based on current comparison mode
   const getComparisonLabel = () => {
-    // NDI always shows quarter comparison regardless of global comparison mode
-    if (metric === 'ndi') {
-      return 'vs. föregående kvartal';
-    }
-    
     switch (state.range.comparisonMode) {
       case 'yoy': return 'vs. föregående år';
       case 'prev': return 'vs. föregående period';
@@ -150,25 +141,11 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
         label={title}
         value={kpiSummary
           ? (() => {
-              if (metric === "ndi") {
-                const raw = typeof kpiSummary.value === 'number' ? kpiSummary.value : parseFloat(String(kpiSummary.value));
-                if (!isFinite(raw)) return "N/A";
-                const clamped = Math.max(0, Math.min(100, raw));
-                return clamped.toFixed(1);
-              }
               const num = typeof kpiSummary.value === 'number' ? kpiSummary.value : parseFloat(String(kpiSummary.value));
               return formatNumber(num);
             })()
           : (summary && data)
-            ? (metric === "ndi"
-                ? (() => {
-                    const targetDate = getQuarterEndDate(range.end);
-                    const hasTarget = (data.timeseries || []).some(p => p.date === targetDate);
-                    if (!hasTarget) return "N/A";
-                    return Math.max(0, Math.min(100, summary.current)).toFixed(1);
-                  })()
-                : formatNumber(summary.current)
-              )
+            ? formatNumber(summary.current)
             : "–"}
         growthRate={kpiSummary ? kpiSummary.growthRate : summary ? summary.yoyPct : undefined}
         Icon={Icon}
@@ -182,14 +159,14 @@ export default function TotalDiffCard({ title, metric, range }: Props) {
         onClick={() => setOpen(true)}
       />
       <div className="absolute top-2 right-2">
-        <InfoTooltip text={metric === "ndi" ? "NDI kvartalsvärden. Mockdata och definitioner för demo." : `Metrik: ${metric}. Mockdata och definitioner för demo.`} />
+        <InfoTooltip text={`Metrik: ${metric}. Mockdata och definitioner för demo.`} />
       </div>
       <ScorecardDetailsDrawer
         open={open}
         onClose={() => setOpen(false)}
         metricId={metric}
         title={title}
-        sourceLabel={metric === "ndi" ? "Uppladdad data" : "Mock"}
+        sourceLabel="Mock"
         getSeries={getSeries}
         getCompareSeries={getCompareSeries}
       />

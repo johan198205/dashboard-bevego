@@ -18,7 +18,7 @@ function getBaseUrl() {
 export async function getCruxSummary(
   range: { start: string; end: string },
   device: string[] = [],
-  origin: string = 'https://mitt.riksbyggen.se'
+  origin: string = 'https://www.bevego.se'
 ): Promise<CwvSummary> {
   try {
     const params = new URLSearchParams({
@@ -55,7 +55,7 @@ export async function getCruxSummary(
 export async function getCruxTrends(
   range: { start: string; end: string },
   device: string[] = [],
-  origin: string = 'https://mitt.riksbyggen.se'
+  origin: string = 'https://www.bevego.se'
 ): Promise<CwvTrendPoint[]> {
   try {
     const params = new URLSearchParams({
@@ -92,7 +92,7 @@ export async function getCruxTrends(
 export async function getCruxTable(
   range: { start: string; end: string },
   device: string[] = [],
-  origin: string = 'https://mitt.riksbyggen.se'
+  origin: string = 'https://www.bevego.se'
 ): Promise<CwvUrlGroupRow[]> {
   try {
     const params = new URLSearchParams({

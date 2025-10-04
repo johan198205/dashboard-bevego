@@ -5,7 +5,7 @@ import { OverviewPageSkeleton } from '@/components/oversikt-besok/OverviewPageSk
 
 export const metadata: Metadata = {
   title: 'GA4 Dashboard – Besök',
-  description: 'Översikt över besöksstatistik från Google Analytics 4 för mitt.riksbyggen.se',
+    description: 'Översikt över besöksstatistik från Google Analytics 4 för www.bevego.se',
 };
 
 type SearchParams = {
@@ -83,7 +83,7 @@ export default async function OverviewPage({ searchParams }: Props) {
             GA4 Dashboard – Besök
           </h1>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Översikt över besöksstatistik från Google Analytics 4 för mitt.riksbyggen.se
+            Översikt över besöksstatistik från Google Analytics 4 för www.bevego.se
           </p>
         </div>
       </div>

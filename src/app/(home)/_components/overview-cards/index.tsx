@@ -13,7 +13,6 @@ import * as icons from "./icons";
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
 import { useFilters } from "@/components/GlobalFilters";
 import { generateTimeseries, aggregate } from "@/lib/mockData/generators";
-import { ndiTimeseriesToChart } from "@/lib/ndi-utils";
 
 // TODO replace with UI settings
 const KPI_PROGRESS_ENABLED_METRICS = ['mau', 'pageviews', 'clarity_score'];
@@ -137,11 +136,6 @@ export function OverviewCardsGroup() {
       const res = await getKpi({ metric: "features_rate", range: { start, end, grain, comparisonMode: state.range.comparisonMode }, filters });
       return (res.timeseries || []).map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
     },
-    // Use resolver data for NDI with normalized 0-100 range
-    ndi: async ({ start, end, grain, filters }: any) => {
-      const res = await getKpi({ metric: "ndi", range: { start, end, grain, comparisonMode: state.range.comparisonMode }, filters });
-      return ndiTimeseriesToChart(res.timeseries || []);
-    },
     tasks: async ({ start, end, grain }: any) => {
       const daily = generateTimeseries({ start, end }, { base: 1200, seasonalityByMonth: [0.9,0.92,0.95,1.0,1.1,1.15,1.2,1.18,1.05,0.98,0.95,0.92], noise: 0.08, seedKey: "tasks" });
       const agg = aggregate(daily, grain);
@@ -179,11 +173,6 @@ export function OverviewCardsGroup() {
 
   // Get comparison label based on current comparison mode
   const getComparisonLabel = (metricId?: string) => {
-    // NDI always shows quarter comparison regardless of global comparison mode
-    if (metricId === 'ndi') {
-      return 'vs. föregående kvartal';
-    }
-    
     switch (state.range.comparisonMode) {
       case 'yoy': return 'vs. föregående år';
       case 'prev': return 'vs. föregående period';

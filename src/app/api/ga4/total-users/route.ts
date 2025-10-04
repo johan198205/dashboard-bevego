@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       dimensionFilter: {
         filter: {
           fieldName: 'hostName',
-          stringFilter: { matchType: 'EXACT', value: 'mitt.riksbyggen.se' }
+          stringFilter: { matchType: 'EXACT', value: 'www.bevego.se' }
         }
       },
       orderBys: [{ dimension: { dimensionName: 'date' } }],
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
       dimensionFilter: {
         filter: {
           fieldName: 'hostName',
-          stringFilter: { matchType: 'EXACT', value: 'mitt.riksbyggen.se' }
+          stringFilter: { matchType: 'EXACT', value: 'www.bevego.se' }
         }
       },
     });
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error('GA4 totalUsers error:', err);
+    console.error('GA4 totalUsers error:', err || 'Unknown error');
     return new Response(JSON.stringify({ error: String(err) }), { status: 502, headers: { 'content-type': 'application/json' } });
   }
 }

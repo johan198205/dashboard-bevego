@@ -6,14 +6,13 @@ import { useFilters } from "@/components/GlobalFilters";
 import type { Grain } from "@/lib/types";
 import { UserIcon, GlobeIcon, MessageOutlineIcon, CheckIcon, XIcon, TrendingUpIcon } from "@/assets/icons";
 import { Gauge } from "@/components/ui/gauge";
-import { selectNdiPercent } from "@/lib/ndi-utils";
 
 export type TimePoint = { x: number; y: number };
 
 export type DrawerProps = {
   open: boolean;
   onClose: () => void;
-  metricId: string; // e.g. mau, pageviews, ndi, tasks, features, clarity, cwv_total
+  metricId: string; // e.g. mau, pageviews, tasks, features, clarity, cwv_total
   title: string;
   sourceLabel: string;
   getSeries: (args: { start: string; end: string; grain: Grain; filters: any }) => Promise<TimePoint[]>;
@@ -91,7 +90,6 @@ async function generateInsights(metricId: string, series: TimePoint[], anomalies
         const nameMap: Record<string, string> = {
     mau: "Total users",
     pageviews: "Sidvisningar",
-    ndi: "Kundnöjdhet (NDI)",
     tasks: "Tasks",
     features: "Funktioner",
     tasks_rate: "Tasks",
@@ -337,7 +335,7 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
   if (!open) return null;
 
   const isRateMetric = metricId === "tasks_rate" || metricId === "features_rate" || metricId === "clarity" || metricId === "cwv_total" || metricId === "engagementRate";
-  const isGaugeMetric = metricId === "ndi" || metricId === "tasks_rate" || metricId === "features_rate" || metricId === "cwv_total";
+  const isGaugeMetric = metricId === "tasks_rate" || metricId === "features_rate" || metricId === "cwv_total";
   
   const options = {
     chart: { type: "line", toolbar: { show: false }, fontFamily: "inherit" },
@@ -372,8 +370,6 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
         return <span className={base}><UserIcon /></span>;
       case "pageviews":
         return <span className={base}><GlobeIcon /></span>;
-      case "ndi":
-        return <span className={base}><MessageOutlineIcon /></span>;
       default:
         return <span className={base}><CheckIcon /></span>;
     }
@@ -488,10 +484,10 @@ export default function ScorecardDetailsDrawer({ open, onClose, metricId, title,
                   {isGaugeMetric && (
                     <div className="mb-6 flex justify-center">
                       <Gauge 
-                        valuePct={metricId === "ndi" ? selectNdiPercent(currentValue) : Math.min(100, Math.max(0, currentValue))} 
+                        valuePct={Math.min(100, Math.max(0, currentValue))} 
                         size={160}
                         strokeWidth={12}
-                        label={metricId === "ndi" ? "NDI" : metricId === "tasks_rate" ? "Tasks" : metricId === "features_rate" ? "Funktioner" : "CWV"}
+                        label={metricId === "tasks_rate" ? "Tasks" : metricId === "features_rate" ? "Funktioner" : "CWV"}
                       />
                     </div>
                   )}

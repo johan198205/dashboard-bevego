@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const type = searchParams.get("type") as string;
   const device = searchParams.get("device") as string;
-  const origin = searchParams.get("origin") as string || "https://mitt.riksbyggen.se";
+  const origin = searchParams.get("origin") as string || "https://www.bevego.se";
   const startDate = searchParams.get("startDate") as string;
   const endDate = searchParams.get("endDate") as string;
 

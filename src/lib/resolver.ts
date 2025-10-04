@@ -1,7 +1,6 @@
 import { type KpiResponse, type Params, type Grain, type Filters, type KpiPoint } from "./types";
 import { buildKpiResponse, buildAverageKpiResponse, generateTimeseries, aggregate, aggregateAverage, buildBreakdown } from "./mockData/generators";
 import { sumSeries } from "./yoy";
-import { getNdiTimeseries, getNdiCurrent, getNdiBreakdown, hasNdiData, getNdiDataSourceLabel } from "../services/ndi-data.service";
 
 function addYears(dateStr: string, years: number): string {
   const d = new Date(dateStr);
@@ -148,7 +147,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
         dimensions: [{ name: "date" }, ...extraDims],
         metrics: [{ name: "totalUsers" }],
-        dimensionFilter: buildGa4FilterExpression("mitt.riksbyggen.se", filters),
+        dimensionFilter: buildGa4FilterExpression("www.bevego.se", filters),
         orderBys: [{ dimension: { dimensionName: "date" } }],
       });
       if (debugGa4) {
@@ -176,7 +175,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
     } catch (err) {
       // Fall back to mock if GA4 fails for any reason
       // eslint-disable-next-line no-console
-      console.error("GA4 MAU query failed, falling back to mock:", err);
+      console.error("GA4 MAU query failed, falling back to mock:", err || "Unknown error");
     }
 
     // Mock fallback
@@ -282,7 +281,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
         dimensions: [{ name: "date" }, ...extraDims],
         metrics: [{ name: "screenPageViews" }],
-        dimensionFilter: buildGa4FilterExpression("mitt.riksbyggen.se", filters),
+        dimensionFilter: buildGa4FilterExpression("www.bevego.se", filters),
         orderBys: [{ dimension: { dimensionName: "date" } }],
       });
       if (debugGa4) {
@@ -330,7 +329,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       }
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error("GA4 Pageviews query failed, falling back to mock:", err);
+      console.error("GA4 Pageviews query failed, falling back to mock:", err || "Unknown error");
     }
 
     // Mock fallback
@@ -404,48 +403,6 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
     ], ["Källa: Mockdata (Funktioner)"]);
   }
 
-  if (metric === "ndi") {
-    // Use uploaded NDI data if available, otherwise fallback to mock
-    const hasUploadedData = await hasNdiData();
-    if (hasUploadedData) {
-      const current = await getNdiTimeseries(range, filters);
-      const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
-      const previous = prevRange ? await getNdiTimeseries(prevRange, filters) : undefined;
-      
-      // Convert filters to NDI dimension format
-      const ndiFilters = filters ? {
-        audience: filters.audience,
-        device: filters.device,
-        channel: filters.channel,
-      } : undefined;
-      
-      const breakdown = await getNdiBreakdown('audience', range);
-      const sourceLabel = await getNdiDataSourceLabel();
-      const currentValue = await getNdiCurrent(range, ndiFilters);
-      const prevValue = previous && previous.length > 0 ? await getNdiCurrent(prevRange!, ndiFilters) : 0;
-      
-      return {
-        meta: { source: "mock", metric: "ndi", dims: breakdown.map(b => b.key) },
-        summary: {
-          current: currentValue,
-          prev: prevValue,
-          yoyPct: prevValue ? ((currentValue - prevValue) / Math.abs(prevValue)) * 100 : 0
-        },
-        timeseries: current,
-        compareTimeseries: previous,
-        breakdown: breakdown.length > 0 ? breakdown : undefined,
-        notes: [`Källa: ${sourceLabel} (NDI)`]
-      };
-    } else {
-      // Fallback to mock data
-      const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 75, noise: 0.08, seedKey: "ndi" }), scale);
-      const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
-      const previous = prevRange ? scaleSeries(generateTimeseries({ start: prevRange.start, end: prevRange.end, grain }, { base: 70, noise: 0.08, seedKey: "ndi_prev" }), scale) : undefined;
-      const series = aggregate(current, grain);
-      const prevAgg = previous ? aggregate(previous, grain) : undefined;
-      return buildKpiResponse("ndi", series, prevAgg, ["Styrelse", "Medlem", "Förvaltare"], ["NDI är dummyvärden på daglig nivå", "Källa: Mockdata (NDI)"]);
-    }
-  }
 
   if (metric === "tasks_rate") {
     // Generate realistic task completion rate 60-85%
@@ -505,7 +462,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         const cruxService = new CruxService();
         
         // Get current CWV data
-        const cwvData = await cruxService.getCoreWebVitals("https://mitt.riksbyggen.se");
+        const cwvData = await cruxService.getCoreWebVitals("https://www.bevego.se");
         const currentRate = cwvData.totalStatus.percentage;
         
         // Get previous period data for comparison
@@ -513,7 +470,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         let prevRate = 0;
         if (prevRange) {
           try {
-            const prevCwvData = await cruxService.getCoreWebVitals("https://mitt.riksbyggen.se");
+            const prevCwvData = await cruxService.getCoreWebVitals("https://www.bevego.se");
             prevRate = prevCwvData.totalStatus.percentage;
           } catch (err) {
             // If previous period fails, use current rate as fallback
@@ -534,7 +491,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         };
       }
     } catch (err) {
-      console.error("CrUX CWV Total query failed, falling back to mock:", err);
+      console.error("CrUX CWV Total query failed, falling back to mock:", err || "Unknown error");
     }
     
     // Fallback to mock data if CrUX fails
@@ -632,7 +589,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
         dimensions: [{ name: "date" }, ...extraDims],
         metrics: [{ name: "sessions" }],
-        dimensionFilter: buildGa4FilterExpression("mitt.riksbyggen.se", filters),
+        dimensionFilter: buildGa4FilterExpression("www.bevego.se", filters),
         orderBys: [{ dimension: { dimensionName: "date" } }],
       });
       if (debugGa4) {
@@ -659,7 +616,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       }
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error("GA4 Sessions query failed:", err);
+      console.error("GA4 Sessions query failed:", err || "Unknown error");
       // Fall back to mock data instead of throwing
       const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 1200, noise: 0.1, seedKey: "sessions" }), scale);
       const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
@@ -744,7 +701,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
         dimensions: [{ name: "date" }, ...extraDims],
         metrics: [{ name: "engagedSessions" }],
-        dimensionFilter: buildGa4FilterExpression("mitt.riksbyggen.se", filters),
+        dimensionFilter: buildGa4FilterExpression("www.bevego.se", filters),
         orderBys: [{ dimension: { dimensionName: "date" } }],
       });
       if (debugGa4) {
@@ -771,7 +728,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       }
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error("GA4 Engaged Sessions query failed:", err);
+      console.error("GA4 Engaged Sessions query failed:", err || "Unknown error");
       // Fall back to mock data instead of throwing
       const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 800, noise: 0.1, seedKey: "engagedSessions" }), scale);
       const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;
@@ -804,7 +761,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
             fieldName: "hostName",
             stringFilter: {
               matchType: "EXACT",
-              value: "mitt.riksbyggen.se"
+              value: "www.bevego.se"
             }
           }
         },
@@ -849,7 +806,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       }
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error("GA4 Engagement Rate query failed:", err);
+      console.error("GA4 Engagement Rate query failed:", err || "Unknown error");
       // Calculate engagement rate from sessions and engagedSessions instead of using GA4 API
       try {
         // Define the functions locally since they're not in scope here
@@ -869,7 +826,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
             dimensionFilter: {
               filter: {
                 fieldName: "hostName",
-                stringFilter: { matchType: "EXACT", value: "mitt.riksbyggen.se" }
+                stringFilter: { matchType: "EXACT", value: "www.bevego.se" }
               }
             }
           });
@@ -896,7 +853,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
             dimensionFilter: {
               filter: {
                 fieldName: "hostName",
-                stringFilter: { matchType: "EXACT", value: "mitt.riksbyggen.se" }
+                stringFilter: { matchType: "EXACT", value: "www.bevego.se" }
               }
             }
           });
@@ -1050,7 +1007,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         dateRanges: [{ startDate: rangeInput.start, endDate: rangeInput.end }],
         dimensions: [{ name: "date" }, ...extraDims],
         metrics: [{ name: "averageSessionDuration" }],
-        dimensionFilter: buildGa4FilterExpression("mitt.riksbyggen.se", filters),
+        dimensionFilter: buildGa4FilterExpression("www.bevego.se", filters),
         orderBys: [{ dimension: { dimensionName: "date" } }],
       });
       if (debugGa4) {
@@ -1077,7 +1034,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
       }
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error("GA4 Average Engagement Time query failed:", err);
+      console.error("GA4 Average Engagement Time query failed:", err || "Unknown error");
       // Fall back to mock data instead of throwing
       const current = scaleSeries(generateTimeseries({ start: range.start, end: range.end, grain }, { base: 180, noise: 0.1, seedKey: "avgEngagementTime" }), scale);
       const prevRange = comparisonMode === 'yoy' ? previousYoyRange(range) : comparisonMode === 'prev' ? previousPeriodRange(range) : null;

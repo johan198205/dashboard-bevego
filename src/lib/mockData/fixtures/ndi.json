@@ -1,8 +1,0 @@
-{
-  "meta": { "metric": "ndi", "grain": "quarter" },
-  "audiences": ["Styrelse", "Medlem", "Förvaltare"],
-  "features": ["Nyheter", "Dokument", "Fakturor", "Felanmälan", "Rapporter"],
-  "notes": ["Dummy NDI på kvartalsnivå."]
-}
-
-

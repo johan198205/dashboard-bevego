@@ -16,7 +16,7 @@ export class CruxHistoryService {
    * Get historical trends data from CrUX History API
    */
   async getTrends(
-    origin: string = 'https://mitt.riksbyggen.se',
+    origin: string = 'https://www.bevego.se',
     formFactor?: 'PHONE' | 'DESKTOP' | 'TABLET',
     weeks: number = 40,
     startDate?: string,
@@ -115,7 +115,7 @@ export class CruxHistoryService {
    * Get summary data for a specific period from historical data
    */
   async getSummaryForPeriod(
-    origin: string = 'https://mitt.riksbyggen.se',
+    origin: string = 'https://www.bevego.se',
     formFactor?: 'PHONE' | 'DESKTOP' | 'TABLET',
     startDate?: string,
     endDate?: string

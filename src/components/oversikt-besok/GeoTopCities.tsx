@@ -120,7 +120,7 @@ export function GeoTopCities({ data, onClick }: Props) {
         setPreviousCities(payload?.cities || null);
       })
       .catch((err) => {
-        console.error('Failed to fetch previous cities:', err);
+        console.error('Failed to fetch previous cities:', err || 'Unknown error');
         setPreviousCities(null);
       })
       .finally(() => setLoadingPrev(false));

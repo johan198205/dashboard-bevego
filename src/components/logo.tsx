@@ -6,7 +6,7 @@ export function Logo() {
       <Image
         src="/Logo.svg"
         fill
-        alt="Riksbyggen"
+        alt="Bevego"
         role="img"
         quality={100}
         className="object-contain"

@@ -6,7 +6,7 @@
 import { prisma } from '@/lib/prisma';
 import { getClarityClient } from '@/lib/clarityClient';
 
-const DOMAIN = 'mitt.riksbyggen.se';
+const DOMAIN = 'www.bevego.se';
 
 /**
  * Fetch last 3 days of Clarity data and store in database

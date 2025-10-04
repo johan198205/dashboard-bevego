@@ -61,7 +61,7 @@ export function OverviewPageClient({ initialData, initialError }: Props) {
       const result: OverviewPayload = await response.json();
       setData(result);
     } catch (err) {
-      console.error('Failed to fetch GA4 data:', err);
+      console.error('Failed to fetch GA4 data:', err || 'Unknown error');
       setError(err instanceof Error ? err.message : 'Okänt fel');
     } finally {
       setLoading(false);
@@ -121,7 +121,7 @@ export function OverviewPageClient({ initialData, initialError }: Props) {
           console.debug('[OverviewPageClient] Request aborted');
           return;
         }
-        console.error('Failed to fetch GA4 data:', err);
+        console.error('Failed to fetch GA4 data:', err || 'Unknown error');
         setError(err instanceof Error ? err.message : 'Okänt fel');
       } finally {
         setLoading(false);

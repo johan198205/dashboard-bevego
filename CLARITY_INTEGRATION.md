@@ -2,7 +2,7 @@
 
 ## Översikt
 
-Denna integration ansluter till Microsoft Clarity Data Exporter API för att hämta användaranalys och beteendemätningar för domänen `mitt.riksbyggen.se`.
+Denna integration ansluter till Microsoft Clarity Data Exporter API för att hämta användaranalys och beteendemätningar för domänen `bevego.se`.
 
 ## Säkerhet
 
@@ -22,7 +22,7 @@ Denna integration ansluter till Microsoft Clarity Data Exporter API för att hä
    - Server-side klient som hanterar autentisering och HTTP-anrop
    - Använder Bearer JWT från `CLARITY_API_KEY`
    - Implementerar cache (120s TTL) för att minska API-belastning
-   - Filtrerar alltid på domain: `mitt.riksbyggen.se`
+   - Filtrerar alltid på domain: `bevego.se`
 
 2. **`src/app/api/clarity/route.ts`**
    - Intern API-endpoint som exponeras till klient

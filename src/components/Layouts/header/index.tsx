@@ -48,7 +48,7 @@ export function Header() {
             src={"/Logo.svg"}
             width={120}
             height={30}
-            alt="Riksbyggen"
+            alt="Bevego"
             role="img"
           />
         </Link>
