@@ -12,17 +12,13 @@ import GaugeCard from "@/widgets/GaugeCard";
 // import PerfCard from "@/widgets/PerfCard";
 // import WcagCard from "@/widgets/WcagCard";
 import { useFilters } from "@/components/GlobalFilters";
-// import { ClarityScoreCard } from "./(home)/_components/overview-cards/clarity-score-card"; // Removed
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
-// import { useClarityData } from "@/hooks/useClarityData"; // Removed
-// import * as overviewIcons from "./(home)/_components/overview-cards/icons"; // Removed
 import { useCwvData } from "@/hooks/useCwvData";
 import { CwvTotalStatusCard } from "@/components/shared/CwvTotalStatusCard";
 
 export default function ClientHome() {
   const { state } = useFilters();
   const range = state.range;
-  // const { clarityScore } = useClarityData(); // Removed
   const { summary: cwvSummary } = useCwvData();
   const [drawer, setDrawer] = useState<{ metricId: string; title: string } | null>(null);
   return (
