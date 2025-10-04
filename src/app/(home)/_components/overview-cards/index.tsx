@@ -4,10 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { compactFormat } from "@/lib/format-number";
 import { getOverviewData } from "../../fetch";
 import { OverviewCard } from "./card";
-import { ClarityScoreCard } from "./clarity-score-card";
 import { CwvTotalStatusCard } from "@/components/shared/CwvTotalStatusCard";
 import { useCwvData } from "@/hooks/useCwvData";
-import { useClarityData } from "@/hooks/useClarityData";
 import { getKpi } from "@/lib/resolver";
 import * as icons from "./icons";
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
@@ -15,11 +13,10 @@ import { useFilters } from "@/components/GlobalFilters";
 import { generateTimeseries, aggregate } from "@/lib/mockData/generators";
 
 // TODO replace with UI settings
-const KPI_PROGRESS_ENABLED_METRICS = ['mau', 'pageviews', 'clarity_score'];
+const KPI_PROGRESS_ENABLED_METRICS = ['mau', 'pageviews'];
 const KPI_ANNUAL_GOALS = {
   mau: 100000, // Monthly Active Users
   pageviews: 1500000, // Page views
-  clarity_score: 80, // Clarity Score (out of 100)
 };
 
 type OverviewData = {
@@ -32,7 +29,6 @@ type OverviewData = {
 export function OverviewCardsGroup() {
   const [overviewData, setOverviewData] = useState<OverviewData | null>(null);
   const { summary: cwvSummary, loading: cwvLoading } = useCwvData();
-  const { clarityScore, loading: clarityLoading } = useClarityData();
   const { state } = useFilters();
   const [drawer, setDrawer] = useState<{ metricId: string; title: string } | null>(null);
   const [tasksRateData, setTasksRateData] = useState<{ value: number; growthRate: number } | null>(null);
@@ -146,12 +142,6 @@ export function OverviewCardsGroup() {
       const agg = aggregate(daily, grain);
       return agg.map((p) => ({ x: new Date(p.date).getTime(), y: p.value }));
     },
-    clarity: async ({ start, end, grain }: any) => {
-      const daily = generateTimeseries({ start, end }, { base: 70, seasonalityByMonth: [0.95,0.96,0.98,1.0,1.02,1.03,1.04,1.05,1.03,1.01,0.99,0.98], noise: 0.04, seedKey: "clarity" });
-      const agg = aggregate(daily, grain);
-      // clamp to 0..100
-      return agg.map((p) => ({ x: new Date(p.date).getTime(), y: Math.max(0, Math.min(100, p.value)) }));
-    },
     cwv_total: async ({ start, end, grain }: any) => {
       const daily = generateTimeseries({ start, end }, { base: 65, seasonalityByMonth: [0.9,0.92,0.95,1.0,1.05,1.08,1.1,1.12,1.1,1.05,0.98,0.95], noise: 0.06, seedKey: "cwv_total" });
       const agg = aggregate(daily, grain);
@@ -159,10 +149,10 @@ export function OverviewCardsGroup() {
     },
   }), [state.range.comparisonMode]);
 
-  if (clarityLoading || cwvLoading) {
+  if (cwvLoading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4 2xl:gap-7.5">
-        {Array.from({ length: 6 }).map((_, i) => (
+        {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
         ))}
       </div>
@@ -183,24 +173,7 @@ export function OverviewCardsGroup() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4 2xl:gap-7.5">
-      {/* Clarity Score - First and most prominent card */}
-      {clarityScore && (
-        <ClarityScoreCard
-          label="Clarity Score"
-          data={{
-            value: `${clarityScore.score} / 100`,
-            growthRate: 0, // TODO: Add growth rate to clarity score
-            grade: clarityScore.grade
-          }}
-          Icon={icons.ClarityScore}
-          comparisonLabel={getComparisonLabel("clarity")}
-          // open drawer
-          onClick={() => setDrawer({ metricId: "clarity", title: "Clarity Score" })}
-          // no sparkline on this card
-        />
-      )}
-
-      {/* CWV Total Status - Second prominent card */}
+      {/* CWV Total Status - First prominent card */}
       {cwvSummary && (
         <CwvTotalStatusCard
           label="CWV total status"
@@ -288,7 +261,6 @@ export function OverviewCardsGroup() {
             if (drawer.metricId === 'mau') return mauSummary?.source || 'GA4';
             if (drawer.metricId === 'pageviews') return pageviewsSummary?.source || 'GA4';
             if (drawer.metricId === 'cwv_total') return cwvSummary ? 'CrUX API' : 'Mock';
-            if (drawer.metricId === 'clarity') return clarityScore ? 'Clarity' : 'Mock';
             return 'Mock';
           })()}
           getSeries={providers[drawer.metricId as keyof typeof providers]}

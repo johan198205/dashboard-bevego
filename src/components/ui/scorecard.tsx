@@ -112,7 +112,7 @@ export function ScoreCard({
     if (typeof value === 'string') {
       // Handle different string formats
       if (value.includes('/')) {
-        // Handle "73 / 100" format (Clarity Score)
+        // Handle percentage format
         const parts = value.split('/');
         numericValue = parseFloat(parts[0]?.trim() || '0');
       } else {

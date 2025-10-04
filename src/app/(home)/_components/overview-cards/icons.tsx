@@ -72,22 +72,6 @@ export function Users(props: SVGPropsType) {
   );
 }
 
-export function ClarityScore(props: SVGPropsType) {
-  return (
-    <svg width={58} height={58} viewBox="0 0 58 58" fill="none" {...props}>
-      <circle cx={29} cy={29} r={29} fill="#E01E26" />
-      <path
-        d="M29 12l5.5 11.2L47 25.4l-9 8.8 2.1 12.2L29 38.4l-11.1 7.9L20 34.2l-9-8.8 12.5-2.2L29 12z"
-        fill="#fff"
-      />
-      <path
-        d="M29 18l3.5 7.1L39 25.7l-5.7 5.6 1.3 7.7L29 33.4l-5.6 3.9L25 31.3l-5.7-5.6 7.9-1.4L29 18z"
-        fill="#fff"
-        opacity={0.8}
-      />
-    </svg>
-  );
-}
 
 export function CwvTotalStatus(props: SVGPropsType) {
   return (
