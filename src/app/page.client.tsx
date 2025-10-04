@@ -12,26 +12,23 @@ import GaugeCard from "@/widgets/GaugeCard";
 // import PerfCard from "@/widgets/PerfCard";
 // import WcagCard from "@/widgets/WcagCard";
 import { useFilters } from "@/components/GlobalFilters";
-import { ClarityScoreCard } from "./(home)/_components/overview-cards/clarity-score-card";
 import ScorecardDetailsDrawer from "@/components/ScorecardDetailsDrawer";
-import { useClarityData } from "@/hooks/useClarityData";
-import * as overviewIcons from "./(home)/_components/overview-cards/icons";
 import { useCwvData } from "@/hooks/useCwvData";
 import { CwvTotalStatusCard } from "@/components/shared/CwvTotalStatusCard";
 
 export default function ClientHome() {
   const { state } = useFilters();
   const range = state.range;
-  const { clarityScore } = useClarityData();
   const { summary: cwvSummary } = useCwvData();
   const [drawer, setDrawer] = useState<{ metricId: string; title: string } | null>(null);
   return (
     <div className="space-y-6">
-      {/* Gauge Cards Section - 3 compact cards in top row */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Gauge Cards Section - 2 compact cards in top row */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <GaugeCard title="Tasks" metric="tasks_rate" range={range} compact={true} />
         <GaugeCard title="Funktioner" metric="features_rate" range={range} compact={true} />
-        {cwvSummary ? (
+        {/* CWV card hidden for now */}
+        {/* {cwvSummary ? (
           <CwvTotalStatusCard
             label="CWV total status"
             data={{
@@ -44,33 +41,14 @@ export default function ClientHome() {
           />
         ) : (
           <GaugeCard title="CWV total status" metric="cwv_total" range={range} compact={true} />
-        )}
+        )} */}
       </div>
 
       {/* Other KPI Cards Section - 4 larger cards in bottom row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <TotalDiffCard title="Total users" metric="mau" range={range} />
         <TotalDiffCard title="Användning — Sidvisningar" metric="pageviews" range={range} />
-        {clarityScore && (
-          <ClarityScoreCard
-            label="Clarity Score"
-            data={{
-              value: `${clarityScore.score} / 100`,
-              growthRate: 0,
-              grade: clarityScore.grade,
-            }}
-            Icon={overviewIcons.ClarityScore}
-            comparisonLabel={(() => {
-              switch (state.range.comparisonMode) {
-                case 'yoy': return 'vs. föregående år';
-                case 'prev': return 'vs. föregående period';
-                case 'none': return null;
-                default: return 'vs. föregående period';
-              }
-            })()}
-            onClick={() => setDrawer({ metricId: "clarity", title: "Clarity Score" })}
-          />
-        )}
+        {/* ClarityScoreCard removed */}
       </div>
 
       {drawer && (
@@ -87,7 +65,7 @@ export default function ClientHome() {
             const e = new Date(end).getTime();
             const day = 1000 * 60 * 60 * 24;
             const points: { x: number; y: number }[] = [];
-            const base = clarityScore?.score ?? 75;
+            const base = 75; // Default clarity score
             for (let t = s; t <= e; t += day) {
               const noise = Math.random() * 2 - 1; // small ±1 variation
               points.push({ x: t, y: Math.max(0, Math.min(100, Math.round(base + noise))) });

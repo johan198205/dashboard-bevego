@@ -12,11 +12,10 @@ import { useKpi } from "@/hooks/useKpi";
 import { cn } from "@/lib/utils";
 
 // TODO replace with UI settings
-const KPI_PROGRESS_ENABLED_METRICS = ['mau', 'pageviews', 'clarity_score'];
+const KPI_PROGRESS_ENABLED_METRICS = ['mau', 'pageviews'];
 const KPI_ANNUAL_GOALS = {
   mau: 100000, // Monthly Active Users
   pageviews: 1500000, // Page views
-  clarity_score: 80, // Clarity Score (out of 100)
 };
 
 type Props = {

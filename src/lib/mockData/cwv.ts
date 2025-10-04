@@ -44,6 +44,11 @@ export async function getCwvSummary(
       status: getCwvStatus(finalCls, 0.1),
       target: 0.1
     },
+    ttfb: {
+      p75: 400, // Mock TTFB value
+      status: getCwvStatus(400, 800),
+      target: 800
+    },
     passedPages: {
       count: isMobile ? 1247 : 1892,
       percentage: isMobile ? 78.2 : 89.4

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+"use client";
 
 import { GlobeIcon } from "@/assets/icons";
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
@@ -12,10 +12,6 @@ import { RadioInput } from "@/components/FormElements/radio";
 import { Select } from "@/components/FormElements/select";
 import { Switch } from "@/components/FormElements/switch";
 import { ShowcaseSection } from "@/components/Layouts/showcase-section";
-
-export const metadata: Metadata = {
-  title: "Form Elements",
-};
 
 export default function FormElementsPage() {
   return (

@@ -130,6 +130,7 @@ export default function CoreWebVitals() {
                 target: '> 75%',
                 description: 'Klarar alla tre'
               }}
+              Icon={() => <div className="w-6 h-6 bg-blue-500 rounded" />}
             />
           </div>
         </div>
