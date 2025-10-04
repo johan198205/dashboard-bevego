@@ -70,7 +70,7 @@ export type CwvSummary = {
   totalStatus: {
     percentage: number; // % that pass all three metrics
   };
-  source: 'Mock' | 'GA4 API' | 'BigQuery' | 'CrUX API';
+  source: 'Mock' | 'GA4 API' | 'CrUX API';
   period?: string; // Actual data collection period from CrUX
 };
 
@@ -98,7 +98,7 @@ export type CwvUrlGroupRow = {
   overallStatus: CwvStatus;
   sessions?: number;
   lastTested: string;
-  source: 'Mock' | 'GA4 API' | 'BigQuery';
+  source: 'Mock' | 'GA4 API';
 };
 
 

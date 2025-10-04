@@ -1068,7 +1068,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
 }
 
 // Temporary shim to avoid breaking existing imports in the template
-export type DataSource = "ga4" | "bq";
+export type DataSource = "ga4";
 export type SessionsKpiInput = { startDate: string; endDate: string; dataSource: DataSource };
 export type SessionsKpiResult = { total_sessions: number; source_label: "Mock" };
 export async function getSessionsKpi(input: SessionsKpiInput): Promise<SessionsKpiResult> {

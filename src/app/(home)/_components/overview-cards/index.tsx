@@ -76,7 +76,7 @@ export function OverviewCardsGroup() {
     loadRateData();
   }, [state.range.start, state.range.end, state.range.grain, state.range.comparisonMode]);
 
-  // Load MAU & Pageviews summary from resolver (GA4/BQ/Mock)
+  // Load MAU & Pageviews summary from resolver (GA4/Mock)
   useEffect(() => {
     const loadSummaries = async () => {
       try {
