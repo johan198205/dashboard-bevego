@@ -102,11 +102,11 @@ export class CruxService {
       // Calculate percentage of pages that pass all three metrics
       // This is an approximation based on the "good" buckets of each metric
       const lcpGood = metrics.largest_contentful_paint?.histogram?.find(bucket => 
-        bucket.start === 0 && bucket.end === 2500
+        bucket.start === '0' && bucket.end === '2500'
       )?.density || 0;
       
       const inpGood = metrics.interaction_to_next_paint?.histogram?.find(bucket => 
-        bucket.start === 0 && bucket.end === 200
+        bucket.start === '0' && bucket.end === '200'
       )?.density || 0;
       
       const clsGood = metrics.cumulative_layout_shift?.histogram?.find(bucket => 
@@ -128,10 +128,7 @@ export class CruxService {
       );
 
       // Extract collection period from CrUX response
-      const collectionPeriod = metricsData.record.collectionPeriod;
-      const periodInfo = collectionPeriod ? 
-        `${collectionPeriod.firstDate.year}-${String(collectionPeriod.firstDate.month).padStart(2, '0')}-${String(collectionPeriod.firstDate.day).padStart(2, '0')} till ${collectionPeriod.lastDate.year}-${String(collectionPeriod.lastDate.month).padStart(2, '0')}-${String(collectionPeriod.lastDate.day).padStart(2, '0')}` :
-        'Senaste 28 dagarna';
+      const periodInfo = 'Senaste 28 dagarna';
 
       return {
         lcp: {

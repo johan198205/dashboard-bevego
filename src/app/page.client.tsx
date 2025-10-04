@@ -69,7 +69,7 @@ export default function ClientHome() {
             const e = new Date(end).getTime();
             const day = 1000 * 60 * 60 * 24;
             const points: { x: number; y: number }[] = [];
-            const base = clarityScore?.score ?? 75;
+            const base = 75; // Default clarity score
             for (let t = s; t <= e; t += day) {
               const noise = Math.random() * 2 - 1; // small ±1 variation
               points.push({ x: t, y: Math.max(0, Math.min(100, Math.round(base + noise))) });

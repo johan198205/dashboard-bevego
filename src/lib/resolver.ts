@@ -484,7 +484,7 @@ export async function getKpi(params: Params): Promise<KpiResponse> {
         const series = [{ date: range.start, value: currentRate }];
         
         return {
-          meta: { source: "crux", metric: "cwv_total", dims: [] },
+          meta: { source: "ga4", metric: "cwv_total", dims: [] },
           summary: { current: currentRate, prev: prevRate, yoyPct },
           timeseries: series,
           notes: ["CWV total status från CrUX API", "Källa: CrUX API"]

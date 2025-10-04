@@ -184,7 +184,7 @@ export class CruxHistoryService {
         percentage: totalStatusPercentage
       },
       period: `Historisk data för ${date}`,
-      source: 'CrUX History API'
+      source: 'CrUX API'
     };
   }
 
