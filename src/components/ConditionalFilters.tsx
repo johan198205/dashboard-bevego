@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import GlobalFilters from "./GlobalFilters";
 
@@ -11,5 +12,9 @@ export function ConditionalFilters() {
     return null;
   }
   
-  return <GlobalFilters />;
+  return (
+    <Suspense fallback={<div>Loading filters...</div>}>
+      <GlobalFilters />
+    </Suspense>
+  );
 }

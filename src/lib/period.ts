@@ -1,4 +1,5 @@
-import { Period } from '@/types/ndi';
+// Period type for quarterly data
+export type Period = `${number}Q${1|2|3|4}`;
 
 /**
  * Get previous quarter period

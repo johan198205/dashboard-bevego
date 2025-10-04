@@ -1,6 +1,6 @@
 # Mitt Riksbyggen – Mock Analytics Dashboard
 
-All data in this app is mock. The UI and resolver are structured so each widget can later be switched from mock to GA4/BigQuery by editing a single place.
+All data in this app is mock. The UI and resolver are structured so each widget can later be switched from mock to GA4 by editing a single place.
 
 ## Snabbstart
 
@@ -28,7 +28,7 @@ npm run dev
 ## Byta en widget till GA4 senare
 
 1. Gå till `src/lib/resolver.ts`, lokalisera grenen för metrik (t.ex. `metric === "mau"`).
-2. Ersätt mock-generatorn med anrop till GA4/BQ-provider.
+2. Ersätt mock-generatorn med anrop till GA4-provider.
 3. Mappa svaret till `KpiResponse` (behåll samma fält). Inga widgetändringar behövs.
 
 ## Sidor

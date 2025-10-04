@@ -18,6 +18,6 @@ UI är single source of truth för datakälla; inga server-overrides.
 
 Ändra inte configs/linters/CI utan explicit tillåtelse.
 
-Timezone konsistens: alltid Europe/Stockholm i BQ & i API-range.
+Timezone konsistens: alltid Europe/Stockholm i API-range.
 
 Labela källa på varje widget och visa explainer.

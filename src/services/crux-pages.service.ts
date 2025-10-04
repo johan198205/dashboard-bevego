@@ -131,10 +131,10 @@ export class CruxPagesService {
     
     return {
       url: url,
-      lcp: { p75: Math.round(lcpP75), status: lcpStatus, target: 2500 },
-      inp: { p75: Math.round(inpP75), status: inpStatus, target: 200 },
-      cls: { p75: Math.round(clsP75 * 100) / 100, status: clsStatus, target: 0.1 },
-      ttfb: { p75: Math.round(ttfbP75), status: ttfbStatus, target: 800 },
+      lcp: { p75: Math.round(lcpP75), status: lcpStatus },
+      inp: { p75: Math.round(inpP75), status: inpStatus },
+      cls: { p75: Math.round(clsP75 * 100) / 100, status: clsStatus },
+      ttfb: { p75: Math.round(ttfbP75), status: ttfbStatus },
       lastTested: new Date().toISOString().split('T')[0],
       source: 'Mock Data'
     };
